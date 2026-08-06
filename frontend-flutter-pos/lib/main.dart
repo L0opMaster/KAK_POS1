@@ -1,0 +1,177 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:frontend_flutter_pos/features/pos/screens/create_modifier.dart';
+import 'package:frontend_flutter_pos/features/pos/screens/employee_management_screen.dart';
+import 'package:frontend_flutter_pos/features/pos/screens/user_account_screen.dart';
+import 'package:frontend_flutter_pos/features/pos/screens/role_management_screen.dart';
+import 'package:frontend_flutter_pos/features/pos/screens/permission_screen.dart';
+import 'package:frontend_flutter_pos/features/pos/screens/modifier_management.dart';
+import 'package:frontend_flutter_pos/features/pos/screens/phone_screen_scan.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'core/config/app_config.dart';
+import 'core/config/pos_theme.dart';
+import 'core/models/auth_models.dart';
+import 'core/providers/auth_provider.dart';
+import 'core/providers/language_provider.dart';
+import 'core/providers/theme_provider.dart';
+import 'core/services/api_service.dart';
+import 'l10n/generated/app_localizations.dart';
+import 'features/auth/screens/login_screen.dart';
+import 'features/pos/screens/pos_screen.dart';
+import 'features/pos/screens/settings_modules_screen.dart';
+import 'features/pos/screens/pos_settings_screen.dart';
+import 'features/pos/screens/customer_management_screen.dart';
+import 'features/pos/screens/open_ticket_page.dart';
+import 'features/pos/screens/receipts_screen.dart';
+import 'features/pos/screens/shift_screen.dart';
+import 'features/pos/screens/table_management_screen.dart';
+import 'features/pos/screens/create_table.dart';
+import 'features/pos/screens/item_management_screen.dart';
+import 'features/pos/screens/category_management_screen.dart';
+import 'features/inventory/screens/inventory_hub_screen.dart';
+import 'features/inventory/screens/purchase_orders_screen.dart';
+import 'features/inventory/screens/transfer_orders_screen.dart';
+import 'features/inventory/screens/stock_adjustments_screen.dart';
+import 'features/inventory/screens/inventory_counts_screen.dart';
+import 'features/inventory/screens/productions_screen.dart';
+import 'features/inventory/screens/suppliers_screen.dart';
+import 'features/inventory/screens/inventory_history_screen.dart';
+import 'features/inventory/screens/inventory_valuation_screen.dart';
+import 'features/reports/screens/reports_hub_screen.dart';
+import 'features/reports/screens/sales_summary_report_screen.dart';
+import 'features/reports/screens/sales_by_item_screen.dart';
+import 'features/reports/screens/category_performance_screen.dart';
+import 'features/reports/screens/cashier_performance_screen.dart';
+import 'features/reports/screens/payment_mix_screen.dart';
+import 'features/reports/screens/sales_report_screen.dart';
+import 'features/reports/screens/sales_by_modifier_screen.dart';
+import 'features/reports/screens/discounts_screen.dart';
+import 'features/reports/screens/taxes_screen.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await AppConfig.initialize();
+  // OFFLINE: pre-warm the SharedPreferences singleton (it's just a cached
+  // plugin instance under the hood) so every OFFLINE read that happens
+  // during startup — auth_service.dart's session check, cart_provider.dart's
+  // restoreCart(), table_selection_provider.dart's load, etc. — is instant
+  // instead of paying the first-call initialization cost.
+  await SharedPreferences.getInstance();
+  runApp(const ProviderScope(child: PosApp()));
+}
+
+class PosApp extends ConsumerWidget {
+  const PosApp({super.key});
+
+  @override
+  Widget build(final BuildContext context, final WidgetRef ref) {
+    final authState = ref.watch(authProvider);
+
+    // ONLINE-triggered, OFFLINE cleanup: wires up ApiService's 401
+    // interceptor (core/services/api_service.dart) — fired whenever any
+    // ONLINE request gets rejected by the backend — to authProvider's
+    // logout, which clears the OFFLINE cached session (see
+    // auth_service.dart's `logout()`) so the app returns to the login
+    // screen instead of holding a dead token.
+    ApiService.onUnauthorized = () => ref.read(authProvider.notifier).logout();
+
+    return MaterialApp(
+      title: AppConfig.appName,
+      debugShowCheckedModeBanner: false,
+      theme: PosTheme.lightTheme,
+      darkTheme: PosTheme.darkTheme,
+      themeMode: ref.watch(themeModeProvider).value,
+      locale: ref.watch(appLanguageProvider).toLocale(),
+      supportedLocales: const [Locale('en'), Locale('km')],
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      routes: <String, WidgetBuilder>{
+        '/login': (context) => const LoginScreen(),
+        '/pos': (final BuildContext context) => const PosScreen(),
+        '/settings': (final BuildContext context) =>
+            const SettingsModulesScreen(),
+        '/pos-settings': (final BuildContext context) =>
+            const PosSettingsScreen(),
+        '/customers': (final BuildContext context) =>
+            const CustomerManagementScreen(),
+        '/add-customer': (final BuildContext context) =>
+            const CustomerFormScreen(),
+        '/open-tickets': (final BuildContext context) => const OpenTicketPage(),
+        '/receipts': (final BuildContext context) => const ReceiptsScreen(),
+        '/shifts': (final BuildContext context) => const ShiftScreen(),
+        '/tables': (final BuildContext context) =>
+            const TableManagementScreen(),
+        '/add-table': (final BuildContext context) => const CreateTable(),
+        // ── Item management (full CRUD) ──
+        '/items': (final BuildContext context) => const ItemManagementScreen(),
+        '/add-item': (final BuildContext context) => const ProductFormScreen(
+              isEdit: false,
+            ),
+        '/categories': (final BuildContext context) =>
+            const CategoryManagementScreen(),
+        '/modifiers': (final BuildContext context) =>
+            const ModifierManagement(),
+        '/create-modifier': (final BuildContext context) =>
+            const CreateModifier(),
+        // ── Inventory Management ──
+        '/inventory': (final BuildContext context) =>
+            const InventoryHubScreen(),
+        '/purchase-orders': (final BuildContext context) =>
+            const PurchaseOrdersScreen(),
+        '/transfer-orders': (final BuildContext context) =>
+            const TransferOrdersScreen(),
+        '/stock-adjustments': (final BuildContext context) =>
+            const StockAdjustmentsScreen(),
+        '/inventory-counts': (final BuildContext context) =>
+            const InventoryCountsScreen(),
+        '/productions': (final BuildContext context) =>
+            const ProductionsScreen(),
+        '/suppliers': (final BuildContext context) =>
+            const SuppliersScreen(),
+        '/inventory-history': (final BuildContext context) =>
+            const InventoryHistoryScreen(),
+        '/inventory-valuation': (final BuildContext context) =>
+            const InventoryValuationScreen(),
+        // ── Reports ──
+        '/reports': (final BuildContext context) => const ReportsHubScreen(),
+        '/report-sales-summary': (final BuildContext context) =>
+            const SalesSummaryReportScreen(),
+        '/report-sales-by-item': (final BuildContext context) =>
+            const SalesByItemScreen(),
+        '/report-sales-by-category': (final BuildContext context) =>
+            const CategoryPerformanceScreen(),
+        '/report-sales-by-employee': (final BuildContext context) =>
+            const CashierPerformanceScreen(),
+        '/report-sales-by-payment-type': (final BuildContext context) =>
+            const PaymentMixScreen(),
+        '/report-receipts': (final BuildContext context) =>
+            const SalesReportScreen(),
+        '/report-sales-by-modifier': (final BuildContext context) =>
+            const SalesByModifierScreen(),
+        '/report-discounts': (final BuildContext context) =>
+            const DiscountsScreen(),
+        '/report-taxes': (final BuildContext context) => const TaxesScreen(),
+
+        // --- employee ---
+        '/employeelist': (final BuildContext context) =>
+            const EmployeeManagementScreen(),
+        '/useraccount': (final BuildContext context) =>
+            const UserAccountScreen(),
+        '/accessRole': (final BuildContext context) =>
+            const RoleManagementScreen(),
+        '/permission': (final BuildContext context) => const PermissionScreen(),
+      },
+      // home: const PhoneScannerScreen(),
+      home: authState.maybeWhen(
+        data: (final User? user) =>
+            user != null ? const PosScreen() : const LoginScreen(),
+        orElse: () => const LoginScreen(),
+      ),
+    );
+  }
+}

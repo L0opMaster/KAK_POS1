@@ -1,0 +1,2321 @@
+{
+  "@@locale": "en",
+  "appName": "KAKNNEA",
+  "commonSave": "Save",
+  "commonCancel": "Cancel",
+  "commonDelete": "Delete",
+  "commonEdit": "Edit",
+  "commonAdd": "Add",
+  "commonSearch": "Search",
+  "commonConfirm": "Confirm",
+  "commonClose": "Close",
+  "commonOk": "OK",
+  "commonYes": "Yes",
+  "commonNo": "No",
+  "commonBack": "Back",
+  "commonNext": "Next",
+  "commonDone": "Done",
+  "commonLoading": "Loading...",
+  "commonRetry": "Retry",
+  "commonRefresh": "Refresh",
+  "commonSubmit": "Submit",
+  "commonApply": "Apply",
+  "commonClear": "Clear",
+  "commonReset": "Reset",
+  "commonSelect": "Select",
+  "commonSelectAll": "Select All",
+  "commonRequired": "Required",
+  "commonOptional": "Optional",
+  "commonNone": "None",
+  "commonAll": "All",
+  "commonActive": "Active",
+  "commonInactive": "Inactive",
+  "commonEnabled": "Enabled",
+  "commonDisabled": "Disabled",
+  "commonError": "Error",
+  "commonSuccess": "Success",
+  "commonWarning": "Warning",
+  "commonInfo": "Info",
+  "errorGeneric": "An error occurred",
+  "errorNetwork": "Network error",
+  "errorUnauthorized": "You are not authorized",
+  "errorNotFound": "Not found",
+  "errorValidation": "Please check the highlighted fields",
+  "errorSomethingWentWrong": "Something went wrong",
+  "errorTryAgain": "Please try again",
+  "navPos": "POS",
+  "navSettings": "Settings",
+  "navInventory": "Inventory",
+  "navReports": "Reports",
+  "navCustomers": "Customers",
+  "navItems": "Items",
+  "navCategories": "Categories",
+  "navTables": "Tables",
+  "navShifts": "Shifts",
+  "navReceipts": "Receipts",
+  "languageLabel": "Language",
+  "languageEnglish": "English",
+  "languageKhmer": "Khmer",
+  "languageSwitchTo": "Switch to {language}",
+  "@languageSwitchTo": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsTitle": "Settings",
+  "settingsGeneral": "General",
+  "settingsCompanyProfile": "Company Profile",
+  "settingsTax": "Tax",
+  "settingsPrinters": "Printers",
+  "settingsPaymentMethods": "Payment Methods",
+  "settingsPosSettings": "POS Settings",
+  "settingsCurrencies": "Currencies",
+  "settingsDarkMode": "Dark mode",
+  "settingsLanguage": "App language",
+  "settingsSave": "Save",
+  "settingsSaveGeneral": "Save General",
+  "settingsSaveCompany": "Save Company",
+  "settingsSaveTax": "Save Tax",
+  "settingsSavePrinters": "Save Printers",
+  "settingsTaxRateLabel": "Tax rate",
+  "settingsDefaultLanguage": "Default language",
+  "settingsReceiptFooter": "Receipt footer",
+  "settingsRequireShiftForSales": "Require shift for sales",
+  "settingsShowKhqrOnReceipts": "Show KHQR on receipts",
+  "printerTransportType": "Connection type",
+  "printerPdfDriver": "PDF / Driver printer",
+  "printerBluetooth": "Bluetooth",
+  "printerUsb": "USB",
+  "printerNetwork": "Network",
+  "printerPaperSize": "Paper size",
+  "printerPaper58mm": "58mm",
+  "printerPaper80mm": "80mm",
+  "printerIpAddress": "IP address",
+  "printerPort": "Port",
+  "printerSelectDevice": "Select device",
+  "printerTestPrint": "Test print",
+  "printerConnect": "Connect",
+  "printerDisconnect": "Disconnect",
+  "printerConnected": "Connected",
+  "printerNotConnected": "Not connected",
+  "printerScanDevices": "Scan devices",
+  "printerPrintSuccess": "Print succeeded",
+  "printerPrintFailed": "Print failed",
+  "posTitle": "POS",
+  "posSearchProducts": "Search products",
+  "posSearchHint": "Search by name or SKU",
+  "posBarcodeHint": "Scan or enter barcode",
+  "posCategories": "Categories",
+  "posCart": "Cart",
+  "posEmptyCart": "Cart is empty",
+  "posCheckout": "Checkout",
+  "posHoldTicket": "Hold ticket",
+  "posOpenTickets": "Open tickets",
+  "posCustomer": "Customer",
+  "posTable": "Table",
+  "posNotifications": "Notifications",
+  "posScannerReady": "Scanner ready — scan a code or type it and press Enter",
+  "posConnectScanner": "Connect / focus barcode scanner",
+  "posNotificationsComingSoon": "Notifications coming soon",
+  "cartSubtotal": "Subtotal",
+  "cartDiscount": "Discount",
+  "cartTax": "Tax",
+  "cartTotal": "Total",
+  "cartQty": "Qty",
+  "cartPrice": "Price",
+  "cartRemove": "Remove",
+  "cartClear": "Clear",
+  "cartAddNote": "Add note",
+  "cartSelectCustomer": "Select customer",
+  "cartSelectTable": "Select table",
+  "cartPayment": "Payment",
+  "cartCash": "Cash",
+  "cartCard": "Card",
+  "cartKhqr": "KHQR",
+  "cartAmountPaid": "Amount paid",
+  "cartChange": "Change",
+  "cartCompleteSale": "Complete sale",
+  "receiptTitle": "Receipt",
+  "receiptSaleReceipt": "Sale Receipt",
+  "receiptInvoiceNumber": "Invoice No.",
+  "receiptDate": "Date",
+  "receiptTime": "Time",
+  "receiptCashier": "Cashier",
+  "receiptCustomer": "Customer",
+  "receiptTable": "Table",
+  "receiptItem": "Item",
+  "receiptQty": "Qty",
+  "receiptPrice": "Price",
+  "receiptAmount": "Amount",
+  "receiptSubtotal": "Subtotal",
+  "receiptDiscount": "Discount",
+  "receiptTax": "Tax",
+  "receiptTotal": "Total",
+  "receiptPaid": "Paid",
+  "receiptChange": "Change",
+  "receiptPaymentMethod": "Payment Method",
+  "receiptThankYou": "Thank you for your purchase!",
+  "receiptPrint": "Print",
+  "receiptReprint": "Reprint",
+  "receiptExchangeRate": "Exchange rate",
+  "dialogConfirmTitle": "Confirm",
+  "dialogConfirmDeleteTitle": "Confirm Delete",
+  "dialogConfirmDeleteMessage": "Are you sure you want to delete this item? This action cannot be undone.",
+  "dialogUnsavedChangesTitle": "Unsaved changes",
+  "dialogUnsavedChangesMessage": "You have unsaved changes. Discard them?",
+  "formName": "Name",
+  "formNameEn": "Name (English)",
+  "formNameKm": "Name (Khmer)",
+  "formPrice": "Price",
+  "formCost": "Cost",
+  "formSku": "SKU",
+  "formBarcode": "Barcode",
+  "formCategory": "Category",
+  "formPhone": "Phone",
+  "formEmail": "Email",
+  "formAddress": "Address",
+  "formPleaseEnterValue": "Please enter a value",
+  "formInvalidValue": "Invalid value",
+  "reportsTitle": "Reports",
+  "reportsSalesSummary": "Sales Summary",
+  "reportsSalesByItem": "Sales by Item",
+  "reportsSalesByCategory": "Sales by Category",
+  "reportsSalesByEmployee": "Sales by Employee",
+  "reportsSalesByPaymentType": "Sales by Payment Type",
+  "reportsDiscounts": "Discounts",
+  "reportsTaxes": "Taxes",
+  "reportsDateRange": "Date range",
+  "reportsExport": "Export",
+  "authLogin": "Login",
+  "authUsername": "Username",
+  "authPassword": "Password",
+  "authLoginFailed": "Login failed",
+  "authLogout": "Logout",
+  "loginScreenBadge": "Smart Restaurant POS",
+  "loginScreenHeadline": "Modern POS\nFor Fast Business",
+  "loginScreenDescription": "Manage restaurant orders, inventory, kitchen workflow,\ncustomer management, payments, and business reports\nfrom one complete POS platform.",
+  "loginScreenFeatureRestaurant": "Restaurant",
+  "loginScreenFeatureMultiBranch": "Multi Branch",
+  "loginScreenCopyright": "© 2026 KAKNNEA Technologies",
+  "loginScreenWelcomeBack": "Welcome Back",
+  "loginScreenSubtitle": "Login to access your dashboard and manage\nyour restaurant or retail business operations.",
+  "loginScreenEnterUsernameHint": "Enter username",
+  "loginScreenEmailRequired": "Please enter your email",
+  "loginScreenEnterPasswordHint": "Enter password",
+  "loginScreenPasswordRequired": "Please enter your password",
+  "loginScreenPasswordMinLength": "Min 6 characters",
+  "loginScreenRememberMe": "Remember me",
+  "loginScreenForgotPassword": "Forgot Password?",
+  "loginScreenNoAccount": "Don't have an account?",
+  "loginScreenRegisterLink": "Register",
+  "createEmployeeSelectExistingAccountError": "Select an existing user account to link",
+  "createEmployeeAccountFieldsRequiredError": "Email, password, and role are required to create a user account",
+  "createEmployeeUpdatedMessage": "Employee updated",
+  "createEmployeeCreatedMessage": "Employee created",
+  "createEmployeeSaveFailedPrefix": "Failed to save",
+  "createEmployeeHasUserAccountTitle": "Has User Account",
+  "createEmployeeHasUserAccountSubtitle": "Allow this employee to log into the POS with a role",
+  "createEmployeeLinkedAccountPrefix": "Linked to user account:",
+  "createEmployeeLinkedAccountManageHint": "Manage its role or password from User Accounts.",
+  "createEmployeeCreateNewOption": "Create New",
+  "createEmployeeLinkExistingOption": "Link Existing",
+  "createEmployeeLoginEmailLabel": "Login Email *",
+  "createEmployeeAccountPasswordLabel": "Password *",
+  "createEmployeeSelectRoleHint": "Select role",
+  "createEmployeeRoleLabel": "Role *",
+  "createEmployeeExistingUserAccountLabel": "Existing User Account *",
+  "createEmployeeSelectUserHint": "Select user",
+  "createEmployeeNoUnlinkedAccountsMessage": "No unlinked user accounts available. Create one instead.",
+  "createEmployeeEditTitle": "Edit Employee",
+  "createEmployeeNewTitle": "New Employee",
+  "createEmployeeFullNameLabel": "Full Name *",
+  "createEmployeeCodeLabel": "Employee Code",
+  "createEmployeeCodeHint": "Leave blank to auto-generate",
+  "createEmployeePositionLabel": "Position",
+  "createEmployeePositionHint": "Cashier, Chef, Manager...",
+  "createEmployeeDepartmentLabel": "Department",
+  "createEmployeeHireDateLabel": "Hire Date",
+  "createEmployeeNotSetLabel": "Not set",
+  "createEmployeeBaseSalaryLabel": "Base Salary *",
+  "createEmployeeInvalidAmountError": "Enter a valid amount",
+  "createEmployeeNegativeAmountError": "Cannot be negative",
+  "createEmployeePayTypeLabel": "Pay Type",
+  "createEmployeeStatusLabel": "Status",
+  "createEmployeeNotesLabel": "Notes",
+  "createEmployeeSavingLabel": "Saving...",
+  "createEmployeeSaveChangesLabel": "Save Changes",
+  "createEmployeeCreateButtonLabel": "Create Employee",
+  "createModifierMinOneOptionError": "A modifier must have at least one option.",
+  "createModifierDiscardChangesMessage": "Are you sure you want to leave this page and discard changes?",
+  "createModifierContinueEditingButton": "CONTINUE EDITING",
+  "createModifierDiscardChangesButton": "DISCARD CHANGES",
+  "createModifierEditTitle": "Edit Modifier",
+  "createModifierCreateTitle": "Create Modifier",
+  "createModifierAddOptionButton": "ADD OPTION",
+  "createModifierRequiredSubtitle": "Customer must select an option.",
+  "createModifierMultiSelectTitle": "Allow multiple selections",
+  "createModifierMultiSelectSubtitle": "Customer can select more than one option.",
+  "createModifierNameLabel": "Modifier name",
+  "createModifierNameRequiredError": "Modifier name cannot be blank",
+  "createModifierDeleteOptionTooltip": "Delete option",
+  "createModifierOptionNameLabel": "Option name",
+  "createModifierOptionNameRequiredError": "Option name is required",
+  "createModifierPriceRequiredError": "Price is required",
+  "createModifierInvalidPriceError": "Enter a valid price",
+  "createModifierNegativePriceError": "Price cannot be negative",
+  "createModifierDeleteTitle": "Delete modifier",
+  "createModifierDeleteConfirmPrefix": "Are you sure you want to delete",
+  "createModifierUpdatedMessage": "Modifier updated successfully.",
+  "createModifierCreatedMessage": "Modifier created successfully.",
+  "createModifierSaveFailedFallback": "Failed to save modifier.",
+  "createModifierDeletedMessage": "Modifier deleted successfully.",
+  "createModifierDeleteFailedFallback": "Failed to delete modifier.",
+  "createTableUpdatedMessage": "Table updated",
+  "createTableCreatedMessage": "Table created",
+  "createTableSaveFailedPrefix": "Failed to save",
+  "createTableEditTitle": "Edit Table",
+  "createTableNewTitle": "New Table",
+  "createTableNumberLabel": "Table Number *",
+  "createTableNumberHint": "A1, B2, T-01...",
+  "createTableNumberLockedHint": "Table number cannot be changed",
+  "createTableDisplayNameLabel": "Display Name",
+  "createTableDisplayNameHint": "Leave blank to use the table number",
+  "createTableCapacityLabel": "Capacity (seats) *",
+  "createTableInvalidNumberError": "Enter a valid number",
+  "createTableMinCapacityError": "Must be at least 1",
+  "createTableSectionLabel": "Section",
+  "createTableSectionHint": "Main Hall, Patio, VIP...",
+  "createTableStatusLabel": "Status",
+  "createTableActiveSubtitle": "Table is available for use in the POS",
+  "createTableNotesLabel": "Notes",
+  "createTableSavingLabel": "Saving...",
+  "createTableSaveChangesLabel": "Save Changes",
+  "createTableCreateButtonLabel": "Create Table",
+  "categoryManagementUpdateFailedPrefix": "Failed to update",
+  "categoryManagementEmptyTitle": "No categories yet",
+  "categoryManagementEmptyHint": "Tap + to add a category",
+  "categoryManagementAddButton": "Add Category",
+  "categoryManagementEditTitle": "Edit Category",
+  "categoryManagementNewTitle": "New Category",
+  "categoryManagementColorLabel": "Color",
+  "categoryManagementActiveSubtitle": "Show in POS category filter",
+  "categoryManagementPreviewNamePlaceholder": "Category Name",
+  "categoryManagementUpdatedSuffix": "updated",
+  "categoryManagementCreatedSuffix": "created",
+  "categoryManagementSaveFailedPrefix": "Failed to save",
+  "customerManagementDeleteTitle": "Delete customers",
+  "customerManagementDeleteConfirmPrefix": "Are you sure you want to delete",
+  "customerManagementDeleteConfirmSuffix": "selected customer(s)?",
+  "customerManagementDeletedSuffix": "customer(s) deleted successfully.",
+  "customerManagementDeleteFailedPrefix": "Failed to delete customers",
+  "customerManagementAddButton": "ADD CUSTOMER",
+  "customerManagementDeleteSelectedTooltip": "Delete selected customers",
+  "customerManagementSelectedSuffix": "selected",
+  "customerManagementSearchHint": "Search by name, phone or email...",
+  "customerManagementShowingPrefix": "Showing",
+  "customerManagementOfLabel": "of",
+  "customerManagementNoResultsTitle": "No customers found",
+  "customerManagementNoContactInfo": "No contact info",
+  "customerManagementPagePrefix": "Page",
+  "customerManagementFirstPageTooltip": "First page",
+  "customerManagementPreviousPageTooltip": "Previous page",
+  "customerManagementNextPageTooltip": "Next page",
+  "customerManagementLastPageTooltip": "Last page",
+  "customerManagementEmptyDescription": "Keep track of customers and their credit balances.",
+  "customerManagementEditTitle": "Edit Customer",
+  "customerManagementNewTitle": "New Customer",
+  "customerManagementNameLabel": "Customer Name *",
+  "customerManagementCreditLimitLabel": "Credit Limit ($)",
+  "customerManagementNotesLabel": "Notes",
+  "customerManagementSavingLabel": "Saving...",
+  "customerManagementUpdateButtonLabel": "Update Customer",
+  "customerManagementCreateButtonLabel": "Create Customer",
+  "customerManagementCreatedMessage": "Customer created",
+  "customerManagementUpdatedMessage": "Customer updated",
+  "customerManagementSaveFailedPrefix": "Failed to save",
+  "customerManagementDetailFallbackTitle": "Customer",
+  "customerManagementCreditAccountTitle": "Credit Account",
+  "customerManagementBalanceLabel": "Balance",
+  "customerManagementLimitPrefix": "Limit:",
+  "customerManagementUsedSuffix": "used",
+  "customerManagementNoPurchaseHistory": "No purchase history",
+  "customerManagementPurchaseHistoryTitle": "Purchase History",
+  "customerManagementSalePrefix": "Sale #",
+  "debugSettingsUpdatedMessage": "Settings updated",
+  "debugSettingsUnavailableMessage": "Unavailable in release mode",
+  "debugSettingsTitle": "Debug Settings",
+  "debugSettingsUseApiCartLabel": "Use API cart service",
+  "debugSettingsHeldTicketSyncLabel": "Enable held-ticket sync",
+  "createPurchaseOrderSelectSupplier": "Select a supplier",
+  "inventoryLinesAddAtLeastOne": "Add at least one line",
+  "createPurchaseOrderCreated": "Purchase order created",
+  "inventoryFailedToSave": "Failed to save: {error}",
+  "@inventoryFailedToSave": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "createPurchaseOrderTitle": "New Purchase Order",
+  "createPurchaseOrderSupplierLabel": "Supplier *",
+  "createPurchaseOrderDeliverToStore": "Deliver to Store",
+  "inventoryNotSet": "Not set",
+  "createPurchaseOrderOrderDeadline": "Order Deadline",
+  "createPurchaseOrderExpectedArrival": "Expected Arrival",
+  "createPurchaseOrderTaxRate": "Tax Rate (%)",
+  "inventoryNotesLabel": "Notes",
+  "inventoryLinesLabel": "Lines",
+  "inventoryAddLine": "Add Line",
+  "inventoryProductLabel": "Product",
+  "createPurchaseOrderUnitCost": "Unit Cost",
+  "createRecipeEnterName": "Enter a recipe name",
+  "createRecipeSelectOutputProduct": "Select an output product",
+  "createRecipeEnterValidQuantity": "Enter a valid output quantity",
+  "createRecipeAddAtLeastOneComponent": "Add at least one component",
+  "createRecipeUpdated": "Recipe updated",
+  "createRecipeCreated": "Recipe created",
+  "createRecipeEditTitle": "Edit Recipe",
+  "createRecipeNewTitle": "New Recipe",
+  "createRecipeNameLabel": "Recipe Name *",
+  "createRecipeOutputProductLabel": "Output Product",
+  "createRecipeProductNumber": "Product #{id}",
+  "@createRecipeProductNumber": {
+    "placeholders": {
+      "id": {
+        "type": "Object"
+      }
+    }
+  },
+  "createRecipeOutputProductRequiredLabel": "Output Product *",
+  "createRecipeOutputQtyLabel": "Output Quantity *",
+  "createRecipeComponentsLabel": "Components",
+  "createRecipeAddComponent": "Add Component",
+  "createRecipeComponentLabel": "Component",
+  "createSupplierUpdated": "Supplier updated",
+  "createSupplierCreated": "Supplier created",
+  "createSupplierEditTitle": "Edit Supplier",
+  "createSupplierNewTitle": "New Supplier",
+  "createSupplierNameLabel": "Supplier Name *",
+  "createSupplierContactPerson": "Contact Person",
+  "createSupplierPaymentTerms": "Payment Terms",
+  "createSupplierPaymentTermsHint": "Net 30, COD...",
+  "createSupplierLeadTime": "Lead Time (days)",
+  "createSupplierTaxId": "Tax ID",
+  "createSupplierDefaultCurrency": "Default Currency",
+  "createSupplierActiveSubtitle": "Available when creating purchase orders",
+  "createSupplierSaving": "Saving...",
+  "createSupplierSaveChanges": "Save Changes",
+  "createSupplierCreateButton": "Create Supplier",
+  "createTransferOrderSelectBothStores": "Select both stores",
+  "createTransferOrderStoresMustDiffer": "From and To store must be different",
+  "createTransferOrderCreated": "Transfer created",
+  "createTransferOrderTitle": "New Transfer",
+  "createTransferOrderFromStore": "From Store *",
+  "createTransferOrderToStore": "To Store *",
+  "inventoryCountsFailedToStart": "Failed to start count: {error}",
+  "@inventoryCountsFailedToStart": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "inventoryCountsEnterValidQuantity": "Enter a valid quantity",
+  "inventoryCountsExpectedPrefix": "Expected",
+  "inventoryCountsCountedQtyLabel": "Counted quantity *",
+  "inventoryCountsPostDialogTitle": "Post count",
+  "inventoryCountsPostDialogMessage": "This applies every counted variance to stock on hand and cannot be undone. Continue?",
+  "inventoryCountsPostAction": "Post",
+  "inventoryCountsPostedSuccess": "Count posted successfully",
+  "inventoryCountsFailedToPost": "Failed to post count: {error}",
+  "@inventoryCountsFailedToPost": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "inventoryCountsTitle": "Inventory Counts",
+  "inventoryCountsForDate": "Count for {date}",
+  "@inventoryCountsForDate": {
+    "placeholders": {
+      "date": {
+        "type": "Object"
+      }
+    }
+  },
+  "inventoryCountsStartCount": "Start Count",
+  "inventoryCountsPostCountButton": "Post Count",
+  "inventoryCountsEmptyTitle": "No count started for today",
+  "inventoryCountsEmptySubtitle": "Tap Start Count to snapshot expected quantities",
+  "inventoryCountsProductsCount": "{count} products",
+  "@inventoryCountsProductsCount": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "inventoryCountsUnitsOff": "{count} unit(s) off",
+  "@inventoryCountsUnitsOff": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "inventoryCountsEnterCountTooltip": "Enter count",
+  "inventoryHistoryTitle": "Inventory History",
+  "inventoryHistoryFilterByProduct": "Filter by product",
+  "inventoryHistoryAllProducts": "All products",
+  "inventoryHistoryMovementsLabel": "Movements",
+  "inventoryHistoryShowingCount": "Showing {shown} of {total}",
+  "@inventoryHistoryShowingCount": {
+    "placeholders": {
+      "shown": {
+        "type": "Object"
+      },
+      "total": {
+        "type": "Object"
+      }
+    }
+  },
+  "inventoryHistoryNoMovements": "No movements found",
+  "inventoryHistoryPaginationRange": "{first}–{last} of {total}",
+  "@inventoryHistoryPaginationRange": {
+    "placeholders": {
+      "first": {
+        "type": "Object"
+      },
+      "last": {
+        "type": "Object"
+      },
+      "total": {
+        "type": "Object"
+      }
+    }
+  },
+  "inventoryHistoryFirstPage": "First page",
+  "inventoryHistoryPrevPage": "Previous page",
+  "inventoryHistoryPageOf": "Page {page} of {total}",
+  "@inventoryHistoryPageOf": {
+    "placeholders": {
+      "page": {
+        "type": "Object"
+      },
+      "total": {
+        "type": "Object"
+      }
+    }
+  },
+  "inventoryHistoryNextPage": "Next page",
+  "inventoryHistoryLastPage": "Last page",
+  "inventoryActionFailed": "Failed: {error}",
+  "@inventoryActionFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "inventoryCancelOrderButton": "CANCEL ORDER",
+  "inventoryFirstPageTooltip": "First page",
+  "inventoryHubLowStockLabel": "Low Stock",
+  "inventoryHubOutOfStockLabel": "Out",
+  "inventoryHubTitle": "Stock Lookup",
+  "inventoryHubTotalLabel": "Total",
+  "inventoryKeepButton": "KEEP",
+  "inventoryLastPageTooltip": "Last page",
+  "inventoryLineCount": "{count} line(s)",
+  "@inventoryLineCount": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "inventoryNextPageTooltip": "Next page",
+  "inventoryNoProductsFound": "No products found",
+  "inventoryOrderCount": "{count} order(s)",
+  "@inventoryOrderCount": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "inventoryPaginationPage": "Page {page} of {total}",
+  "@inventoryPaginationPage": {
+    "placeholders": {
+      "page": {
+        "type": "Object"
+      },
+      "total": {
+        "type": "Object"
+      }
+    }
+  },
+  "inventoryPaginationRange": "{start}–{end} of {total}",
+  "@inventoryPaginationRange": {
+    "placeholders": {
+      "start": {
+        "type": "Object"
+      },
+      "end": {
+        "type": "Object"
+      },
+      "total": {
+        "type": "Object"
+      }
+    }
+  },
+  "inventoryPreviousPageTooltip": "Previous page",
+  "inventoryShowingCount": "Showing {shown} of {total}",
+  "@inventoryShowingCount": {
+    "placeholders": {
+      "shown": {
+        "type": "Object"
+      },
+      "total": {
+        "type": "Object"
+      }
+    }
+  },
+  "inventoryValuationAsOf": "As of {date}",
+  "@inventoryValuationAsOf": {
+    "placeholders": {
+      "date": {
+        "type": "Object"
+      }
+    }
+  },
+  "inventoryValuationColProduct": "Product",
+  "inventoryValuationColStock": "Stock",
+  "inventoryValuationColValue": "Value",
+  "inventoryValuationProductsLabel": "Products",
+  "inventoryValuationStockByProduct": "Stock Value by Product",
+  "inventoryValuationTitle": "Inventory Valuation",
+  "inventoryValuationTotalValue": "Total Inventory Value",
+  "productionsActionComplete": "Complete",
+  "productionsActionStart": "Start",
+  "productionsAllComponentsAvailable": "All components available",
+  "productionsCancelOrderConfirm": "Cancel {name}?",
+  "@productionsCancelOrderConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "productionsCancelOrderTitle": "Cancel production order",
+  "productionsCheckAvailabilityButton": "Check Component Availability",
+  "productionsCheckAvailabilityFailed": "Failed to check availability: {error}",
+  "@productionsCheckAvailabilityFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "productionsCompleteButton": "COMPLETE",
+  "productionsCompleteOrderTitle": "Complete Production Order",
+  "productionsComponentCount": "{count} component(s)",
+  "@productionsComponentCount": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "productionsComponentNeedHave": "need {required}, have {onHand}",
+  "@productionsComponentNeedHave": {
+    "placeholders": {
+      "required": {
+        "type": "Object"
+      },
+      "onHand": {
+        "type": "Object"
+      }
+    }
+  },
+  "productionsCreateButton": "CREATE",
+  "productionsDeactivateButton": "DEACTIVATE",
+  "productionsDeactivateRecipeConfirm": "Deactivate \"{name}\"? It will no longer be usable for new production orders.",
+  "@productionsDeactivateRecipeConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "productionsDeactivateRecipeTitle": "Deactivate recipe",
+  "productionsDeactivateTooltip": "Deactivate",
+  "productionsInsufficientStock": "Insufficient stock",
+  "productionsInvalidProducedQtyError": "Enter a valid produced quantity",
+  "productionsMakesLabel": "Makes",
+  "productionsNewOrderButton": "NEW ORDER",
+  "productionsNewOrderTitle": "New Production Order",
+  "productionsNewRecipeButton": "NEW RECIPE",
+  "productionsNoOrdersFound": "No production orders found",
+  "productionsNoRecipesFound": "No recipes found",
+  "productionsNotesLabel": "Notes",
+  "productionsOrderFallback": "Order #{id}",
+  "@productionsOrderFallback": {
+    "placeholders": {
+      "id": {
+        "type": "Object"
+      }
+    }
+  },
+  "productionsOrdersTab": "Orders",
+  "productionsPickRecipeQtyError": "Pick a recipe and enter a valid quantity",
+  "productionsPlannedLabel": "Planned",
+  "productionsPlannedQuantityLabel": "Planned Quantity *",
+  "productionsProducedLabel": "Produced",
+  "productionsProducedQuantityLabel": "Produced Quantity *",
+  "productionsProductFallback": "Product #{id}",
+  "@productionsProductFallback": {
+    "placeholders": {
+      "id": {
+        "type": "Object"
+      }
+    }
+  },
+  "productionsRecipeCount": "{count} recipe(s)",
+  "@productionsRecipeCount": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "productionsRecipeFallback": "Recipe #{id}",
+  "@productionsRecipeFallback": {
+    "placeholders": {
+      "id": {
+        "type": "Object"
+      }
+    }
+  },
+  "productionsRecipeLabel": "Recipe *",
+  "productionsRecipesTab": "Recipes",
+  "productionsTitle": "Productions",
+  "productionsWasteQuantityLabel": "Waste Quantity",
+  "purchaseOrdersActionApprove": "Approve",
+  "purchaseOrdersActionDoneSnackbar": "{action} done",
+  "@purchaseOrdersActionDoneSnackbar": {
+    "placeholders": {
+      "action": {
+        "type": "Object"
+      }
+    }
+  },
+  "purchaseOrdersActionSendToSupplier": "Send to Supplier",
+  "purchaseOrdersCancelConfirm": "Cancel {name}?",
+  "@purchaseOrdersCancelConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "purchaseOrdersCancelTitle": "Cancel purchase order",
+  "purchaseOrdersEmptySubtitle": "Order stock from your suppliers.",
+  "purchaseOrdersNewButton": "NEW PURCHASE ORDER",
+  "purchaseOrdersNoOrdersFound": "No purchase orders found",
+  "purchaseOrdersPoFallback": "PO #{id}",
+  "@purchaseOrdersPoFallback": {
+    "placeholders": {
+      "id": {
+        "type": "Object"
+      }
+    }
+  },
+  "purchaseOrdersSupplierFallback": "Supplier #{id}",
+  "@purchaseOrdersSupplierFallback": {
+    "placeholders": {
+      "id": {
+        "type": "Object"
+      }
+    }
+  },
+  "purchaseOrdersTitle": "Purchase Orders",
+  "stockAdjustmentReasonDamaged": "Damaged",
+  "stockAdjustmentReasonFound": "Found",
+  "stockAdjustmentReasonLost": "Lost",
+  "stockAdjustmentReasonManualCount": "Manual Count",
+  "stockAdjustmentReasonOther": "Other",
+  "stockAdjustmentReasonReceived": "Received",
+  "stockAdjustmentReasonReturned": "Returned",
+  "stockAdjustmentsEmptySubtitle": "Record manual stock corrections — damaged, lost, found, or recounted items.",
+  "stockAdjustmentsMovementsHeader": "Movements",
+  "stockAdjustmentsNewButton": "NEW ADJUSTMENT",
+  "stockAdjustmentsNewTitle": "New Stock Adjustment",
+  "stockAdjustmentsNoMatchingMovements": "No matching movements found",
+  "stockAdjustmentsNoMovements": "No movements found",
+  "stockAdjustmentsPickProductError": "Pick a product and enter a non-zero quantity",
+  "stockAdjustmentsProductLabel": "Product *",
+  "stockAdjustmentsQuantityChangeLabel": "Quantity change *",
+  "stockAdjustmentsQuantityHint": "e.g. 10 or -5",
+  "stockAdjustmentsReasonLabel": "Reason",
+  "stockAdjustmentsSearchHint": "Search by product or reason...",
+  "stockAdjustmentsTitle": "Stock Adjustments",
+  "suppliersAddButton": "ADD SUPPLIER",
+  "suppliersDeleteConfirm": "Are you sure you want to delete {count} selected supplier(s)?",
+  "@suppliersDeleteConfirm": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "suppliersDeleteFailed": "Failed to delete suppliers: {error}",
+  "@suppliersDeleteFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "suppliersDeleteSelectedTooltip": "Delete selected suppliers",
+  "suppliersDeleteSuccess": "{count} supplier(s) deleted successfully.",
+  "@suppliersDeleteSuccess": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "suppliersDeleteTitle": "Delete suppliers",
+  "suppliersEmptySubtitle": "Keep track of who you buy stock from.",
+  "suppliersNoContactSet": "No contact set",
+  "suppliersNoMatchingSuppliersFound": "No matching suppliers found",
+  "suppliersNoSuppliersFound": "No suppliers found",
+  "suppliersOwedAmount": "Owed {amount}",
+  "@suppliersOwedAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "Object"
+      }
+    }
+  },
+  "suppliersSearchHint": "Search suppliers...",
+  "suppliersSelectedCount": "{count} selected",
+  "@suppliersSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "suppliersTitle": "Suppliers",
+  "transferOrdersCancelConfirm": "Cancel transfer {name}?",
+  "@transferOrdersCancelConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "transferOrdersCancelTitle": "Cancel transfer",
+  "transferOrdersCancelTransferButton": "CANCEL TRANSFER",
+  "transferOrdersCompletedSnackbar": "Transfer completed",
+  "transferOrdersCount": "{count} transfer(s)",
+  "@transferOrdersCount": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "transferOrdersEmptySubtitle": "Move stock between store locations.",
+  "transferOrdersFailedToCancel": "Failed to cancel: {error}",
+  "@transferOrdersFailedToCancel": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "transferOrdersFailedToComplete": "Failed to complete: {error}",
+  "@transferOrdersFailedToComplete": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "transferOrdersMarkComplete": "Mark Complete",
+  "transferOrdersNewButton": "NEW TRANSFER",
+  "transferOrdersNoTransfersFound": "No transfers found",
+  "transferOrdersTitle": "Transfer Orders",
+  "transferOrdersTransferFallback": "Transfer #{id}",
+  "@transferOrdersTransferFallback": {
+    "placeholders": {
+      "id": {
+        "type": "Object"
+      }
+    }
+  },
+  "paymentScreenMethodAba": "ABA Pay",
+  "paymentScreenMethodBankTransfer": "Bank Transfer",
+  "paymentScreenMethodWing": "Wing",
+  "paymentScreenMethodAcleda": "ACLEDA",
+  "paymentScreenMethodCheck": "Check",
+  "paymentScreenMethodOther": "Other",
+  "paymentScreenSplitAmountTitle": "Split {number} Amount",
+  "@paymentScreenSplitAmountTitle": {
+    "placeholders": {
+      "number": {
+        "type": "Object"
+      }
+    }
+  },
+  "paymentScreenSplitPayment": "Split Payment",
+  "paymentScreenPaymentComplete": "Payment Complete",
+  "paymentScreenPaymentFailed": "Payment Failed",
+  "paymentScreenCartCount": "Cart ({count})",
+  "@paymentScreenCartCount": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "paymentScreenBaseModifierLine": "Base: {base} + Modifier: {modifier}",
+  "@paymentScreenBaseModifierLine": {
+    "placeholders": {
+      "base": {
+        "type": "Object"
+      },
+      "modifier": {
+        "type": "Object"
+      }
+    }
+  },
+  "paymentScreenTotalDue": "Total Due",
+  "paymentScreenCashReceived": "Cash Received",
+  "paymentScreenExact": "Exact",
+  "paymentScreenShort": "Short",
+  "paymentScreenChargeCash": "Charge Cash",
+  "paymentScreenPayFullAmount": "Pay Full Amount",
+  "paymentScreenTotalLabel": "Total: {amount}",
+  "@paymentScreenTotalLabel": {
+    "placeholders": {
+      "amount": {
+        "type": "Object"
+      }
+    }
+  },
+  "paymentScreenRemainingLabel": "Remaining: {amount}",
+  "@paymentScreenRemainingLabel": {
+    "placeholders": {
+      "amount": {
+        "type": "Object"
+      }
+    }
+  },
+  "paymentScreenAllPaid": "All paid",
+  "paymentScreenRemaining": "Remaining",
+  "paymentScreenOfAmount": "of {amount}",
+  "@paymentScreenOfAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "Object"
+      }
+    }
+  },
+  "paymentScreenCharge": "Charge",
+  "paymentScreenSubmitting": "Submitting…",
+  "paymentScreenInvoiceNumber": "Invoice #{number}",
+  "@paymentScreenInvoiceNumber": {
+    "placeholders": {
+      "number": {
+        "type": "Object"
+      }
+    }
+  },
+  "paymentScreenWaitingNumber": "Waiting Number  #{number}",
+  "@paymentScreenWaitingNumber": {
+    "placeholders": {
+      "number": {
+        "type": "Object"
+      }
+    }
+  },
+  "paymentScreenReceiptHeader": "KAKNNEA POS",
+  "paymentScreenPayments": "Payments",
+  "paymentScreenPrintReceipt": "Print Receipt",
+  "paymentScreenEmailReceipt": "Email Receipt",
+  "paymentScreenNewSale": "New Sale",
+  "paymentScreenTryAgain": "Try Again",
+  "paymentScreenWaitingTicketSaveFailed": "Payment succeeded, but waiting ticket was not saved: {error}",
+  "@paymentScreenWaitingTicketSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "paymentScreenSaleFailed": "Sale failed: {error}",
+  "@paymentScreenSaleFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "itemManagementDeleteItemsTitle": "Delete items",
+  "itemManagementDeleteItemsMessage": "Are you sure you want to delete {count} selected item(s)?",
+  "@itemManagementDeleteItemsMessage": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "itemManagementItemsDeletedSuccess": "{count} item(s) deleted successfully.",
+  "@itemManagementItemsDeletedSuccess": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "itemManagementFailedToDeleteItems": "Failed to delete items: {error}",
+  "@itemManagementFailedToDeleteItems": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "itemManagementAddItem": "Add Item",
+  "itemManagementDeleteSelectedItemsTooltip": "Delete selected items",
+  "itemManagementSelectedCount": "{count} selected",
+  "@itemManagementSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "itemManagementSearchHint": "Search items by name or SKU...",
+  "itemManagementShowingCount": "Showing {shown} of {total}",
+  "@itemManagementShowingCount": {
+    "placeholders": {
+      "shown": {
+        "type": "Object"
+      },
+      "total": {
+        "type": "Object"
+      }
+    }
+  },
+  "itemManagementNoItemsFound": "No items found",
+  "itemManagementNoCategorySet": "No category set",
+  "itemManagementFirstPage": "First page",
+  "itemManagementPreviousPage": "Previous page",
+  "itemManagementPageOfPages": "Page {current} of {total}",
+  "@itemManagementPageOfPages": {
+    "placeholders": {
+      "current": {
+        "type": "Object"
+      },
+      "total": {
+        "type": "Object"
+      }
+    }
+  },
+  "itemManagementNextPage": "Next page",
+  "itemManagementLastPage": "Last page",
+  "itemManagementRangeOfTotal": "{first}–{last} of {total}",
+  "@itemManagementRangeOfTotal": {
+    "placeholders": {
+      "first": {
+        "type": "Object"
+      },
+      "last": {
+        "type": "Object"
+      },
+      "total": {
+        "type": "Object"
+      }
+    }
+  },
+  "itemManagementEmptyStateDescription": "Create and manage the items sold at the POS.",
+  "itemManagementProductImageTitle": "Product Image",
+  "itemManagementImageUrlLabel": "Image URL",
+  "itemManagementUseUrl": "Use URL",
+  "itemManagementOrUploadFromDevice": "Or upload from device",
+  "itemManagementUploadImage": "Upload Image",
+  "itemManagementSkuRequired": "SKU is required",
+  "itemManagementBarcodeRequired": "Barcode is required",
+  "itemManagementKhmerNameRequired": "Khmer name is required",
+  "itemManagementPleaseSelectCategory": "Please select a category",
+  "itemManagementItemUpdated": "\"{name}\" updated",
+  "@itemManagementItemUpdated": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "itemManagementItemCreated": "\"{name}\" created",
+  "@itemManagementItemCreated": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "itemManagementFailedToSave": "Failed to save: {error}",
+  "@itemManagementFailedToSave": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "itemManagementModifiersNotUpdated": "Item saved, but modifiers were not updated: {error}",
+  "@itemManagementModifiersNotUpdated": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "itemManagementEditItemTitle": "Edit Item",
+  "itemManagementNewItemTitle": "New Item",
+  "itemManagementSectionBasicInfo": "Basic Info",
+  "itemManagementSelectCategoryHint": "Select a category",
+  "itemManagementSectionDescriptionOptional": "Description (optional)",
+  "itemManagementDescriptionHint": "Additional details visible in POS ticket",
+  "itemManagementSectionPricing": "Pricing",
+  "itemManagementSellPriceLabel": "Sell Price *",
+  "itemManagementInvalidNumber": "Invalid number",
+  "itemManagementSectionInventory": "Inventory",
+  "itemManagementTrackInventoryTitle": "Track inventory",
+  "itemManagementManageStockQuantitySubtitle": "Manage stock quantity",
+  "itemManagementInitialStockLabel": "Initial Stock",
+  "itemManagementLowStockAlertLabel": "Low Stock Alert",
+  "itemManagementSectionStatus": "Status",
+  "itemManagementProductAvailableSubtitle": "Product is available for sale",
+  "itemManagementSellableTitle": "Sellable",
+  "itemManagementCanBeSoldInPosSubtitle": "Can be sold in POS",
+  "itemManagementSectionModifiers": "Modifiers",
+  "itemManagementNoModifiersYet": "No modifiers yet. Create one from Modifiers management first.",
+  "itemManagementNoOptions": "No options",
+  "itemManagementSectionImage": "Image",
+  "itemManagementSavingEllipsis": "Saving...",
+  "itemManagementUpdateItem": "Update Item",
+  "itemManagementCreateItem": "Create Item",
+  "employeeManagementTitle": "Employee List",
+  "employeeManagementDeleteDialogTitle": "Delete employees",
+  "employeeManagementDeleteDialogMessage": "Are you sure you want to delete {count} selected employee(s)?",
+  "@employeeManagementDeleteDialogMessage": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "employeeManagementDeleteSuccess": "{count} employee(s) deleted successfully.",
+  "@employeeManagementDeleteSuccess": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "employeeManagementDeleteFailed": "Failed to delete employees: {error}",
+  "@employeeManagementDeleteFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "employeeManagementAddEmployee": "ADD EMPLOYEE",
+  "employeeManagementDeleteSelectedTooltip": "Delete selected employees",
+  "employeeManagementSelectedCount": "{count} selected",
+  "@employeeManagementSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "employeeManagementSearchHint": "Search employees...",
+  "employeeManagementEmployeesHeader": "Employees",
+  "employeeManagementShowingCount": "Showing {shown} of {total}",
+  "@employeeManagementShowingCount": {
+    "placeholders": {
+      "shown": {
+        "type": "Object"
+      },
+      "total": {
+        "type": "Object"
+      }
+    }
+  },
+  "employeeManagementNoEmployeesFound": "No employees found",
+  "employeeManagementNoPositionSet": "No position set",
+  "employeeManagementRangeOfTotal": "{first}–{last} of {total}",
+  "@employeeManagementRangeOfTotal": {
+    "placeholders": {
+      "first": {
+        "type": "Object"
+      },
+      "last": {
+        "type": "Object"
+      },
+      "total": {
+        "type": "Object"
+      }
+    }
+  },
+  "employeeManagementFirstPage": "First page",
+  "employeeManagementPreviousPage": "Previous page",
+  "employeeManagementPageOf": "Page {current} of {total}",
+  "@employeeManagementPageOf": {
+    "placeholders": {
+      "current": {
+        "type": "Object"
+      },
+      "total": {
+        "type": "Object"
+      }
+    }
+  },
+  "employeeManagementNextPage": "Next page",
+  "employeeManagementLastPage": "Last page",
+  "employeeManagementEmptyTitle": "Employee",
+  "employeeManagementEmptyDescription": "Create sets of options that can be applied to employees.",
+  "modifierManagementTitle": "Modifiers",
+  "modifierManagementDeleteDialogTitle": "Delete modifiers",
+  "modifierManagementDeleteDialogMessage": "Are you sure you want to delete {count} selected modifier(s)?",
+  "@modifierManagementDeleteDialogMessage": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "modifierManagementDeleteSuccess": "{count} modifier(s) deleted successfully.",
+  "@modifierManagementDeleteSuccess": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "modifierManagementDeleteFailedDefault": "Failed to delete modifiers.",
+  "modifierManagementEmptyTitle": "Item modifiers",
+  "modifierManagementEmptyDescription": "Create sets of options that can be applied to items.",
+  "modifierManagementAddModifier": "ADD MODIFIER",
+  "modifierManagementDeleteSelectedTooltip": "Delete selected modifiers",
+  "modifierManagementSelectedCount": "{count} selected",
+  "@modifierManagementSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "modifierManagementSearchHint": "Search modifiers...",
+  "modifierManagementSectionHeader": "Modifier",
+  "modifierManagementShowingCount": "Showing {shown} of {total}",
+  "@modifierManagementShowingCount": {
+    "placeholders": {
+      "shown": {
+        "type": "Object"
+      },
+      "total": {
+        "type": "Object"
+      }
+    }
+  },
+  "modifierManagementNoModifiersFound": "No modifiers found",
+  "modifierManagementNoOptions": "No options",
+  "modifierManagementApplyToProductsTooltip": "Apply to products",
+  "modifierManagementProductsUpdated": "Updated products for \"{name}\".",
+  "@modifierManagementProductsUpdated": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "modifierManagementRangeOfTotal": "{first}–{last} of {total}",
+  "@modifierManagementRangeOfTotal": {
+    "placeholders": {
+      "first": {
+        "type": "Object"
+      },
+      "last": {
+        "type": "Object"
+      },
+      "total": {
+        "type": "Object"
+      }
+    }
+  },
+  "modifierManagementFirstPage": "First page",
+  "modifierManagementPreviousPage": "Previous page",
+  "modifierManagementPageOf": "Page {current} of {total}",
+  "@modifierManagementPageOf": {
+    "placeholders": {
+      "current": {
+        "type": "Object"
+      },
+      "total": {
+        "type": "Object"
+      }
+    }
+  },
+  "modifierManagementNextPage": "Next page",
+  "modifierManagementLastPage": "Last page",
+  "modifierProductAssignmentSearchFailed": "Search failed: {error}",
+  "@modifierProductAssignmentSearchFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "modifierProductAssignmentTitle": "Apply \"{groupName}\" to products",
+  "@modifierProductAssignmentTitle": {
+    "placeholders": {
+      "groupName": {
+        "type": "Object"
+      }
+    }
+  },
+  "modifierProductAssignmentDescription": "Customers will be able to choose from this modifier whenever a checked product is added to the cart.",
+  "modifierProductAssignmentSelectedCount": "{count} product(s) selected",
+  "@modifierProductAssignmentSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "modifierProductAssignmentNoProducts": "No products found",
+  "openTicketPageEmptyTitle": "No held tickets",
+  "openTicketPageEmptySubtitle": "Tap \"Hold\" on the POS screen to save a sale here",
+  "openTicketPageTicketNumber": "Ticket #{number}",
+  "@openTicketPageTicketNumber": {
+    "placeholders": {
+      "number": {
+        "type": "Object"
+      }
+    }
+  },
+  "openTicketPageItemCount": "{count} items",
+  "@openTicketPageItemCount": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "openTicketPageJustNow": "Just now",
+  "openTicketPageMinutesAgo": "{minutes}m ago",
+  "@openTicketPageMinutesAgo": {
+    "placeholders": {
+      "minutes": {
+        "type": "Object"
+      }
+    }
+  },
+  "openTicketPageHoursAgo": "{hours}h ago",
+  "@openTicketPageHoursAgo": {
+    "placeholders": {
+      "hours": {
+        "type": "Object"
+      }
+    }
+  },
+  "openTicketPageDaysAgo": "{days}d ago",
+  "@openTicketPageDaysAgo": {
+    "placeholders": {
+      "days": {
+        "type": "Object"
+      }
+    }
+  },
+  "openTicketPageRestore": "Restore",
+  "paginationFirstPage": "First page",
+  "paginationLastPage": "Last page",
+  "paginationNextPage": "Next page",
+  "paginationPageOf": "Page {current} of {total}",
+  "@paginationPageOf": {
+    "placeholders": {
+      "current": {
+        "type": "Object"
+      },
+      "total": {
+        "type": "Object"
+      }
+    }
+  },
+  "paginationPreviousPage": "Previous page",
+  "paginationRangeOfTotal": "{first}–{last} of {total}",
+  "@paginationRangeOfTotal": {
+    "placeholders": {
+      "first": {
+        "type": "Object"
+      },
+      "last": {
+        "type": "Object"
+      },
+      "total": {
+        "type": "Object"
+      }
+    }
+  },
+  "paginationShowingOfTotal": "Showing {shown} of {total}",
+  "@paginationShowingOfTotal": {
+    "placeholders": {
+      "shown": {
+        "type": "Object"
+      },
+      "total": {
+        "type": "Object"
+      }
+    }
+  },
+  "permissionScreenEmpty": "No permissions found",
+  "permissionScreenListHeader": "Permission List",
+  "permissionScreenNoMatch": "No matching permissions found",
+  "permissionScreenSearchHint": "Search permissions...",
+  "permissionScreenTitle": "Permissions",
+  "phoneScanScreenBarcodeSent": "{value} sent to POS",
+  "@phoneScanScreenBarcodeSent": {
+    "placeholders": {
+      "value": {
+        "type": "Object"
+      }
+    }
+  },
+  "phoneScanScreenConnectButton": "Connect to POS",
+  "phoneScanScreenConnectedReady": "Connected — point the camera at a 1D barcode",
+  "phoneScanScreenConnectFailed": "Could not connect. Check the server URL, Wi-Fi and code.",
+  "phoneScanScreenConnectHeadline": "Connect this phone to the active POS",
+  "phoneScanScreenConnecting": "Connecting...",
+  "phoneScanScreenConnectSubtitle": "The phone and POS must use the same Wi-Fi and backend server.",
+  "phoneScanScreenDetectedSending": "{value} detected — sending to POS",
+  "@phoneScanScreenDetectedSending": {
+    "placeholders": {
+      "value": {
+        "type": "Object"
+      }
+    }
+  },
+  "phoneScanScreenDisconnected": "Disconnected",
+  "phoneScanScreenDisconnectTooltip": "Disconnect",
+  "phoneScanScreenEnterCode": "Enter the 8-character code shown on the POS",
+  "phoneScanScreenFlashlight": "Flashlight",
+  "phoneScanScreenLastBarcode": "Last barcode: {barcode}",
+  "@phoneScanScreenLastBarcode": {
+    "placeholders": {
+      "barcode": {
+        "type": "Object"
+      }
+    }
+  },
+  "phoneScanScreenPosEndedSession": "The POS ended this scanner session",
+  "phoneScanScreenReadyToScan": "Ready to scan",
+  "phoneScanScreenRelayError": "Scanner relay error",
+  "phoneScanScreenServerUrlLabel": "POS server URL",
+  "phoneScanScreenSessionCodeHint": "Example: 7KMX4P2R",
+  "phoneScanScreenSessionCodeLabel": "POS session code",
+  "phoneScanScreenTitle": "Phone 1D Scanner",
+  "posDrawerAddCustomer": "Add Customer",
+  "posDrawerAddItem": "Add Item",
+  "posDrawerAddTable": "Add Table",
+  "posDrawerCustomerList": "Customer List",
+  "posDrawerEmployees": "Employees",
+  "posDrawerEmployeesList": "Employees List",
+  "posDrawerHeldTickets": "Held Tickets",
+  "posDrawerInventoryCounts": "Inventory Counts",
+  "posDrawerInventoryHistory": "Inventory History",
+  "posDrawerInventoryManagement": "Inventory Management",
+  "posDrawerInventoryValuation": "Inventory Valuation",
+  "posDrawerItemList": "Item List",
+  "posDrawerLogoutConfirm": "Are you sure you want to logout?",
+  "posDrawerModifiers": "Modifiers",
+  "posDrawerOnlineStatus": "Online · Cashier",
+  "posDrawerPermission": "Permission",
+  "posDrawerProductions": "Productions",
+  "posDrawerPurchaseOrders": "Purchase Orders",
+  "posDrawerRegister": "Register",
+  "posDrawerRole": "Role",
+  "posDrawerSalesByCashier": "Sales by Cashier",
+  "posDrawerSalesByModifier": "Sales by Modifier",
+  "posDrawerStockAdjustments": "Stock Adjustments",
+  "posDrawerStockLookup": "Stock Lookup",
+  "posDrawerStoreName": "Kaknnea Store",
+  "posDrawerSuppliers": "Suppliers",
+  "posDrawerTableList": "Table List",
+  "posDrawerTransferOrders": "Transfer Orders",
+  "posDrawerUnits": "Units",
+  "posDrawerUserAccount": "User Account",
+  "posSettingsScreenAlertEmailLabel": "Alert email (optional)",
+  "posSettingsScreenAutoPrint": "Auto-print after payment",
+  "posSettingsScreenCashRounding": "Cash Rounding",
+  "posSettingsScreenColumns": "Columns",
+  "posSettingsScreenDefaultLayout": "Default layout",
+  "posSettingsScreenDiscount": "Discount",
+  "posSettingsScreenEnableFavorites": "Enable favorites",
+  "posSettingsScreenEnableKitchenDisplay": "Enable kitchen display",
+  "posSettingsScreenKitchenDisplay": "Kitchen Display",
+  "posSettingsScreenKitchenPrinterLabel": "Kitchen printer name/IP",
+  "posSettingsScreenKitchenSubtitle": "Send orders to kitchen printer",
+  "posSettingsScreenLowStockAlert": "Low stock alert",
+  "posSettingsScreenPaperWidth": "Paper width (mm)",
+  "posSettingsScreenPinFavoriteProducts": "Pin favourite products",
+  "posSettingsScreenPinSubtitle": "Cashier must enter PIN on launch",
+  "posSettingsScreenQuickPresets": "Quick presets: {presets}",
+  "@posSettingsScreenQuickPresets": {
+    "placeholders": {
+      "presets": {
+        "type": "Object"
+      }
+    }
+  },
+  "posSettingsScreenRequireDiscountReason": "Require reason for discount",
+  "posSettingsScreenRequirePin": "Require PIN to open POS",
+  "posSettingsScreenRoundingInterval": "Rounding interval",
+  "posSettingsScreenRoundingMode": "Rounding mode",
+  "posSettingsScreenSaleScreen": "Sale Screen",
+  "posSettingsScreenSaveAll": "Save All Settings",
+  "posSettingsScreenSaveAllTooltip": "Save all settings",
+  "posSettingsScreenSaved": "POS settings saved",
+  "posSettingsScreenSaveFailed": "Failed to save: {error}",
+  "@posSettingsScreenSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "posSettingsScreenSaving": "Saving...",
+  "posSettingsScreenSecurity": "Security",
+  "posSettingsScreenShowBarcodes": "Show barcodes",
+  "posSettingsScreenShowCustomerInfo": "Show customer info",
+  "posSettingsScreenStockAlerts": "Stock Alerts",
+  "receiptsScreenBaseWithUnit": "Base: {amount}/{unit}",
+  "@receiptsScreenBaseWithUnit": {
+    "placeholders": {
+      "amount": {
+        "type": "Object"
+      },
+      "unit": {
+        "type": "Object"
+      }
+    }
+  },
+  "receiptsScreenConfirmRefundButton": "Confirm Refund",
+  "receiptsScreenDaysAgo": "{days}d ago",
+  "@receiptsScreenDaysAgo": {
+    "placeholders": {
+      "days": {
+        "type": "Object"
+      }
+    }
+  },
+  "receiptsScreenDeliveryLabel": "Delivery",
+  "receiptsScreenDescriptionHeader": "Description",
+  "receiptsScreenEachUnitFallback": "ea",
+  "receiptsScreenEmailDialogBody": "Enter the customer's email address:",
+  "receiptsScreenEmailDialogTitle": "Email Receipt",
+  "receiptsScreenEmailHint": "customer@example.com",
+  "receiptsScreenEmptySubtitle": "Complete a sale to see it here",
+  "receiptsScreenEmptyTitle": "No receipts yet",
+  "receiptsScreenExchangeRateValue": "1 USD = {rate} KHR",
+  "@receiptsScreenExchangeRateValue": {
+    "placeholders": {
+      "rate": {
+        "type": "Object"
+      }
+    }
+  },
+  "receiptsScreenHoursAgo": "{hours}h ago",
+  "@receiptsScreenHoursAgo": {
+    "placeholders": {
+      "hours": {
+        "type": "Object"
+      }
+    }
+  },
+  "receiptsScreenItemFallback": "Item",
+  "receiptsScreenJustNow": "just now",
+  "receiptsScreenManagerEmailLabel": "Manager email",
+  "receiptsScreenManagerPasswordLabel": "Manager password",
+  "receiptsScreenMinutesAgo": "{minutes}m ago",
+  "@receiptsScreenMinutesAgo": {
+    "placeholders": {
+      "minutes": {
+        "type": "Object"
+      }
+    }
+  },
+  "receiptsScreenModeLabel": "Mode",
+  "receiptsScreenModifiersWithUnit": "Modifiers: {amount}/{unit}",
+  "@receiptsScreenModifiersWithUnit": {
+    "placeholders": {
+      "amount": {
+        "type": "Object"
+      },
+      "unit": {
+        "type": "Object"
+      }
+    }
+  },
+  "receiptsScreenOtherLabel": "Other",
+  "receiptsScreenPaymentFallback": "Payment",
+  "receiptsScreenPoweredBy": "Powered by KAKNNEA",
+  "receiptsScreenPrintNotConnected": "Print receipt - connect a printer",
+  "receiptsScreenPrintReceipt": "Print Receipt",
+  "receiptsScreenReasonOptionalLabel": "Reason (optional)",
+  "receiptsScreenReceiptCount": "{count} receipt(s)",
+  "@receiptsScreenReceiptCount": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "receiptsScreenReceiptNoLabel": "Receipt No.",
+  "receiptsScreenReceiptSentTo": "Receipt sent to {email}",
+  "@receiptsScreenReceiptSentTo": {
+    "placeholders": {
+      "email": {
+        "type": "Object"
+      }
+    }
+  },
+  "receiptsScreenRefundAlreadyRefundedLine": "Already refunded: {amount}",
+  "@receiptsScreenRefundAlreadyRefundedLine": {
+    "placeholders": {
+      "amount": {
+        "type": "Object"
+      }
+    }
+  },
+  "receiptsScreenRefundAmountLine": "Refund amount: {amount}",
+  "@receiptsScreenRefundAmountLine": {
+    "placeholders": {
+      "amount": {
+        "type": "Object"
+      }
+    }
+  },
+  "receiptsScreenRefundConfirmPrefix": "Issue a refund for {reference}?",
+  "@receiptsScreenRefundConfirmPrefix": {
+    "placeholders": {
+      "reference": {
+        "type": "Object"
+      }
+    }
+  },
+  "receiptsScreenRefund": "Refund",
+  "receiptsScreenRefundReceiptFallback": "receipt #{id}",
+  "@receiptsScreenRefundReceiptFallback": {
+    "placeholders": {
+      "id": {
+        "type": "Object"
+      }
+    }
+  },
+  "receiptsScreenRefundSubmitted": "Refund submitted",
+  "receiptsScreenRefundTotalLine": "Total: {amount}",
+  "@receiptsScreenRefundTotalLine": {
+    "placeholders": {
+      "amount": {
+        "type": "Object"
+      }
+    }
+  },
+  "receiptsScreenSaleFallback": "Sale #{id}",
+  "@receiptsScreenSaleFallback": {
+    "placeholders": {
+      "id": {
+        "type": "Object"
+      }
+    }
+  },
+  "receiptsScreenSearchHint": "Search by invoice, customer...",
+  "receiptsScreenSelectHint": "Tap a receipt to view details",
+  "receiptsScreenSendButton": "Send",
+  "receiptsScreenSendByEmail": "Send by Email",
+  "receiptsScreenShiftSegment": "Shift",
+  "receiptsScreenTelLabel": "Tel: {phone}",
+  "@receiptsScreenTelLabel": {
+    "placeholders": {
+      "phone": {
+        "type": "Object"
+      }
+    }
+  },
+  "receiptsScreenThankYouFooter": "Thank you ❤️",
+  "receiptsScreenTotalRielLabel": "Total (Riel)",
+  "receiptsScreenWalkIn": "Walk-in",
+  "roleManagementScreenEmpty": "No roles found",
+  "roleManagementScreenListHeader": "Role List",
+  "roleManagementScreenNoMatch": "No matching roles found",
+  "roleManagementScreenPermissionsFor": "Permissions for {role}",
+  "@roleManagementScreenPermissionsFor": {
+    "placeholders": {
+      "role": {
+        "type": "Object"
+      }
+    }
+  },
+  "roleManagementScreenPermissionsGranted": "{count} permission(s) granted",
+  "@roleManagementScreenPermissionsGranted": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "roleManagementScreenSaveFailed": "Failed to save: {error}",
+  "@roleManagementScreenSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "roleManagementScreenSearchHint": "Search roles...",
+  "roleManagementScreenTitle": "Roles",
+  "shiftScreenBlockers": "Blockers: {list}",
+  "@shiftScreenBlockers": {
+    "placeholders": {
+      "list": {
+        "type": "Object"
+      }
+    }
+  },
+  "shiftScreenCashEvents": "Cash Events",
+  "shiftScreenCashIn": "Cash In",
+  "shiftScreenCashOut": "Cash Out",
+  "shiftScreenCloseShiftFailed": "Failed to close shift: {error}",
+  "@shiftScreenCloseShiftFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "shiftScreenCloseShift": "Close Shift",
+  "shiftScreenClosingCashLabel": "Closing cash",
+  "shiftScreenExpectedCash": "Expected cash: {amount}",
+  "@shiftScreenExpectedCash": {
+    "placeholders": {
+      "amount": {
+        "type": "Object"
+      }
+    }
+  },
+  "shiftScreenNoCashEvents": "No cash events yet",
+  "shiftScreenNoOpenShiftSubtitle": "Open a shift before taking sales.",
+  "shiftScreenNoOpenShiftTitle": "No open shift",
+  "shiftScreenOpened": "Opened {time}",
+  "@shiftScreenOpened": {
+    "placeholders": {
+      "time": {
+        "type": "Object"
+      }
+    }
+  },
+  "shiftScreenOpeningCash": "Opening cash: {amount}",
+  "@shiftScreenOpeningCash": {
+    "placeholders": {
+      "amount": {
+        "type": "Object"
+      }
+    }
+  },
+  "shiftScreenOpeningCashLabel": "Opening cash",
+  "shiftScreenOpen": "Open",
+  "shiftScreenOpenShiftFailed": "Failed to open shift: {error}",
+  "@shiftScreenOpenShiftFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "shiftScreenOpenShift": "Open Shift",
+  "shiftScreenPrecheckFailed": "Failed to load close precheck: {error}",
+  "@shiftScreenPrecheckFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "shiftScreenReasonLabel": "Reason",
+  "shiftScreenSaveCashEventFailed": "Failed to save cash event: {error}",
+  "@shiftScreenSaveCashEventFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "shiftScreenShiftNumber": "Shift #{id}",
+  "@shiftScreenShiftNumber": {
+    "placeholders": {
+      "id": {
+        "type": "Object"
+      }
+    }
+  },
+  "shiftScreenTitle": "Shift Management",
+  "shiftScreenVariance": "Variance: {amount}",
+  "@shiftScreenVariance": {
+    "placeholders": {
+      "amount": {
+        "type": "Object"
+      }
+    }
+  },
+  "paginationPageOfTotal": "Page {page} of {totalPages}",
+  "@paginationPageOfTotal": {
+    "placeholders": {
+      "page": {
+        "type": "Object"
+      },
+      "totalPages": {
+        "type": "Object"
+      }
+    }
+  },
+  "tableManagementDeleteTablesTitle": "Delete tables",
+  "tableManagementDeleteTablesMessage": "Are you sure you want to delete {count} selected table(s)? Occupied tables cannot be deleted.",
+  "@tableManagementDeleteTablesMessage": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "tableManagementDeleteSuccess": "{count} table(s) deleted successfully.",
+  "@tableManagementDeleteSuccess": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "tableManagementDeleteFailed": "Failed to delete tables: {error}",
+  "@tableManagementDeleteFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "tableManagementAddTable": "Add Table",
+  "tableManagementDeleteSelectedTooltip": "Delete selected tables",
+  "tableManagementSelectedCount": "{count} selected",
+  "@tableManagementSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "tableManagementSearchHint": "Search tables...",
+  "tableManagementNoResults": "No tables found",
+  "tableManagementSeatsCount": "{count} seats",
+  "@tableManagementSeatsCount": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "tableManagementEmptyStateDescription": "Set up the tables available for dine-in orders.",
+  "userAccountAllFieldsRequired": "All fields are required",
+  "userAccountCreateFailed": "Failed to create user: {error}",
+  "@userAccountCreateFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "userAccountAddTitle": "Add User Account",
+  "userAccountFullNameLabel": "Full Name *",
+  "userAccountEmailLabel": "Email *",
+  "userAccountPasswordLabel": "Password *",
+  "userAccountRoleLabel": "Role *",
+  "userAccountCreateButton": "Create",
+  "userAccountUpdateStatusFailed": "Failed to update status: {error}",
+  "@userAccountUpdateStatusFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "userAccountScreenTitle": "User Accounts",
+  "userAccountAddButton": "Add User",
+  "userAccountSearchHint": "Search users...",
+  "userAccountEmptyMessage": "No user accounts yet",
+  "userAccountNoResultsMessage": "No user accounts found",
+  "cartActionsApplyDiscountTitle": "Apply Discount",
+  "cartActionsAmountHint": "Amount",
+  "cartActionsClearCart": "Clear Cart",
+  "cartFooterTotalAmount": "Total: {amount}",
+  "@cartFooterTotalAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "Object"
+      }
+    }
+  },
+  "cartFooterDiscountAmount": "Discount: -{amount}",
+  "@cartFooterDiscountAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "Object"
+      }
+    }
+  },
+  "cartFooterLoyaltyAmount": "Loyalty: -{amount}",
+  "@cartFooterLoyaltyAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "Object"
+      }
+    }
+  },
+  "cartFooterFinalAmount": "Final: {amount}",
+  "@cartFooterFinalAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "Object"
+      }
+    }
+  },
+  "cartFooterClearDiscount": "Clear Discount",
+  "cartFooterClearLoyalty": "Clear Loyalty",
+  "cartItemsListTapToAdd": "Tap a product to add it",
+  "cartItemsListOpenHeldTickets": "Open Held Tickets",
+  "cartItemsListDescriptionHeader": "Description",
+  "cartItemsListEditItemTitle": "Edit {name}",
+  "@cartItemsListEditItemTitle": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "cartItemsListQuantityLabel": "Quantity",
+  "cartItemsListNoteLabel": "Note",
+  "cartItemsListNoteHint": "e.g. extra sauce, no ice",
+  "cartItemsListDiscountPerUnitLabel": "Discount per unit",
+  "cartItemsListMaxDiscountHint": "Max {amount}",
+  "@cartItemsListMaxDiscountHint": {
+    "placeholders": {
+      "amount": {
+        "type": "Object"
+      }
+    }
+  },
+  "cartItemsListRemovedItem": "Removed {name}",
+  "@cartItemsListRemovedItem": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "cartItemsListUndoAction": "Undo",
+  "cartItemsListBaseModifierBreakdown": "Base: {base} + Modifier: {modifier}",
+  "@cartItemsListBaseModifierBreakdown": {
+    "placeholders": {
+      "base": {
+        "type": "Object"
+      },
+      "modifier": {
+        "type": "Object"
+      }
+    }
+  },
+  "cartItemsListModifierLink": "Modifier",
+  "cartPanelCancelTicketTitle": "Cancel ticket",
+  "cartPanelCancelTicketMessage": "Are you sure you want to cancel Ticket #{ticketId}? This cannot be undone.",
+  "@cartPanelCancelTicketMessage": {
+    "placeholders": {
+      "ticketId": {
+        "type": "Object"
+      }
+    }
+  },
+  "cartPanelKeepButton": "Keep",
+  "cartPanelCancelTicketButton": "Cancel Ticket",
+  "cartPanelCancelTicketFailed": "Failed to cancel ticket: {error}",
+  "@cartPanelCancelTicketFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "cartPanelTicketCancelled": "Ticket cancelled",
+  "cartPanelTicketLabel": "Ticket",
+  "cartPanelWalkIn": "Walk-in",
+  "cartPanelCustomerFallback": "Customer #{id}",
+  "@cartPanelCustomerFallback": {
+    "placeholders": {
+      "id": {
+        "type": "Object"
+      }
+    }
+  },
+  "cartPanelSearchCustomerHint": "Search name or phone",
+  "cartPanelWalkInNoCustomerButton": "Walk-in (no customer)",
+  "cartPanelLoadCustomersFailed": "Failed to load customers: {error}",
+  "@cartPanelLoadCustomersFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "cartPanelNoCustomersFound": "No customers found",
+  "cartPanelFooterCharge": "Charge",
+  "cartPanelFooterHold": "Hold",
+  "cartTotalsItemDiscounts": "Item Discounts",
+  "cartTotalsTicketHeld": "Ticket #{ticketNumber} held",
+  "@cartTotalsTicketHeld": {
+    "placeholders": {
+      "ticketNumber": {
+        "type": "Object"
+      }
+    }
+  },
+  "cartTotalsHoldFailed": "Could not hold order: {error}",
+  "@cartTotalsHoldFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "cartTotalsHold": "Hold",
+  "cartTotalsAddDiscount": "Add Discount",
+  "cartTotalsFixedAmount": "Fixed $",
+  "cartTotalsPercentAmount": "Percent %",
+  "cartTotalsAmountLabel": "Amount ($)",
+  "cartTotalsPercentLabel": "Percent (%)",
+  "cartTotalsQuickSelect": "Quick select:",
+  "cartTotalsRemoveDiscount": "Remove",
+  "categoryTabsAllItems": "All Items",
+  "heldTicketsCancelTitle": "Cancel ticket",
+  "heldTicketsCancelConfirm": "Are you sure you want to cancel Ticket #{ticketId}? This cannot be undone.",
+  "@heldTicketsCancelConfirm": {
+    "placeholders": {
+      "ticketId": {
+        "type": "Object"
+      }
+    }
+  },
+  "heldTicketsKeep": "KEEP",
+  "heldTicketsCancelTicketButton": "CANCEL TICKET",
+  "heldTicketsCancelFailed": "Failed to cancel ticket: {error}",
+  "@heldTicketsCancelFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "heldTicketsCancelled": "Ticket #{ticketId} cancelled",
+  "@heldTicketsCancelled": {
+    "placeholders": {
+      "ticketId": {
+        "type": "Object"
+      }
+    }
+  },
+  "heldTicketsTitle": "Held Tickets",
+  "heldTicketsSearchHint": "Search tickets...",
+  "heldTicketsEmpty": "No held tickets",
+  "heldTicketsEmptyHint": "Tap \"Hold\" on a sale to save it here",
+  "heldTicketsTicketLabel": "Ticket #{ticketNumber}",
+  "@heldTicketsTicketLabel": {
+    "placeholders": {
+      "ticketNumber": {
+        "type": "Object"
+      }
+    }
+  },
+  "heldTicketsTapToRestore": "Tap to restore",
+  "modifierSheetQuantity": "Quantity",
+  "modifierSheetNoteHint": "Add a note...",
+  "modifierSheetValidationError": "Please select an option for all required modifiers.",
+  "modifierSheetLineTotal": "Line Total",
+  "modifierSheetUpdate": "Update",
+  "phoneScannerConnecting": "Connecting POS to scanner relay...",
+  "phoneScannerWaiting": "Waiting for phone scanner",
+  "phoneScannerStartFailed": "Could not start phone scanner session",
+  "phoneScannerStopped": "Scanner session stopped",
+  "phoneScannerDialogTitle": "Phone scanner",
+  "phoneScannerInstructions": "On the phone, open Phone 1D Scanner. Enter the Windows computer/server LAN address and this code:",
+  "phoneScannerUnavailable": "Unavailable",
+  "phoneScannerCopyCode": "Copy session code",
+  "phoneScannerExampleUrl": "Example phone URL: http://192.168.1.10:8081\nDo not enter localhost on the phone.",
+  "phoneScannerStopSession": "Stop session",
+  "phoneScannerKeepRunning": "Keep running",
+  "phoneScannerPhoneReady": "Phone connected and ready",
+  "phoneScannerPhoneDisconnected": "Phone disconnected — session stopped",
+  "phoneScannerRelayError": "Scanner relay error",
+  "phoneScannerConnectedTooltip": "Phone scanner connected",
+  "phoneScannerConnectTooltip": "Connect phone scanner",
+  "phoneScannerSessionStoppedStatus": "Scanner session is stopped",
+  "productCardOutOfStock": "Out of Stock",
+  "statusBarToggleMenu": "Toggle menu",
+  "statusBarShiftLabel": "Shift",
+  "statusBarOnline": "Online",
+  "statusBarOffline": "Offline",
+  "statusBarTransactions": "Trans",
+  "statusBarBills": "Bills",
+  "tableSelectorTitle": "Select Table",
+  "tableSelectorEmpty": "No tables available",
+  "tableSelectorInUseBadge": "IN USE",
+  "tableSelectorInUse": "{table} is in use",
+  "@tableSelectorInUse": {
+    "placeholders": {
+      "table": {
+        "type": "Object"
+      }
+    }
+  },
+  "tableSelectorNoTable": "No Table",
+  "waitingTicketsTitle": "Waiting Numbers",
+  "waitingTicketsEmpty": "No waiting customers",
+  "waitingTicketsItemsCount": "{count} items",
+  "@waitingTicketsItemsCount": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "waitingTicketsReady": "Ready",
+  "waitingTicketsCollected": "Collected",
+  "cashierPerformanceTitle": "Sales by Cashier",
+  "reportsNoDataForPeriod": "No data for this period",
+  "reportsTxCount": "{count} tx",
+  "@reportsTxCount": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "categoryPerformanceTopByRevenue": "Top Categories by Revenue",
+  "categoryPerformanceFallbackName": "Category #{id}",
+  "@categoryPerformanceFallbackName": {
+    "placeholders": {
+      "id": {
+        "type": "Object"
+      }
+    }
+  },
+  "categoryPerformanceItemsSoldCount": "{count} items sold",
+  "@categoryPerformanceItemsSoldCount": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "discountsScreenSummary": "Summary",
+  "discountsScreenDiscountsGiven": "Discounts Given",
+  "discountsScreenTotalDiscountAmount": "Total Discount Amount",
+  "discountsScreenNoData": "No discounts for this period",
+  "discountsScreenChartTitle": "Discount Amount",
+  "discountsScreenTransactionsTitle": "Discount Transactions",
+  "monthlySalesTitle": "Monthly Sales — {year}",
+  "@monthlySalesTitle": {
+    "placeholders": {
+      "year": {
+        "type": "Object"
+      }
+    }
+  },
+  "monthlySalesPreviousYear": "Previous year",
+  "monthlySalesNextYear": "Next year",
+  "monthlySalesNoData": "No data for this year",
+  "monthlySalesTotalRevenue": "Total Revenue",
+  "paymentMixShareByMethod": "Share by Payment Method",
+  "paymentMixTotalLabel": "Total:",
+  "reportsHubSalesReportsSection": "Sales Reports",
+  "reportsHubSalesSummarySubtitle": "Daily sales totals with filters by store & cashier",
+  "reportsHubSalesByItemSubtitle": "Quantity sold, gross, discount & net per product",
+  "reportsHubSalesByCategorySubtitle": "Revenue & quantity per product category",
+  "reportsHubSalesByCashierSubtitle": "Sales totals & transaction counts per cashier",
+  "reportsHubPaymentMixSubtitle": "Revenue breakdown by payment method",
+  "reportsHubReceiptsSubtitle": "In-depth sales with items, customers & payments",
+  "reportsHubSalesByModifierTitle": "Sales by Modifier",
+  "reportsHubSalesByModifierSubtitle": "Revenue & quantity per modifier option",
+  "reportsHubDiscountsSubtitle": "Discounts applied across receipts",
+  "reportsHubTaxesSubtitle": "Taxable sales & tax collected per day",
+  "reportsHubOtherReportsSection": "Other Reports",
+  "reportsHubDailyReportTitle": "Daily / X-Report",
+  "reportsHubDailyReportSubtitle": "Today's sales snapshot with top products & payments",
+  "reportsHubTopProductsTitle": "Top Products",
+  "reportsHubTopProductsSubtitle": "Best-selling items by quantity & revenue",
+  "reportsHubPerformanceSection": "Performance",
+  "reportsHubMonthlySalesTitle": "Monthly Sales",
+  "reportsHubMonthlySalesSubtitle": "Revenue trend across months in a year",
+  "reportsHubStockMovementsTitle": "Stock Movements",
+  "reportsHubStockMovementsSubtitle": "In/out movements within a date range",
+  "reportsHubChangeDateTooltip": "Change date",
+  "reportsHubGrossSales": "Gross Sales",
+  "reportsHubNetSales": "Net Sales",
+  "reportsHubTransactions": "Transactions",
+  "reportsHubAvgPerSale": "Avg per Sale",
+  "reportsHubPaymentBreakdown": "Payment Breakdown",
+  "reportsHubQuantitySold": "{count} sold",
+  "@reportsHubQuantitySold": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "reportsHubCashierPerformanceSection": "Cashier Performance",
+  "reportsHubNotAvailable": "N/A",
+  "salesByItemSortByRevenue": "By Revenue",
+  "salesByItemSortByQuantity": "By Quantity",
+  "salesByItemTopItems": "Top Items",
+  "salesByItemSkuLabel": "SKU:",
+  "salesByItemGrossLabel": "Gross",
+  "salesByItemNetLabel": "Net",
+  "reportsSalesByModifier": "Sales by Modifier",
+  "salesByModifierTopOptionsTitle": "Top Modifier Options by Revenue",
+  "reportsRevenue": "Revenue",
+  "reportsSummary": "Summary",
+  "reportsGrossSales": "Gross Sales",
+  "reportsNetSales": "Net Sales",
+  "reportsSalesCountLabel": "Sales Count",
+  "reportsItemsSold": "Items Sold",
+  "reportsAvgSale": "Avg Sale",
+  "reportsPaymentMethods": "Payment Methods",
+  "reportsTransactionsCount": "{count} tx",
+  "@reportsTransactionsCount": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "reportsNoReceiptsForPeriod": "No receipts for this period",
+  "reportsGross": "Gross",
+  "reportsBalance": "Balance",
+  "reportsCreditSale": "Credit Sale",
+  "reportsTransactions": "Transactions",
+  "reportsAvgPerSale": "Avg per Sale",
+  "reportsNetSalesPerDay": "Net Sales per Day",
+  "reportsSalesByCashier": "Sales by Cashier",
+  "reportsDailyBreakdown": "Daily Breakdown",
+  "reportsOrders": "Orders",
+  "reportsNet": "Net",
+  "reportsSalesCountSingular": "{count} sale",
+  "@reportsSalesCountSingular": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "reportsSalesCountPlural": "{count} sales",
+  "@reportsSalesCountPlural": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "reportsStockMovements": "Stock Movements",
+  "reportsNoMovementsForPeriod": "No movements for this period",
+  "reportsProductFallback": "Product #{id}",
+  "@reportsProductFallback": {
+    "placeholders": {
+      "id": {
+        "type": "Object"
+      }
+    }
+  },
+  "reportsTotalTaxCollected": "Total Tax Collected",
+  "reportsNoTaxDataForPeriod": "No tax data for this period",
+  "reportsTaxCollectedPerDay": "Tax Collected per Day",
+  "reportsTaxableSales": "Taxable Sales",
+  "reportsTaxCollected": "Tax Collected",
+  "reportsSalesLabel": "Sales",
+  "reportsTopProducts": "Top Products",
+  "reportsQuantitySold": "{qty} sold",
+  "@reportsQuantitySold": {
+    "placeholders": {
+      "qty": {
+        "type": "Object"
+      }
+    }
+  },
+  "reportFilterToday": "Today",
+  "reportFilterYesterday": "Yesterday",
+  "reportFilterThisWeek": "This week",
+  "reportFilterLastWeek": "Last week",
+  "reportFilterThisMonth": "This month",
+  "reportFilterLastMonth": "Last month",
+  "reportFilterLast7Days": "Last 7 days",
+  "reportFilterLast30Days": "Last 30 days",
+  "reportFilterThisYear": "This Year",
+  "reportFilterCustomRange": "Custom range…",
+  "reportFilterAllDay": "All day",
+  "reportFilterCustomPeriod": "Custom period",
+  "reportFilterStart": "Start",
+  "reportFilterEnd": "End",
+  "reportFilterAllCashiers": "All cashiers",
+  "reportPaginationPreviousPage": "Previous page",
+  "reportPaginationNextPage": "Next page",
+  "reportPaginationPageInfo": "Page {page} of {totalPages} ({total} total)",
+  "@reportPaginationPageInfo": {
+    "placeholders": {
+      "page": {
+        "type": "Object"
+      },
+      "totalPages": {
+        "type": "Object"
+      },
+      "total": {
+        "type": "Object"
+      }
+    }
+  },
+  "customerDisplayTooltipConnected": "Customer display connected",
+  "customerDisplayTooltipConnect": "Connect customer display",
+  "customerDisplayDialogTitle": "Customer Display",
+  "customerDisplayDialogInstructions": "On the customer-screen device, enter this store's server address and the code below to connect.",
+  "customerDisplayCopyCode": "Copy code",
+  "customerDisplayStopSession": "Stop session",
+  "customerDisplayKeepRunning": "Keep running",
+  "customerDisplayStatusStarting": "Starting session...",
+  "customerDisplayStatusStopped": "Session stopped",
+  "customerDisplayStatusConnected": "Customer display connected",
+  "customerDisplayStatusWaiting": "Waiting for the customer display to connect..."
+}

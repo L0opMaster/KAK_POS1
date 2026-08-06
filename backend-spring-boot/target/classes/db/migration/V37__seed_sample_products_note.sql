@@ -1,0 +1,2 @@
+-- Placeholder migration to preserve sequence for sample product generator.
+-- Sample products are inserted via /api/products/seed-samples endpoint.

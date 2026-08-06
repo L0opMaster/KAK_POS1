@@ -1,0 +1,16 @@
+# Dev profile — loaded when SPRING_PROFILES_ACTIVE=dev
+# Overrides production defaults for local development only.
+app:
+  cors:
+    # Allow every origin in dev (wildcard via pattern).
+    # DO NOT copy this to application.yml or production config.
+    allowed-origins: "*"
+  security:
+    # When true every authenticated request is permitted regardless of role.
+    # The JWT filter still runs so you still need a valid token — use this to
+    # skip role/permission checks while building new endpoints locally.
+    permit-all: true
+  dev:
+    # Set to true to skip JWT validation entirely (no token required).
+    # Only useful when testing with curl/Postman without a login step.
+    disable-auth: false

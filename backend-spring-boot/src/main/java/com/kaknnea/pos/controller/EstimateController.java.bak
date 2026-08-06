@@ -1,0 +1,90 @@
+package com.kaknnea.pos.controller;
+
+import com.kaknnea.pos.dto.SaleDtos;
+import com.kaknnea.pos.service.SaleService;
+import jakarta.validation.Valid;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+/**
+ * Dedicated controller for Estimate/Quotation operations.
+ * Fully separated from the SaleController.
+ */
+@RestController
+@RequestMapping("/api/pos/estimates")
+@PreAuthorize("hasAuthority('PERM_POS_SALE')")
+public class EstimateController {
+
+    private final SaleService saleService;
+
+    public EstimateController(SaleService saleService) {
+        this.saleService = saleService;
+    }
+
+    @PostMapping
+    public SaleDtos.SaleResponse createEstimate(@Valid @RequestBody SaleDtos.SaleCreateRequest request) {
+        return saleService.createEstimate(request);
+    }
+
+    @GetMapping
+    @PreAuthorize("hasAuthority('PERM_POS_SALE') or hasAnyRole('OWNER', 'ADMIN', 'MANAGER')")
+    public List<SaleDtos.SaleResponse> listEstimates(
+            @RequestParam(required = false) String status) {
+        return saleService.listEstimates(status);
+    }
+
+    @GetMapping("/{id}")
+    public SaleDtos.SaleResponse getEstimate(@PathVariable Long id) {
+        return saleService.getById(id);
+    }
+
+    @PutMapping("/{id}")
+    public SaleDtos.SaleResponse updateEstimate(@PathVariable Long id,
+            @Valid @RequestBody SaleDtos.SaleCreateRequest request) {
+        return saleService.update(id, request);
+    }
+
+    @PostMapping("/{id}/send")
+    public SaleDtos.SaleResponse sendEstimate(@PathVariable Long id) {
+        return saleService.sendEstimate(id);
+    }
+
+    @PostMapping("/{id}/accept")
+    public SaleDtos.SaleResponse acceptEstimate(@PathVariable Long id) {
+        return saleService.acceptEstimate(id);
+    }
+
+    @PostMapping("/{id}/decline")
+    public SaleDtos.SaleResponse declineEstimate(@PathVariable Long id,
+            @Valid @RequestBody SaleDtos.DeclineEstimateRequest request) {
+        return saleService.declineEstimate(id, request.getReason());
+    }
+
+    @PostMapping("/{id}/convert")
+    public SaleDtos.SaleResponse convertEstimateToSale(@PathVariable Long id) {
+        return saleService.convertEstimateToSale(id);
+    }
+
+    @GetMapping(value = "/{id}/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    public byte[] estimatePdf(@PathVariable Long id) {
+        return saleService.estimatePdf(id);
+    }
+
+    @PutMapping("/{id}/void")
+    public SaleDtos.SaleResponse voidEstimate(@PathVariable Long id,
+            @RequestBody(required = false) java.util.Map<String, String> body) {
+        String reason = body != null ? body.get("reason") : null;
+        return saleService.voidSale(id, reason);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteEstimate(@PathVariable Long id,
+            @RequestParam(defaultValue = "Deleted via estimate API") String reason) {
+        saleService.deleteSale(id, reason);
+        return ResponseEntity.noContent().build();
+    }
+}

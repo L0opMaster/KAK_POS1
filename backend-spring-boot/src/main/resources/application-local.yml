@@ -1,0 +1,7 @@
+app:
+  cors:
+    allowed-origins: "*"
+  security:
+    permit-all: true
+  dev:
+    disable-auth: true

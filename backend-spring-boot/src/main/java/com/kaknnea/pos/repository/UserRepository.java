@@ -1,0 +1,9 @@
+package com.kaknnea.pos.repository;
+
+import com.kaknnea.pos.domain.User;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface UserRepository extends JpaRepository<User, Long> {
+    Optional<User> findByEmail(String email);
+}

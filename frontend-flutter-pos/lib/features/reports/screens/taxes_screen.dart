@@ -1,0 +1,272 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/config/pos_theme.dart';
+import '../../../core/utils/l10n_extensions.dart';
+import '../services/report_service.dart';
+import '../models/report_models.dart';
+import '../widgets/report_filter_bar.dart';
+import '../widgets/report_pagination_bar.dart';
+import '../widgets/report_charts.dart';
+
+/// Taxes — tax collected per day over a date range, with totals.
+class TaxesScreen extends ConsumerStatefulWidget {
+  const TaxesScreen({super.key});
+
+  @override
+  ConsumerState<TaxesScreen> createState() => _TaxesScreenState();
+}
+
+class _TaxesScreenState extends ConsumerState<TaxesScreen> {
+  ReportFilterState _filter = ReportFilterState.initial().copyWith(
+    period: ReportPeriod.thisWeek,
+    from: DateTime.now().subtract(const Duration(days: 7)),
+    to: DateTime.now(),
+  );
+  int _page = 0;
+  static const _pageSize = 20;
+  TaxRangeReportResponse? _data;
+  bool _loading = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final svc = ref.read(reportServiceProvider);
+      final data = await svc.taxRangeReport(
+        from: _filter.fromStr,
+        to: _filter.toStr,
+        fromHour: _filter.fromHour == 0 ? null : _filter.fromHour,
+        toHour: _filter.toHour == 23 ? null : _filter.toHour,
+        employeeId: _filter.employeeId,
+        page: _page,
+        size: _pageSize,
+      );
+      setState(() {
+        _data = data;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  void _applyFilter(ReportFilterState filter) {
+    setState(() {
+      _filter = filter;
+      _page = 0;
+    });
+    _load();
+  }
+
+  void _changePage(int page) {
+    setState(() => _page = page);
+    _load();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(context.l10n.reportsTaxes),
+        backgroundColor: PosTheme.primaryGreen,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        actions: [
+          IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _load,
+              tooltip: context.l10n.commonRefresh),
+        ],
+      ),
+      body: RefreshIndicator(
+        onRefresh: _load,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            ReportFilterBar(value: _filter, onChanged: _applyFilter),
+            if (_loading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 40),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (_error != null)
+              _errorView()
+            else
+              _buildContent(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _errorView() => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, size: 48, color: PosTheme.errorRed),
+            const SizedBox(height: 12),
+            Text(_error!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: PosTheme.errorRed)),
+            const SizedBox(height: 16),
+            ElevatedButton(
+                onPressed: _load, child: Text(context.l10n.commonRetry)),
+          ],
+        ),
+      );
+
+  Widget _buildContent() {
+    final data = _data;
+    if (data == null) return const SizedBox();
+    final chartData =
+        data.rows.map((r) => (label: r.date, value: r.taxCollected)).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── Totals card ──
+        Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: const BorderSide(color: PosTheme.dividerColor),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                Text(context.l10n.reportsSummary,
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                _sRow(context.l10n.reportsTotalTaxCollected,
+                    '\$${_fmtNum(data.totalTaxCollected)}',
+                    bold: true, color: PosTheme.primaryGreen),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        if (data.rows.isEmpty)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Text(context.l10n.reportsNoTaxDataForPeriod,
+                  style: const TextStyle(color: PosTheme.textHint)),
+            ),
+          )
+        else ...[
+          Text(context.l10n.reportsTaxCollectedPerDay,
+              style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: PosTheme.textPrimary,
+                  fontSize: 15)),
+          const SizedBox(height: 8),
+          ReportLineChart(data: chartData, valuePrefix: '\$'),
+          const SizedBox(height: 16),
+          Text(context.l10n.reportsDailyBreakdown,
+              style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: PosTheme.textPrimary,
+                  fontSize: 15)),
+          const SizedBox(height: 8),
+          ...data.rows.map(_rowCard),
+          ReportPaginationBar(meta: data.meta, onPageChange: _changePage),
+        ],
+      ],
+    );
+  }
+
+  Widget _rowCard(TaxReportRow r) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 6),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: const BorderSide(color: PosTheme.dividerColor),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(r.date,
+                style: const TextStyle(
+                    fontWeight: FontWeight.w600, color: PosTheme.textPrimary)),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                _chip(context.l10n.reportsTaxableSales,
+                    '\$${_fmtNum(r.taxableSales)}'),
+                const SizedBox(width: 8),
+                _chip(context.l10n.reportsTaxCollected,
+                    '\$${_fmtNum(r.taxCollected)}',
+                    bold: true),
+                const SizedBox(width: 8),
+                _chip(context.l10n.reportsSalesLabel, '${r.salesCount}'),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _chip(String label, String value, {bool bold = false}) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+        decoration: BoxDecoration(
+          color: PosTheme.backgroundPage,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Column(
+          children: [
+            Text(value,
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: bold ? FontWeight.bold : FontWeight.w600)),
+            Text(label,
+                style: const TextStyle(fontSize: 10, color: PosTheme.textHint)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _sRow(String label, String value, {bool bold = false, Color? color}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label,
+              style: TextStyle(
+                  fontSize: 14,
+                  color: bold ? PosTheme.textPrimary : PosTheme.textSecondary)),
+          Text(value,
+              style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: bold ? FontWeight.bold : FontWeight.w500,
+                  color: color)),
+        ],
+      ),
+    );
+  }
+
+  String _fmtNum(double v) => v.toStringAsFixed(2);
+}

@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c ' *)",
+      "Bash(python3)",
+      "Bash(flutter gen-l10n *)",
+      "Bash(tee /tmp/claude-1000/-home-luffy-KAKNNEA-write-test-pos/d8497edc-7bee-49cd-b013-99f791704188/scratchpad/item_test.log)",
+      "Bash(timeout 180 npx playwright install chromium)",
+      "Bash(flutter build *)"
+    ]
+  }
+}
