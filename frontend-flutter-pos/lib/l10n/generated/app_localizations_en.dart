@@ -63,6 +63,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonRefresh => 'Refresh';
 
   @override
+  String get commonPrint => 'Print';
+
+  @override
   String get commonSubmit => 'Submit';
 
   @override
@@ -442,6 +445,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get receiptDiscount => 'Discount';
+
+  @override
+  String get receiptDelivery => 'Delivery';
+
+  @override
+  String get receiptOtherCharge => 'Other Charge';
 
   @override
   String get receiptTax => 'Tax';
@@ -2703,6 +2712,52 @@ class AppLocalizationsEn extends AppLocalizations {
   String get receiptsScreenPrintReceipt => 'Print Receipt';
 
   @override
+  String get receiptsScreenPrintAll => 'Print All';
+
+  @override
+  String get receiptsScreenPrintAllTooltip => 'Print all receipts';
+
+  @override
+  String get receiptsScreenPrintAllConfirmTitle => 'Print all receipts?';
+
+  @override
+  String receiptsScreenPrintAllConfirmBody(Object count) {
+    return 'Print all $count receipts?';
+  }
+
+  @override
+  String get receiptsScreenPreparingReceipts => 'Preparing receipts...';
+
+  @override
+  String get receiptsScreenPrintingReceipts => 'Printing receipts...';
+
+  @override
+  String receiptsScreenPrintAllProgress(Object done, Object total) {
+    return '$done / $total';
+  }
+
+  @override
+  String receiptsScreenLoadReceiptFailed(Object invoice) {
+    return 'Unable to load receipt $invoice.';
+  }
+
+  @override
+  String get receiptsScreenPrintReceiptFailed => 'Unable to print receipt.';
+
+  @override
+  String receiptsScreenPrintAllDone(Object printed, Object total) {
+    return 'Printed $printed of $total receipts.';
+  }
+
+  @override
+  String receiptsScreenPrintAllPartialFailure(Object count) {
+    return '$count receipt(s) could not be printed.';
+  }
+
+  @override
+  String get receiptsScreenSavePdf => 'Save PDF';
+
+  @override
   String get receiptsScreenReasonOptionalLabel => 'Reason (optional)';
 
   @override
@@ -3735,4 +3790,49 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get customerDisplayStatusWaiting =>
       'Waiting for the customer display to connect...';
+
+  @override
+  String get reportPdfGeneratedLabel => 'Generated';
+
+  @override
+  String get reportPdfPageLabel => 'Page';
+
+  @override
+  String get salesSummaryPdfTitle => 'Sales Summary Report';
+
+  @override
+  String get salesSummaryPdfColDate => 'Date';
+
+  @override
+  String get salesSummaryPdfColOrders => 'Orders';
+
+  @override
+  String get salesSummaryPdfColQty => 'Qty';
+
+  @override
+  String get salesSummaryPdfColGross => 'Gross';
+
+  @override
+  String get salesSummaryPdfColDiscount => 'Discount';
+
+  @override
+  String get salesSummaryPdfColTax => 'Tax';
+
+  @override
+  String get salesSummaryPdfColNet => 'Net';
+
+  @override
+  String get salesSummaryPdfGrossSalesLabel => 'Gross Sales';
+
+  @override
+  String get salesSummaryPdfDiscountsLabel => 'Discounts';
+
+  @override
+  String get salesSummaryPdfNetSalesLabel => 'Net Sales';
+
+  @override
+  String get salesSummaryPdfTransactionsLabel => 'Transactions';
+
+  @override
+  String get salesSummaryPdfItemsSoldLabel => 'Items Sold';
 }

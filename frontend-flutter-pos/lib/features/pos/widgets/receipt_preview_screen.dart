@@ -1,15 +1,13 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
 import '../../../core/providers/language_provider.dart';
 import '../../../core/utils/l10n_extensions.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../models/cart_models.dart';
+import '../services/print_service.dart';
 import '../services/printing/printer_profile.dart';
 import '../services/printing/receipt_view_model.dart';
 import '../services/printing/thermal_printer_service.dart';
@@ -25,11 +23,14 @@ import '../services/printing/thermal_printer_service.dart';
 class ReceiptPreviewScreen extends ConsumerWidget {
   final double total;
   final double subtotal;
+  final double discountAmount;
+  final double taxAmount;
+  final double deliveryCharge;
+  final double otherCharge;
   final List<SplitRowReceipt> splits;
   final String? invoiceNumber;
   final String cashierName;
   final List<CartItem>? saleItems;
-  final String? qrCodeBase64;
   final String? businessName;
   final String? businessAddress;
   final String? businessPhone;
@@ -38,6 +39,14 @@ class ReceiptPreviewScreen extends ConsumerWidget {
   final String? saleDate;
   final String? saleTime;
   final String? tableNumber;
+
+  /// Overrides the splits-derived paid/change amounts with the backend's
+  /// authoritative values (`ReceiptResponse.paidAmount`/`.changeAmount`)
+  /// once the finalized sale has loaded. Null falls back to computing from
+  /// [splits] (amount applied vs. [total]) — used only for the brief window
+  /// before the backend receipt is available.
+  final double? paidAmountOverride;
+  final double? changeAmountOverride;
 
   /// KHR-per-USD rate frozen onto this sale at the time it was created —
   /// never the live Settings rate, so an old receipt keeps showing the
@@ -49,11 +58,14 @@ class ReceiptPreviewScreen extends ConsumerWidget {
     super.key,
     required this.total,
     this.subtotal = 0,
+    this.discountAmount = 0,
+    this.taxAmount = 0,
+    this.deliveryCharge = 0,
+    this.otherCharge = 0,
     required this.splits,
     this.invoiceNumber,
     this.cashierName = '',
     this.saleItems,
-    this.qrCodeBase64,
     this.businessName,
     this.businessAddress,
     this.businessPhone,
@@ -62,14 +74,18 @@ class ReceiptPreviewScreen extends ConsumerWidget {
     this.saleDate,
     this.saleTime,
     this.tableNumber,
+    this.paidAmountOverride,
+    this.changeAmountOverride,
     this.exchangeRateKhr,
   });
 
   ReceiptViewModel _buildViewModel(
       AppLanguage language, AppLocalizations l10n) {
     final items = saleItems ?? [];
-    final totalPaid = splits.fold(0.0, (sum, s) => sum + s.amount);
-    final change = totalPaid > total ? totalPaid - total : 0.0;
+    final splitsPaid = splits.fold(0.0, (sum, s) => sum + s.amount);
+    final totalPaid = paidAmountOverride ?? splitsPaid;
+    final change =
+        changeAmountOverride ?? (splitsPaid > total ? splitsPaid - total : 0.0);
     final now = DateTime.now();
     final dispDate = saleDate ??
         '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}';
@@ -81,6 +97,10 @@ class ReceiptPreviewScreen extends ConsumerWidget {
       l10n: l10n,
       total: total,
       subtotal: subtotal,
+      discountAmount: discountAmount,
+      taxAmount: taxAmount,
+      deliveryCharge: deliveryCharge,
+      otherCharge: otherCharge,
       items: items,
       paidAmount: totalPaid,
       changeAmount: change,
@@ -94,7 +114,6 @@ class ReceiptPreviewScreen extends ConsumerWidget {
       saleDate: dispDate,
       saleTime: dispTime,
       tableNumber: tableNumber,
-      qrImageData: qrCodeBase64,
       exchangeRateKhr: exchangeRateKhr,
     );
   }
@@ -220,6 +239,11 @@ class ReceiptPreviewScreen extends ConsumerWidget {
                 //  TOTALS
                 // ═══════════════════════════════════════════
                 _total(l10n.receiptSubtotal, receipt.fmt(receipt.subtotal)),
+                for (final adj in receipt.adjustments) ...[
+                  const _Spacer(3),
+                  _total(_adjustmentLabel(l10n, adj.type),
+                      receipt.fmtAdjustment(adj)),
+                ],
                 const _Spacer(3),
                 _total(l10n.receiptTotal, receipt.fmt(receipt.total),
                     bold: true, large: true),
@@ -233,12 +257,23 @@ class ReceiptPreviewScreen extends ConsumerWidget {
                 _total(l10n.receiptPaid, receipt.fmt(receipt.paidAmount),
                     bold: true),
                 const _Spacer(3),
-                if (receipt.changeAmount > 0)
+                // Cash Received/Change only make sense together — showing
+                // Change alone next to a Paid amount that already equals
+                // the Total (paidAmount is the amount APPLIED to the sale,
+                // never more) reads as if change appeared from nowhere.
+                // Cash Received (= paidAmount + changeAmount, i.e. what the
+                // customer actually handed over) makes the arithmetic
+                // legible: Cash Received - Change = Paid.
+                if (receipt.changeAmount > 0) ...[
+                  _total(l10n.paymentScreenCashReceived,
+                      receipt.fmt(receipt.paidAmount + receipt.changeAmount)),
+                  const _Spacer(3),
                   _total(l10n.receiptChange, receipt.fmt(receipt.changeAmount),
                       color: _green),
-                if (receipt.changeAmount > 0) const _Spacer(10),
-                if (receipt.changeAmount > 0) _dashed,
-                if (receipt.changeAmount > 0) const _Spacer(10),
+                  const _Spacer(10),
+                  _dashed,
+                  const _Spacer(10),
+                ],
 
                 // ═══════════════════════════════════════════
                 //  EXCHANGE RATE
@@ -266,23 +301,6 @@ class ReceiptPreviewScreen extends ConsumerWidget {
                   _solid,
                   const _Spacer(10),
                 ],
-
-                // ═══════════════════════════════════════════
-                //  QR CODE
-                // ═══════════════════════════════════════════
-                if (receipt.qrImageData != null &&
-                    receipt.qrImageData!.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Center(
-                      child: Image.memory(
-                        base64Decode(receipt.qrImageData!),
-                        width: 72,
-                        height: 72,
-                        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                      ),
-                    ),
-                  ),
 
                 // ═══════════════════════════════════════════
                 //  FOOTER
@@ -352,6 +370,36 @@ class ReceiptPreviewScreen extends ConsumerWidget {
     );
   }
 
+  String _adjustmentLabel(AppLocalizations l10n, ReceiptAdjustmentType type) {
+    switch (type) {
+      case ReceiptAdjustmentType.discount:
+        return l10n.receiptDiscount;
+      case ReceiptAdjustmentType.delivery:
+        return l10n.receiptDelivery;
+      case ReceiptAdjustmentType.otherCharge:
+        return l10n.receiptOtherCharge;
+      case ReceiptAdjustmentType.tax:
+        return l10n.receiptTax;
+    }
+  }
+
+  /// Plain-English label for the clipboard fallback text — mirrors
+  /// PrintService's own `_adjustmentLabel` (PDF pipeline has no
+  /// BuildContext/l10n available either), so the copied text and the
+  /// printed receipt never disagree on wording.
+  String _adjustmentPlainLabel(ReceiptAdjustmentType type) {
+    switch (type) {
+      case ReceiptAdjustmentType.discount:
+        return 'Discount';
+      case ReceiptAdjustmentType.delivery:
+        return 'Delivery';
+      case ReceiptAdjustmentType.otherCharge:
+        return 'Other Charge';
+      case ReceiptAdjustmentType.tax:
+        return 'Tax';
+    }
+  }
+
   Widget _total(String label, String value,
       {bool bold = false, bool large = false, Color? color}) {
     return Padding(
@@ -418,11 +466,18 @@ class ReceiptPreviewScreen extends ConsumerWidget {
     }
     buf.writeln();
     buf.writeln('  Subtotal${r.fmt(r.subtotal).padLeft(24)}');
+    for (final adj in r.adjustments) {
+      final label = _adjustmentPlainLabel(adj.type);
+      buf.writeln('  $label${r.fmtAdjustment(adj).padLeft(32 - label.length)}');
+    }
     buf.writeln('  TOTAL${r.fmt(r.total).padLeft(28)}');
     buf.writeln();
     buf.writeln('  Paid${r.fmt(r.paidAmount).padLeft(28)}');
-    if (r.changeAmount > 0)
+    if (r.changeAmount > 0) {
+      buf.writeln(
+          '  Cash Received${r.fmt(r.paidAmount + r.changeAmount).padLeft(19)}');
       buf.writeln('  Change${r.fmt(r.changeAmount).padLeft(26)}');
+    }
     if (r.showExchangeRate) {
       buf.writeln();
       buf.writeln(
@@ -445,8 +500,14 @@ class ReceiptPreviewScreen extends ConsumerWidget {
       if (!context.mounted) return;
 
       if (config.transportType == PrinterTransportType.pdfDriver) {
+        // Same PrintService.buildReceiptPdf a reprint from receipts_screen.dart
+        // uses — one PDF receipt design in the app, not a second "lightweight"
+        // one that visually disagrees with what's on screen.
+        final pdfBytes = await ref
+            .read(printServiceProvider)
+            .buildReceiptPdf(receipt, config.paperSize);
         await Printing.layoutPdf(
-          onLayout: (format) async => _buildSimplePdf(receipt),
+          onLayout: (format) async => pdfBytes,
           name: 'receipt_${invoiceNumber ?? "preview"}',
         );
       } else {
@@ -462,29 +523,6 @@ class ReceiptPreviewScreen extends ConsumerWidget {
         );
       }
     }
-  }
-
-  /// A lightweight PDF fallback used only for the immediate post-sale
-  /// preview (before the backend receipt — and its logo/footer — has
-  /// necessarily loaded). Uses the plain-text layout; the full itemized PDF
-  /// (with the Khmer font embedded) is [PrintService]'s job for reprints.
-  Future<Uint8List> _buildSimplePdf(ReceiptViewModel receipt) async {
-    final text = _plainTextReceipt(receipt);
-    final doc = pw.Document();
-    doc.addPage(
-      pw.Page(
-        pageFormat: PdfPageFormat.roll80,
-        build: (ctx) => pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.stretch,
-          children: text
-              .split('\n')
-              .map((line) =>
-                  pw.Text(line, style: const pw.TextStyle(fontSize: 10)))
-              .toList(),
-        ),
-      ),
-    );
-    return doc.save();
   }
 }
 

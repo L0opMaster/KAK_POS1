@@ -590,10 +590,17 @@
 // }
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
+import '../../../core/config/currency_utils.dart';
 import '../../../core/config/pos_theme.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/services/printing/a4_report_pdf.dart';
 import '../../../core/utils/l10n_extensions.dart';
+import '../../reports/models/report_models.dart';
+import '../../reports/services/report_service.dart';
+import '../services/settings_service.dart';
 
 /// POS navigation drawer.
 class PosDrawer extends ConsumerWidget {
@@ -702,6 +709,12 @@ class PosDrawer extends ConsumerWidget {
                   title: context.l10n.navReceipts,
                   route: 'receipts',
                   context: context,
+                  // trailingAction: IconButton(
+                  //   icon: const Icon(Icons.print_outlined, size: 20),
+                  //   tooltip: context.l10n.commonPrint,
+                  //   color: PosTheme.textHintOf(context),
+                  //   onPressed: () => _quickPrintReceipts(context, ref),
+                  // ),
                 ),
 
                 // Clicking Reports expands its child menu.
@@ -804,6 +817,76 @@ class PosDrawer extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  // ───────────────── Quick print (Receipts) ─────────────────
+
+  /// Print shortcut on the Receipts drawer tile: prints today's receipts as
+  /// an A4 PDF directly, without navigating into the full Receipts screen
+  /// first. Walks every backend page for the query (see report_service.dart
+  /// `fetchAllPages`) instead of trusting a single page of results, for the
+  /// same reason SalesReportScreen's own print button does — a report with
+  /// more receipts than one backend page must never silently drop rows.
+  Future<void> _quickPrintReceipts(BuildContext context, WidgetRef ref) async {
+    final l10n = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+    final now = DateTime.now();
+    String fmt(DateTime d) =>
+        '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+    final today = fmt(now);
+
+    try {
+      final svc = ref.read(reportServiceProvider);
+      final company =
+          await ref.read(settingsServiceProvider).getCompanyProfile();
+      final cur = currencySymbol(readCurrency(ref));
+
+      SalesReportSummary? summary;
+      final allSales = await fetchAllPages<SalesDetail>(
+        fetchPage: (page) async {
+          final pageData = await svc.salesReport(
+            from: today,
+            to: today,
+            page: page,
+            size: reportPrintPageSize,
+          );
+          summary ??= pageData.summary;
+          return (pageData.sales, pageData.salesMeta);
+        },
+      );
+
+      final rows = allSales
+          .map((sale) => [
+                sale.saleNumber ?? '#${sale.saleId}',
+                sale.saleDate ?? '',
+                sale.cashierName ?? '',
+                sale.paymentMethod ?? '',
+                '$cur${sale.netAmount.toStringAsFixed(2)}',
+              ])
+          .toList();
+
+      final pdfBytes = await A4ReportPdf.build(
+        title: l10n.navReceipts,
+        subtitle: today,
+        businessName: '${company['businessName'] ?? ''}',
+        businessAddress: '${company['address'] ?? ''}',
+        businessPhone: '${company['phone'] ?? ''}',
+        columns: const ['Receipt #', 'Date', 'Cashier', 'Payment', 'Net'],
+        rows: rows,
+        columnAlignments: const {4: pw.Alignment.centerRight},
+        summary: summary == null
+            ? const []
+            : [MapEntry('Transactions', '${summary!.totalSalesCount}')],
+        generatedAt: now,
+        generatedLabel: l10n.reportPdfGeneratedLabel,
+        pageLabel: l10n.reportPdfPageLabel,
+      );
+
+      await Printing.layoutPdf(onLayout: (_) => pdfBytes, name: 'receipts');
+    } catch (e) {
+      messenger
+          .showSnackBar(SnackBar(content: Text('${l10n.printerPrintFailed}: $e')));
+    }
   }
 
   // ───────────────── Reports expandable menu ─────────────────
@@ -1255,6 +1338,7 @@ class PosDrawer extends ConsumerWidget {
     required String route,
     required BuildContext context,
     Color? color,
+    Widget? trailingAction,
   }) {
     final tileColor = color ?? PosTheme.textPrimaryOf(context);
 
@@ -1272,10 +1356,16 @@ class PosDrawer extends ConsumerWidget {
           color: tileColor,
         ),
       ),
-      trailing: Icon(
-        Icons.chevron_right,
-        size: 20,
-        color: PosTheme.textHintOf(context),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (trailingAction != null) trailingAction,
+          Icon(
+            Icons.chevron_right,
+            size: 20,
+            color: PosTheme.textHintOf(context),
+          ),
+        ],
       ),
       onTap: () {
         final navigator = Navigator.of(context);

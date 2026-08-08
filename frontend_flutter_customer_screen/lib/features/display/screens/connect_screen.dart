@@ -33,10 +33,14 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen> {
 
   Future<void> _loadSavedValues() async {
     final String? savedServerUrl = await AppConfig.loadServerUrl();
+    final String? savedSessionCode = await AppConfig.loadSessionCode();
     if (!mounted) return;
     setState(() {
       if (savedServerUrl != null) {
         _serverController.text = savedServerUrl;
+      }
+      if (savedSessionCode != null) {
+        _sessionController.text = savedSessionCode;
       }
       _loadingSavedValues = false;
     });

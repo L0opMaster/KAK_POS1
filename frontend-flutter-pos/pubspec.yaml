@@ -72,6 +72,11 @@ flutter:
     - assets/icons/
     - assets/fonts/
   fonts:
+    - family: NotoSans
+      fonts:
+        - asset: assets/fonts/NotoSans-Regular.ttf
+        - asset: assets/fonts/NotoSans-Bold.ttf
+          weight: 700
     - family: NotoSansKhmer
       fonts:
         - asset: assets/fonts/NotoSansKhmer-Regular.ttf

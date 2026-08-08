@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -55,9 +54,8 @@ class ReceiptBitmapRenderer {
 
     overlay.insert(entry);
     try {
-      // Two frames: first mounts+lays out the subtree (and starts decoding
-      // any embedded QR image), second ensures that decode has resolved
-      // and repainted before we capture.
+      // Two frames: first mounts+lays out the subtree, second ensures it
+      // has fully repainted before we capture.
       await WidgetsBinding.instance.endOfFrame;
       await WidgetsBinding.instance.endOfFrame;
 
@@ -76,7 +74,8 @@ class ReceiptBitmapRenderer {
         throw StateError('Failed to decode rendered receipt bitmap');
       }
       // Thermal raster printing is strictly black/white — Floyd-Steinberg
-      // dithering keeps logos/QR codes legible instead of just thresholding.
+      // dithering keeps Khmer glyph strokes legible instead of just
+      // thresholding.
       return img.ditherImage(decoded, kernel: img.DitherKernel.floydSteinberg);
     } finally {
       entry.remove();
@@ -96,8 +95,7 @@ class _ReceiptDocument extends StatelessWidget {
 
   static const _khmerFallback = ['NotoSansKhmer'];
 
-  TextStyle _style(double size, {bool bold = false, Color? color}) =>
-      TextStyle(
+  TextStyle _style(double size, {bool bold = false, Color? color}) => TextStyle(
         fontSize: size,
         fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
         color: color ?? Colors.black,
@@ -165,8 +163,15 @@ class _ReceiptDocument extends StatelessWidget {
           ],
           if (receipt.paidAmount > 0)
             _amountRow('Paid', receipt.fmt(receipt.paidAmount)),
-          if (receipt.changeAmount > 0)
+          // Cash Received (= paidAmount + changeAmount) makes Change
+          // legible — Paid alone is the amount APPLIED to the sale (never
+          // more than the total), so Change would otherwise look like it
+          // appeared from nowhere.
+          if (receipt.changeAmount > 0) ...[
+            _amountRow('Cash Received',
+                receipt.fmt(receipt.paidAmount + receipt.changeAmount)),
             _amountRow('Change', receipt.fmt(receipt.changeAmount)),
+          ],
           if (receipt.paymentMethodLabel != null)
             _amountRow('Payment', receipt.paymentMethodLabel!),
           const SizedBox(height: 8),
@@ -176,19 +181,6 @@ class _ReceiptDocument extends StatelessWidget {
             child: Text(receipt.footer,
                 textAlign: TextAlign.center, style: _style(13, bold: true)),
           ),
-          if (receipt.qrImageData != null && receipt.qrImageData!.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Center(
-                child: Image.memory(
-                  base64Decode(receipt.qrImageData!),
-                  width: widthPx * 0.4,
-                  height: widthPx * 0.4,
-                  gaplessPlayback: true,
-                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                ),
-              ),
-            ),
           const SizedBox(height: 12),
         ],
       ),

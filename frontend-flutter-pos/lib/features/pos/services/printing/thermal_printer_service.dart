@@ -84,13 +84,44 @@ class ThermalPrinterService {
       await transport.disconnect();
     }
   }
+
+  /// Prints every receipt in [receipts] over a single connect/disconnect
+  /// cycle instead of one per receipt — reconnecting per receipt (Bluetooth
+  /// especially) is slow enough to make a large "Print All" batch
+  /// impractical. Each receipt still gets its own feed+cut, exactly as
+  /// [EscPosReceiptBuilder.build] already appends for a single receipt, so
+  /// physical output is identical to calling [printReceipt] N times — only
+  /// the connection overhead is batched, not the per-receipt formatting.
+  ///
+  /// [onProgress], if given, is called with (receipts printed so far, total)
+  /// after each receipt is written. [context] must stay mounted for the
+  /// whole call (used for Khmer bitmap rendering, same as [printReceipt]).
+  Future<void> printReceipts(
+    BuildContext context,
+    List<ReceiptViewModel> receipts,
+    PrinterConfig config, {
+    void Function(int done, int total)? onProgress,
+  }) async {
+    final transport = _transportFor(config);
+    await transport.connect();
+    try {
+      for (var i = 0; i < receipts.length; i++) {
+        if (!context.mounted) return;
+        final bytes =
+            await builder.build(context, receipts[i], config.paperSize);
+        await transport.write(bytes);
+        onProgress?.call(i + 1, receipts.length);
+      }
+    } finally {
+      await transport.disconnect();
+    }
+  }
 }
 
 final thermalPrinterServiceProvider = Provider<ThermalPrinterService>((ref) {
   return ThermalPrinterService();
 });
 
-final printerConfigProvider =
-    FutureProvider<PrinterConfig>((ref) async {
+final printerConfigProvider = FutureProvider<PrinterConfig>((ref) async {
   return ref.read(thermalPrinterServiceProvider).loadConfig();
 });

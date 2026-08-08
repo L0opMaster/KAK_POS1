@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import '../../../core/config/pos_theme.dart';
+import '../../../core/services/printing/a4_report_pdf.dart';
 import '../../../core/utils/l10n_extensions.dart';
+import '../../pos/services/settings_service.dart';
 import '../services/report_service.dart';
 import '../models/report_models.dart';
 
@@ -68,6 +72,49 @@ class _StockMovementScreenState extends ConsumerState<StockMovementScreen> {
     }
   }
 
+  Future<void> _printReport() async {
+    if (_data.isEmpty) return;
+    final l10n = context.l10n;
+    try {
+      final company =
+          await ref.read(settingsServiceProvider).getCompanyProfile();
+
+      final rows = _data
+          .map((m) => [
+                m.productNameEn ?? l10n.reportsProductFallback(m.productId),
+                m.movementType ?? '',
+                _fmtNum(m.quantity),
+                m.createdAt ?? '',
+              ])
+          .toList();
+
+      final pdfBytes = await A4ReportPdf.build(
+        title: l10n.reportsStockMovements,
+        subtitle: '$_from — $_to',
+        businessName: '${company['businessName'] ?? ''}',
+        businessAddress: '${company['address'] ?? ''}',
+        businessPhone: '${company['phone'] ?? ''}',
+        columns: const ['Product', 'Type', 'Qty', 'Date'],
+        rows: rows,
+        columnAlignments: const {2: pw.Alignment.centerRight},
+        summary: [MapEntry('Movements', '${_data.length}')],
+        generatedAt: DateTime.now(),
+        generatedLabel: l10n.reportPdfGeneratedLabel,
+        pageLabel: l10n.reportPdfPageLabel,
+      );
+
+      await Printing.layoutPdf(
+        onLayout: (_) => pdfBytes,
+        name: 'stock_movements',
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('${l10n.printerPrintFailed}: $e')));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -81,6 +128,10 @@ class _StockMovementScreenState extends ConsumerState<StockMovementScreen> {
               icon: const Icon(Icons.date_range),
               onPressed: _pickRange,
               tooltip: context.l10n.reportsDateRange),
+          IconButton(
+              icon: const Icon(Icons.print_outlined),
+              onPressed: _data.isEmpty ? null : _printReport,
+              tooltip: context.l10n.commonPrint),
           IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: _load,

@@ -1,17 +1,31 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/api_service.dart';
 
+const _cachedCurrencyCodeKey = 'cached_currency_code';
+
 /// Fetches the store's currency code from the backend settings
 /// (e.g., "KHR", "USD") once and caches it for the lifetime of the app.
+///
+/// The last successfully-fetched code is also mirrored into
+/// SharedPreferences under `_cachedCurrencyCodeKey`. If the backend request
+/// fails (e.g. a transient network hiccup on cold start) we fall back to
+/// that last-known-good value instead of silently hardcoding 'KHR' — since
+/// this provider only ever runs once per app session, a single failed
+/// request used to lock in the wrong currency for the whole session even
+/// after the user had saved a different one.
 final currencyCodeProvider = FutureProvider<String>((ref) async {
+  final prefs = await SharedPreferences.getInstance();
+  final cached = prefs.getString(_cachedCurrencyCodeKey);
   final api = ref.read(apiServiceProvider);
   try {
     final data = await api.get<Map<String, dynamic>>('/api/settings/general');
-    return (data['currency'] as String?) ?? 'KHR';
+    final code = (data['currency'] as String?) ?? cached ?? 'KHR';
+    await prefs.setString(_cachedCurrencyCodeKey, code);
+    return code;
   } catch (_) {
-    // Fallback — the backend is almost always KHR for this store.
-    return 'KHR';
+    return cached ?? 'KHR';
   }
 });
 

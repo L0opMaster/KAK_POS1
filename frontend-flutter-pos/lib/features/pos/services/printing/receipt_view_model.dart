@@ -30,6 +30,26 @@ class ReceiptLineViewModel {
   final String? note;
 }
 
+/// Which financial adjustment a [ReceiptAdjustment] row represents. Kept
+/// separate from display text — each renderer (on-screen l10n, plain-English
+/// PDF) supplies its own label for a given type, matching how the rest of
+/// this app's PDF content is labeled (see print_service.dart).
+enum ReceiptAdjustmentType { discount, delivery, otherCharge, tax }
+
+/// One non-zero row to show between Subtotal and Total. See
+/// [ReceiptViewModel.adjustments].
+class ReceiptAdjustment {
+  const ReceiptAdjustment(this.type, this.amount);
+
+  final ReceiptAdjustmentType type;
+
+  /// Always the positive magnitude — [isSubtraction] says how to sign it
+  /// for display (see [ReceiptViewModel.fmtAdjustment]).
+  final double amount;
+
+  bool get isSubtraction => type == ReceiptAdjustmentType.discount;
+}
+
 /// A fully localized, formatted, print-ready receipt.
 ///
 /// This is the single source of truth for receipt content — the on-screen
@@ -116,6 +136,33 @@ class ReceiptViewModel {
 
   String fmt(double amount) => formatAmount(amount, currencyCode);
 
+  /// Non-zero financial adjustment rows to show between Subtotal and Total,
+  /// in display order (discount, delivery, other/service charge, tax) —
+  /// the single source of truth for "which rows, in what order, hidden when
+  /// zero" so the on-screen preview and the printed PDF can't drift apart
+  /// on this again. Amounts are the plain (always positive) values already
+  /// authoritative on this model — nothing here recomputes them; [Total]
+  /// itself still comes straight from [total], never derived from this list.
+  /// Use [fmtAdjustment] to format a row's amount with the correct sign.
+  List<ReceiptAdjustment> get adjustments => [
+        if (discountAmount > 0)
+          ReceiptAdjustment(ReceiptAdjustmentType.discount, discountAmount),
+        if (deliveryCharge > 0)
+          ReceiptAdjustment(ReceiptAdjustmentType.delivery, deliveryCharge),
+        if (otherCharge > 0)
+          ReceiptAdjustment(ReceiptAdjustmentType.otherCharge, otherCharge),
+        if (taxAmount > 0)
+          ReceiptAdjustment(ReceiptAdjustmentType.tax, taxAmount),
+      ];
+
+  /// Formats [adjustment]'s amount with the correct sign placement — a
+  /// discount renders as e.g. "-$1.00" (minus before the currency symbol);
+  /// [fmt] alone would render a negated amount as "$-1.00" since it just
+  /// appends `toStringAsFixed` (which puts the sign first) after the symbol.
+  String fmtAdjustment(ReceiptAdjustment adjustment) => adjustment.isSubtraction
+      ? '-${fmt(adjustment.amount)}'
+      : fmt(adjustment.amount);
+
   /// Groups a riel amount with thousands separators and no decimals
   /// (e.g. 82000 -> "82,000"), since riel is never quoted in cents.
   static String khrGroup(num v) {
@@ -187,6 +234,10 @@ class ReceiptViewModel {
     required AppLocalizations l10n,
     required double total,
     double subtotal = 0,
+    double discountAmount = 0,
+    double taxAmount = 0,
+    double deliveryCharge = 0,
+    double otherCharge = 0,
     required List<CartItem> items,
     required double paidAmount,
     double changeAmount = 0,
@@ -231,15 +282,18 @@ class ReceiptViewModel {
               ))
           .toList(),
       subtotal: computedSubtotal,
+      discountAmount: discountAmount,
+      taxAmount: taxAmount,
+      deliveryCharge: deliveryCharge,
+      otherCharge: otherCharge,
       total: total,
       paidAmount: paidAmount,
       changeAmount: changeAmount,
       currencyCode: currency,
       exchangeRateKhr: exchangeRateKhr,
       qrImageData: qrImageData,
-      footer: (footer != null && footer.isNotEmpty)
-          ? footer
-          : l10n.receiptThankYou,
+      footer:
+          (footer != null && footer.isNotEmpty) ? footer : l10n.receiptThankYou,
       paymentMethodLabel: paymentMethodLabel,
     );
   }

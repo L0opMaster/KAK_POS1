@@ -201,7 +201,7 @@ class _ProductCardState extends ConsumerState<ProductCard> {
                       children: [
                         Flexible(
                           child: Text(
-                            formatAmount(p.price, readCurrency(ref)),
+                            formatAmount(p.price, watchCurrency(ref)),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(

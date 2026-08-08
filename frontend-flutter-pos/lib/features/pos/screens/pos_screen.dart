@@ -4,7 +4,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import 'package:flutter/gestures.dart';
 import '../../../core/config/pos_theme.dart';
 import '../../../core/providers/language_provider.dart';
 import '../../../core/utils/bilingual.dart';
@@ -52,10 +52,11 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     final notifier = ref.read(productsProvider.notifier);
     final l10n = context.l10n;
 
+    final String storeCurrency = watchCurrency(ref);
     ref.listen<CartState>(cartProvider, (previous, next) {
       ref.read(customerDisplayProvider.notifier).broadcastCartState(
             next,
-            currencySymbol: currencySymbol('USD'),
+            currencySymbol: currencySymbol(storeCurrency),
           );
     });
 
@@ -146,8 +147,8 @@ class _PosScreenState extends ConsumerState<PosScreen> {
             const SizedBox(height: 8),
             Text(
               l10n.errorNotFound,
-              style: TextStyle(
-                  fontSize: 13, color: PosTheme.textHintOf(context)),
+              style:
+                  TextStyle(fontSize: 13, color: PosTheme.textHintOf(context)),
             ),
             const SizedBox(height: 20),
             OutlinedButton.icon(
@@ -497,121 +498,376 @@ class _PosAppBarState extends ConsumerState<_PosAppBar> {
   }
 }
 
+// // ═══════════════════════════════════════════════════════════════════
+// // Category Filter Bar — Horizontal scrollable pills (Loyverse style)
+// // ═══════════════════════════════════════════════════════════════════
+// class _CategoryFilterBar extends ConsumerStatefulWidget {
+//   const _CategoryFilterBar({super.key});
+
+//   @override
+//   ConsumerState<_CategoryFilterBar> createState() => _CategoryFilterBarState();
+// }
+
+// class _CategoryFilterBarState extends ConsumerState<_CategoryFilterBar> {
+//   int? _selectedCategory;
+
+//   void _applyCategory(int? id) {
+//     final categoryId = (id == null || id <= 0) ? null : id;
+//     ref.read(productsProvider.notifier).filterByCategory(categoryId);
+//     setState(() => _selectedCategory = categoryId);
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     final l10n = context.l10n;
+//     final language = ref.watch(appLanguageProvider);
+//     final catState = ref.watch(categoriesProvider);
+//     final productsState = ref.watch(productsProvider);
+//     final products = productsState.products;
+//     final apiCats = catState.asData?.value ?? [];
+
+//     final List<Category> baseCats;
+//     if (apiCats.isNotEmpty) {
+//       baseCats = [];
+//       for (final c in apiCats) {
+//         baseCats.add(
+//           c is Category
+//               ? c
+//               : Category(
+//                   id: (c as dynamic).id as int,
+//                   nameEn: (c as dynamic).nameEn ?? 'Cat ${(c as dynamic).id}',
+//                   nameKm:
+//                       (c as dynamic).nameKm ?? 'កាតេកូរី ${(c as dynamic).id}',
+//                   active: true,
+//                 ),
+//         );
+//       }
+//     } else {
+//       baseCats = <Category>{
+//         for (var p in products)
+//           Category(
+//             id: p.categoryId,
+//             nameEn: 'Cat ${p.categoryId}',
+//             nameKm: 'កាតេកូរី ${p.categoryId}',
+//             active: true,
+//           )
+//       }.toList();
+//     }
+
+//     final usedCats = [
+//       Category(
+//           id: -1, nameEn: l10n.commonAll, nameKm: l10n.commonAll, active: true),
+//       ...baseCats,
+//     ];
+
+//     final selectedId = _selectedCategory;
+
+//     return Container(
+//       height: 56,
+//       decoration: BoxDecoration(
+//         color: PosTheme.backgroundCardOf(context),
+//         border:
+//             Border(bottom: BorderSide(color: PosTheme.dividerColorOf(context))),
+//       ),
+//       child: ListView.builder(
+//         scrollDirection: Axis.horizontal,
+//         // shrinkWrap: true,
+//         physics: AlwaysScrollableScrollPhysics(),
+//         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+//         itemCount: usedCats.length,
+//         itemBuilder: (context, index) {
+//           final cat = usedCats[index];
+//           final isSelected =
+//               (cat.id <= 0 && selectedId == null) || cat.id == selectedId;
+//           return Padding(
+//             padding: const EdgeInsets.only(right: 8),
+//             child: GestureDetector(
+//               onTap: () => _applyCategory(cat.id <= 0 ? null : cat.id),
+//               child: AnimatedContainer(
+//                 duration: const Duration(milliseconds: 200),
+//                 padding:
+//                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+//                 decoration: BoxDecoration(
+//                   color: isSelected
+//                       ? PosTheme.primaryGreen
+//                       : PosTheme.backgroundPageOf(context),
+//                   borderRadius: BorderRadius.circular(PosTheme.radiusPill),
+//                   border: Border.all(
+//                     color: isSelected
+//                         ? PosTheme.primaryGreen
+//                         : PosTheme.borderColorOf(context),
+//                     width: 1,
+//                   ),
+//                 ),
+//                 child: Center(
+//                   child: Text(
+//                     cat.localizedName(language),
+//                     style: TextStyle(
+//                       color: isSelected
+//                           ? Colors.white
+//                           : PosTheme.textSecondaryOf(context),
+//                       fontWeight:
+//                           isSelected ? FontWeight.w600 : FontWeight.w400,
+//                       fontSize: 13,
+//                     ),
+//                   ),
+//                 ),
+//               ),
+//             ),
+//           );
+//         },
+//       ),
+//     );
+//   }
+// }
+
+
+
 // ═══════════════════════════════════════════════════════════════════
-// Category Filter Bar — Horizontal scrollable pills (Loyverse style)
+// Category Filter Bar — Horizontal scrollable pills
 // ═══════════════════════════════════════════════════════════════════
+
 class _CategoryFilterBar extends ConsumerStatefulWidget {
   const _CategoryFilterBar({super.key});
 
   @override
-  ConsumerState<_CategoryFilterBar> createState() => _CategoryFilterBarState();
+  ConsumerState<_CategoryFilterBar> createState() =>
+      _CategoryFilterBarState();
 }
 
-class _CategoryFilterBarState extends ConsumerState<_CategoryFilterBar> {
+class _CategoryFilterBarState
+    extends ConsumerState<_CategoryFilterBar> {
   int? _selectedCategory;
 
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   void _applyCategory(int? id) {
-    final categoryId = (id == null || id <= 0) ? null : id;
-    ref.read(productsProvider.notifier).filterByCategory(categoryId);
-    setState(() => _selectedCategory = categoryId);
+    final int? categoryId = (id == null || id <= 0) ? null : id;
+
+    ref
+        .read(productsProvider.notifier)
+        .filterByCategory(categoryId);
+
+    setState(() {
+      _selectedCategory = categoryId;
+    });
+  }
+
+  void _handleMouseWheel(PointerSignalEvent event) {
+    if (event is! PointerScrollEvent) {
+      return;
+    }
+
+    if (!_scrollController.hasClients) {
+      return;
+    }
+
+    final double currentOffset = _scrollController.offset;
+
+    // Mouse wheel normally gives vertical delta.
+    // We use that value to move the horizontal category list.
+    final double newOffset =
+        currentOffset + event.scrollDelta.dy;
+
+    final double minOffset =
+        _scrollController.position.minScrollExtent;
+
+    final double maxOffset =
+        _scrollController.position.maxScrollExtent;
+
+    _scrollController.animateTo(
+      newOffset.clamp(minOffset, maxOffset),
+      duration: const Duration(milliseconds: 120),
+      curve: Curves.easeOut,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final language = ref.watch(appLanguageProvider);
+
     final catState = ref.watch(categoriesProvider);
     final productsState = ref.watch(productsProvider);
+
     final products = productsState.products;
     final apiCats = catState.asData?.value ?? [];
 
     final List<Category> baseCats;
+
     if (apiCats.isNotEmpty) {
       baseCats = [];
-      for (final c in apiCats) {
-        baseCats.add(
-          c is Category
-              ? c
-              : Category(
-                  id: (c as dynamic).id as int,
-                  nameEn: (c as dynamic).nameEn ?? 'Cat ${(c as dynamic).id}',
-                  nameKm:
-                      (c as dynamic).nameKm ?? 'កាតេកូរី ${(c as dynamic).id}',
-                  active: true,
-                ),
-        );
+
+      for (final category in apiCats) {
+        if (category is Category) {
+          baseCats.add(category);
+        } else {
+          final dynamic dynamicCategory = category;
+
+          baseCats.add(
+            Category(
+              id: dynamicCategory.id as int,
+              nameEn:
+                  dynamicCategory.nameEn ??
+                  'Cat ${dynamicCategory.id}',
+              nameKm:
+                  dynamicCategory.nameKm ??
+                  'កាតេកូរី ${dynamicCategory.id}',
+              active: true,
+            ),
+          );
+        }
       }
     } else {
-      baseCats = <Category>{
-        for (var p in products)
-          Category(
-            id: p.categoryId,
-            nameEn: 'Cat ${p.categoryId}',
-            nameKm: 'កាតេកូរី ${p.categoryId}',
-            active: true,
-          )
-      }.toList();
+      // Create categories from products when category API data
+      // is unavailable.
+      final Map<int, Category> uniqueCategories = {};
+
+      for (final product in products) {
+        uniqueCategories[product.categoryId] = Category(
+          id: product.categoryId,
+          nameEn: 'Cat ${product.categoryId}',
+          nameKm: 'កាតេកូរី ${product.categoryId}',
+          active: true,
+        );
+      }
+
+      baseCats = uniqueCategories.values.toList();
     }
 
-    final usedCats = [
-      Category(id: -1, nameEn: l10n.commonAll, nameKm: l10n.commonAll, active: true),
+    final List<Category> usedCats = [
+      Category(
+        id: -1,
+        nameEn: l10n.commonAll,
+        nameKm: l10n.commonAll,
+        active: true,
+      ),
       ...baseCats,
     ];
 
-    final selectedId = _selectedCategory;
-
     return Container(
       height: 56,
+      width: double.infinity,
       decoration: BoxDecoration(
         color: PosTheme.backgroundCardOf(context),
-        border:
-            Border(bottom: BorderSide(color: PosTheme.dividerColorOf(context))),
+        border: Border(
+          bottom: BorderSide(
+            color: PosTheme.dividerColorOf(context),
+          ),
+        ),
       ),
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        itemCount: usedCats.length,
-        itemBuilder: (context, index) {
-          final cat = usedCats[index];
-          final isSelected =
-              (cat.id <= 0 && selectedId == null) || cat.id == selectedId;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: GestureDetector(
-              onTap: () => _applyCategory(cat.id <= 0 ? null : cat.id),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? PosTheme.primaryGreen
-                      : PosTheme.backgroundPageOf(context),
-                  borderRadius: BorderRadius.circular(PosTheme.radiusPill),
-                  border: Border.all(
-                    color: isSelected
-                        ? PosTheme.primaryGreen
-                        : PosTheme.borderColorOf(context),
-                    width: 1,
-                  ),
-                ),
-                child: Center(
-                  child: Text(
-                    cat.localizedName(language),
-                    style: TextStyle(
-                      color: isSelected
-                          ? Colors.white
-                          : PosTheme.textSecondaryOf(context),
-                      fontWeight:
-                          isSelected ? FontWeight.w600 : FontWeight.w400,
-                      fontSize: 13,
+      child: Listener(
+        onPointerSignal: _handleMouseWheel,
+        child: ScrollConfiguration(
+          behavior: const MaterialScrollBehavior().copyWith(
+            dragDevices: {
+              PointerDeviceKind.touch,
+              PointerDeviceKind.mouse,
+              PointerDeviceKind.trackpad,
+              PointerDeviceKind.stylus,
+            },
+          ),
+          child: Scrollbar(
+            controller: _scrollController,
+            thumbVisibility: false,
+            scrollbarOrientation: ScrollbarOrientation.bottom,
+            child: ListView.builder(
+              controller: _scrollController,
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 10,
+              ),
+              itemCount: usedCats.length,
+              itemBuilder: (context, index) {
+                final Category category = usedCats[index];
+
+                final bool isAllCategory = category.id <= 0;
+
+                final bool isSelected =
+                    (isAllCategory &&
+                        _selectedCategory == null) ||
+                    category.id == _selectedCategory;
+
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(
+                        PosTheme.radiusPill,
+                      ),
+                      onTap: () {
+                        _applyCategory(
+                          isAllCategory
+                              ? null
+                              : category.id,
+                        );
+                      },
+                      child: AnimatedContainer(
+                        duration:
+                            const Duration(milliseconds: 200),
+                        curve: Curves.easeInOut,
+                        padding:
+                            const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? PosTheme.primaryGreen
+                              : PosTheme.backgroundPageOf(
+                                  context,
+                                ),
+                          borderRadius:
+                              BorderRadius.circular(
+                            PosTheme.radiusPill,
+                          ),
+                          border: Border.all(
+                            color: isSelected
+                                ? PosTheme.primaryGreen
+                                : PosTheme.borderColorOf(
+                                    context,
+                                  ),
+                            width: 1,
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            category.localizedName(language),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: isSelected
+                                  ? Colors.white
+                                  : PosTheme
+                                      .textSecondaryOf(
+                                        context,
+                                      ),
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
-          );
-        },
+          ),
+        ),
       ),
     );
   }

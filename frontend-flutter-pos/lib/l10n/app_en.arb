@@ -18,6 +18,7 @@
   "commonLoading": "Loading...",
   "commonRetry": "Retry",
   "commonRefresh": "Refresh",
+  "commonPrint": "Print",
   "commonSubmit": "Submit",
   "commonApply": "Apply",
   "commonClear": "Clear",
@@ -151,6 +152,8 @@
   "receiptAmount": "Amount",
   "receiptSubtotal": "Subtotal",
   "receiptDiscount": "Discount",
+  "receiptDelivery": "Delivery",
+  "receiptOtherCharge": "Other Charge",
   "receiptTax": "Tax",
   "receiptTotal": "Total",
   "receiptPaid": "Paid",
@@ -1582,6 +1585,59 @@
   "receiptsScreenPoweredBy": "Powered by KAKNNEA",
   "receiptsScreenPrintNotConnected": "Print receipt - connect a printer",
   "receiptsScreenPrintReceipt": "Print Receipt",
+  "receiptsScreenPrintAll": "Print All",
+  "receiptsScreenPrintAllTooltip": "Print all receipts",
+  "receiptsScreenPrintAllConfirmTitle": "Print all receipts?",
+  "receiptsScreenPrintAllConfirmBody": "Print all {count} receipts?",
+  "@receiptsScreenPrintAllConfirmBody": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "receiptsScreenPreparingReceipts": "Preparing receipts...",
+  "receiptsScreenPrintingReceipts": "Printing receipts...",
+  "receiptsScreenPrintAllProgress": "{done} / {total}",
+  "@receiptsScreenPrintAllProgress": {
+    "placeholders": {
+      "done": {
+        "type": "Object"
+      },
+      "total": {
+        "type": "Object"
+      }
+    }
+  },
+  "receiptsScreenLoadReceiptFailed": "Unable to load receipt {invoice}.",
+  "@receiptsScreenLoadReceiptFailed": {
+    "placeholders": {
+      "invoice": {
+        "type": "Object"
+      }
+    }
+  },
+  "receiptsScreenPrintReceiptFailed": "Unable to print receipt.",
+  "receiptsScreenPrintAllDone": "Printed {printed} of {total} receipts.",
+  "@receiptsScreenPrintAllDone": {
+    "placeholders": {
+      "printed": {
+        "type": "Object"
+      },
+      "total": {
+        "type": "Object"
+      }
+    }
+  },
+  "receiptsScreenPrintAllPartialFailure": "{count} receipt(s) could not be printed.",
+  "@receiptsScreenPrintAllPartialFailure": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "receiptsScreenSavePdf": "Save PDF",
   "receiptsScreenReasonOptionalLabel": "Reason (optional)",
   "receiptsScreenReceiptCount": "{count} receipt(s)",
   "@receiptsScreenReceiptCount": {
@@ -2317,5 +2373,20 @@
   "customerDisplayStatusStarting": "Starting session...",
   "customerDisplayStatusStopped": "Session stopped",
   "customerDisplayStatusConnected": "Customer display connected",
-  "customerDisplayStatusWaiting": "Waiting for the customer display to connect..."
+  "customerDisplayStatusWaiting": "Waiting for the customer display to connect...",
+  "reportPdfGeneratedLabel": "Generated",
+  "reportPdfPageLabel": "Page",
+  "salesSummaryPdfTitle": "Sales Summary Report",
+  "salesSummaryPdfColDate": "Date",
+  "salesSummaryPdfColOrders": "Orders",
+  "salesSummaryPdfColQty": "Qty",
+  "salesSummaryPdfColGross": "Gross",
+  "salesSummaryPdfColDiscount": "Discount",
+  "salesSummaryPdfColTax": "Tax",
+  "salesSummaryPdfColNet": "Net",
+  "salesSummaryPdfGrossSalesLabel": "Gross Sales",
+  "salesSummaryPdfDiscountsLabel": "Discounts",
+  "salesSummaryPdfNetSalesLabel": "Net Sales",
+  "salesSummaryPdfTransactionsLabel": "Transactions",
+  "salesSummaryPdfItemsSoldLabel": "Items Sold"
 }

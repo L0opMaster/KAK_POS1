@@ -63,6 +63,9 @@ class AppLocalizationsKm extends AppLocalizations {
   String get commonRefresh => 'ធ្វើឲ្យស្រស់';
 
   @override
+  String get commonPrint => 'បោះពុម្ព';
+
+  @override
   String get commonSubmit => 'ដាក់ស្នើ';
 
   @override
@@ -442,6 +445,12 @@ class AppLocalizationsKm extends AppLocalizations {
 
   @override
   String get receiptDiscount => 'បញ្ចុះតម្លៃ';
+
+  @override
+  String get receiptDelivery => 'ការដឹកជញ្ជូន';
+
+  @override
+  String get receiptOtherCharge => 'ថ្លៃផ្សេងទៀត';
 
   @override
   String get receiptTax => 'ពន្ធ';
@@ -2711,6 +2720,53 @@ class AppLocalizationsKm extends AppLocalizations {
   String get receiptsScreenPrintReceipt => 'បោះពុម្ពបង្កាន់ដៃ';
 
   @override
+  String get receiptsScreenPrintAll => 'បោះពុម្ពទាំងអស់';
+
+  @override
+  String get receiptsScreenPrintAllTooltip => 'បោះពុម្ពបង្កាន់ដៃទាំងអស់';
+
+  @override
+  String get receiptsScreenPrintAllConfirmTitle => 'បោះពុម្ពបង្កាន់ដៃទាំងអស់?';
+
+  @override
+  String receiptsScreenPrintAllConfirmBody(Object count) {
+    return 'បោះពុម្ពបង្កាន់ដៃទាំង $count?';
+  }
+
+  @override
+  String get receiptsScreenPreparingReceipts => 'កំពុងរៀបចំបង្កាន់ដៃ...';
+
+  @override
+  String get receiptsScreenPrintingReceipts => 'កំពុងបោះពុម្ពបង្កាន់ដៃ...';
+
+  @override
+  String receiptsScreenPrintAllProgress(Object done, Object total) {
+    return '$done / $total';
+  }
+
+  @override
+  String receiptsScreenLoadReceiptFailed(Object invoice) {
+    return 'មិនអាចផ្ទុកបង្កាន់ដៃ $invoice បានទេ។';
+  }
+
+  @override
+  String get receiptsScreenPrintReceiptFailed =>
+      'មិនអាចបោះពុម្ពបង្កាន់ដៃបានទេ។';
+
+  @override
+  String receiptsScreenPrintAllDone(Object printed, Object total) {
+    return 'បានបោះពុម្ព $printed នៃ $total បង្កាន់ដៃ។';
+  }
+
+  @override
+  String receiptsScreenPrintAllPartialFailure(Object count) {
+    return 'បង្កាន់ដៃ $count មិនអាចបោះពុម្ពបានទេ។';
+  }
+
+  @override
+  String get receiptsScreenSavePdf => 'រក្សាទុក PDF';
+
+  @override
   String get receiptsScreenReasonOptionalLabel => 'មូលហេតុ (ស្រេចចិត្ត)';
 
   @override
@@ -3746,4 +3802,49 @@ class AppLocalizationsKm extends AppLocalizations {
   @override
   String get customerDisplayStatusWaiting =>
       'កំពុងរង់ចាំម៉ាស៊ីនបង្ហាញអតិថិជនតភ្ជាប់...';
+
+  @override
+  String get reportPdfGeneratedLabel => 'បង្កើតនៅ';
+
+  @override
+  String get reportPdfPageLabel => 'ទំព័រ';
+
+  @override
+  String get salesSummaryPdfTitle => 'របាយការណ៍សង្ខេបការលក់';
+
+  @override
+  String get salesSummaryPdfColDate => 'កាលបរិច្ឆេទ';
+
+  @override
+  String get salesSummaryPdfColOrders => 'ចំនួនវិក្កយបត្រ';
+
+  @override
+  String get salesSummaryPdfColQty => 'បរិមាណ';
+
+  @override
+  String get salesSummaryPdfColGross => 'ការលក់សរុប';
+
+  @override
+  String get salesSummaryPdfColDiscount => 'បញ្ចុះតម្លៃ';
+
+  @override
+  String get salesSummaryPdfColTax => 'ពន្ធ';
+
+  @override
+  String get salesSummaryPdfColNet => 'ការលក់សុទ្ធ';
+
+  @override
+  String get salesSummaryPdfGrossSalesLabel => 'ការលក់សរុប';
+
+  @override
+  String get salesSummaryPdfDiscountsLabel => 'បញ្ចុះតម្លៃ';
+
+  @override
+  String get salesSummaryPdfNetSalesLabel => 'ការលក់សុទ្ធ';
+
+  @override
+  String get salesSummaryPdfTransactionsLabel => 'ចំនួនប្រតិបត្តិការ';
+
+  @override
+  String get salesSummaryPdfItemsSoldLabel => 'ទំនិញបានលក់';
 }

@@ -123,6 +123,13 @@ class DisplayNotifier extends StateNotifier<DisplayState> {
           posConnected: false,
           error: 'The register disconnected',
         );
+        // The backend only nulls its side of the room and leaves this
+        // socket open — drop it ourselves so `connectionState` flips to
+        // `disconnected` and DisplayScreen's existing handler routes back
+        // to ConnectScreen, instead of sitting frozen on the last view
+        // waiting for a POS session that (after a POS-side reload) will
+        // come back under a different pairing code.
+        unawaited(_relay.disconnect());
         break;
       case 'cart_update':
         _revertTimer?.cancel();

@@ -206,6 +206,12 @@ abstract class AppLocalizations {
   /// **'Refresh'**
   String get commonRefresh;
 
+  /// No description provided for @commonPrint.
+  ///
+  /// In en, this message translates to:
+  /// **'Print'**
+  String get commonPrint;
+
   /// No description provided for @commonSubmit.
   ///
   /// In en, this message translates to:
@@ -961,6 +967,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Discount'**
   String get receiptDiscount;
+
+  /// No description provided for @receiptDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery'**
+  String get receiptDelivery;
+
+  /// No description provided for @receiptOtherCharge.
+  ///
+  /// In en, this message translates to:
+  /// **'Other Charge'**
+  String get receiptOtherCharge;
 
   /// No description provided for @receiptTax.
   ///
@@ -4973,6 +4991,78 @@ abstract class AppLocalizations {
   /// **'Print Receipt'**
   String get receiptsScreenPrintReceipt;
 
+  /// No description provided for @receiptsScreenPrintAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Print All'**
+  String get receiptsScreenPrintAll;
+
+  /// No description provided for @receiptsScreenPrintAllTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Print all receipts'**
+  String get receiptsScreenPrintAllTooltip;
+
+  /// No description provided for @receiptsScreenPrintAllConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Print all receipts?'**
+  String get receiptsScreenPrintAllConfirmTitle;
+
+  /// No description provided for @receiptsScreenPrintAllConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Print all {count} receipts?'**
+  String receiptsScreenPrintAllConfirmBody(Object count);
+
+  /// No description provided for @receiptsScreenPreparingReceipts.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing receipts...'**
+  String get receiptsScreenPreparingReceipts;
+
+  /// No description provided for @receiptsScreenPrintingReceipts.
+  ///
+  /// In en, this message translates to:
+  /// **'Printing receipts...'**
+  String get receiptsScreenPrintingReceipts;
+
+  /// No description provided for @receiptsScreenPrintAllProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{done} / {total}'**
+  String receiptsScreenPrintAllProgress(Object done, Object total);
+
+  /// No description provided for @receiptsScreenLoadReceiptFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to load receipt {invoice}.'**
+  String receiptsScreenLoadReceiptFailed(Object invoice);
+
+  /// No description provided for @receiptsScreenPrintReceiptFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to print receipt.'**
+  String get receiptsScreenPrintReceiptFailed;
+
+  /// No description provided for @receiptsScreenPrintAllDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Printed {printed} of {total} receipts.'**
+  String receiptsScreenPrintAllDone(Object printed, Object total);
+
+  /// No description provided for @receiptsScreenPrintAllPartialFailure.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} receipt(s) could not be printed.'**
+  String receiptsScreenPrintAllPartialFailure(Object count);
+
+  /// No description provided for @receiptsScreenSavePdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Save PDF'**
+  String get receiptsScreenSavePdf;
+
   /// No description provided for @receiptsScreenReasonOptionalLabel.
   ///
   /// In en, this message translates to:
@@ -6754,6 +6844,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Waiting for the customer display to connect...'**
   String get customerDisplayStatusWaiting;
+
+  /// No description provided for @reportPdfGeneratedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Generated'**
+  String get reportPdfGeneratedLabel;
+
+  /// No description provided for @reportPdfPageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Page'**
+  String get reportPdfPageLabel;
+
+  /// No description provided for @salesSummaryPdfTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales Summary Report'**
+  String get salesSummaryPdfTitle;
+
+  /// No description provided for @salesSummaryPdfColDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get salesSummaryPdfColDate;
+
+  /// No description provided for @salesSummaryPdfColOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders'**
+  String get salesSummaryPdfColOrders;
+
+  /// No description provided for @salesSummaryPdfColQty.
+  ///
+  /// In en, this message translates to:
+  /// **'Qty'**
+  String get salesSummaryPdfColQty;
+
+  /// No description provided for @salesSummaryPdfColGross.
+  ///
+  /// In en, this message translates to:
+  /// **'Gross'**
+  String get salesSummaryPdfColGross;
+
+  /// No description provided for @salesSummaryPdfColDiscount.
+  ///
+  /// In en, this message translates to:
+  /// **'Discount'**
+  String get salesSummaryPdfColDiscount;
+
+  /// No description provided for @salesSummaryPdfColTax.
+  ///
+  /// In en, this message translates to:
+  /// **'Tax'**
+  String get salesSummaryPdfColTax;
+
+  /// No description provided for @salesSummaryPdfColNet.
+  ///
+  /// In en, this message translates to:
+  /// **'Net'**
+  String get salesSummaryPdfColNet;
+
+  /// No description provided for @salesSummaryPdfGrossSalesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Gross Sales'**
+  String get salesSummaryPdfGrossSalesLabel;
+
+  /// No description provided for @salesSummaryPdfDiscountsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Discounts'**
+  String get salesSummaryPdfDiscountsLabel;
+
+  /// No description provided for @salesSummaryPdfNetSalesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Net Sales'**
+  String get salesSummaryPdfNetSalesLabel;
+
+  /// No description provided for @salesSummaryPdfTransactionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Transactions'**
+  String get salesSummaryPdfTransactionsLabel;
+
+  /// No description provided for @salesSummaryPdfItemsSoldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Items Sold'**
+  String get salesSummaryPdfItemsSoldLabel;
 }
 
 class _AppLocalizationsDelegate

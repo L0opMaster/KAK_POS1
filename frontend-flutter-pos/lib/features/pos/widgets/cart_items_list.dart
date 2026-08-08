@@ -24,7 +24,7 @@ class CartItemsList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cur = readCurrency(ref);
+    final cur = watchCurrency(ref);
     final lang = ref.watch(appLanguageProvider);
     if (items.isEmpty) {
       return Center(

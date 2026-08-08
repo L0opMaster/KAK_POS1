@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +11,7 @@ import '../../../core/providers/theme_provider.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/utils/l10n_extensions.dart';
 import '../../../l10n/generated/app_localizations.dart';
+import 'print_test_screen.dart';
 import '../services/printing/bluetooth_printer_transport.dart';
 import '../services/printing/printer_profile.dart';
 import '../services/printing/receipt_view_model.dart';
@@ -745,6 +747,18 @@ class _SettingsModulesScreenState extends ConsumerState<SettingsModulesScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
+            if (kDebugMode)
+              Padding(
+                padding: const EdgeInsets.only(right: PosTheme.spacingSm),
+                child: OutlinedButton.icon(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                        builder: (_) => const PrintTestScreen()),
+                  ),
+                  icon: const Icon(Icons.science_outlined, size: 18),
+                  label: const Text('Print test suite'),
+                ),
+              ),
             OutlinedButton.icon(
               onPressed: _testPrinting ? null : _testPrint,
               icon: _testPrinting

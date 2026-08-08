@@ -1,9 +1,15 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+import '../../../core/config/currency_utils.dart';
 import '../../../core/config/pos_theme.dart';
 import '../../../core/providers/language_provider.dart';
+import '../../../core/services/printing/a4_report_pdf.dart';
 import '../../../core/utils/bilingual.dart';
 import '../../../core/utils/l10n_extensions.dart';
+import '../../pos/services/settings_service.dart';
 import '../services/report_service.dart';
 import '../models/report_models.dart';
 import '../widgets/report_filter_bar.dart';
@@ -76,6 +82,112 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
     _load();
   }
 
+  Future<void> _printReport() async {
+    final data = _data;
+    if (data == null) return;
+    final l10n = context.l10n;
+    try {
+      final company =
+          await ref.read(settingsServiceProvider).getCompanyProfile();
+      final cur = currencySymbol(readCurrency(ref));
+      final s = data.summary;
+
+      // Print/export must include every sale matching the active filters,
+      // not just the ~20 currently loaded for on-screen pagination — walk
+      // every backend page (same filters, same query) rather than trusting
+      // whatever page the screen happened to have loaded. `s.totalSalesCount`
+      // is already the authoritative total (the backend computes it from the
+      // full filtered set before paginating, not from one page), so it's a
+      // reliable check for whether every row actually made it into the PDF.
+      final svc = ref.read(reportServiceProvider);
+      final allSales = await fetchAllPages<SalesDetail>(
+        fetchPage: (page) async {
+          final pageData = await svc.salesReport(
+            from: _filter.fromStr,
+            to: _filter.toStr,
+            cashierId: _filter.employeeId,
+            fromHour: _filter.fromHour == 0 ? null : _filter.fromHour,
+            toHour: _filter.toHour == 23 ? null : _filter.toHour,
+            page: page,
+            size: reportPrintPageSize,
+          );
+          return (pageData.sales, pageData.salesMeta);
+        },
+      );
+
+      if (kDebugMode) {
+        final summaryCount = s?.totalSalesCount;
+        debugPrint('[ReportPrint] summaryTransactionCount=$summaryCount '
+            'rowsFetched=${allSales.length} rowsPassedToPdf=${allSales.length}');
+        if (summaryCount != null && summaryCount != allSales.length) {
+          debugPrint('[ReportPrint] WARNING: rowsFetched (${allSales.length}) '
+              'does not match summaryTransactionCount ($summaryCount) — the '
+              'printed PDF may be missing rows.');
+        }
+      }
+
+      final rows = allSales
+          .map((sale) => [
+                sale.saleNumber ?? '#${sale.saleId}',
+                sale.saleDate ?? '',
+                sale.cashierName ?? '',
+                sale.paymentMethod ?? '',
+                '$cur${_fmtNum(sale.grossAmount)}',
+                '$cur${_fmtNum(sale.discountAmount)}',
+                '$cur${_fmtNum(sale.taxAmount)}',
+                '$cur${_fmtNum(sale.netAmount)}',
+              ])
+          .toList();
+
+      final pdfBytes = await A4ReportPdf.build(
+        title: l10n.navReceipts,
+        subtitle: '${_filter.fromStr} — ${_filter.toStr}',
+        businessName: '${company['businessName'] ?? ''}',
+        businessAddress: '${company['address'] ?? ''}',
+        businessPhone: '${company['phone'] ?? ''}',
+        columns: const [
+          'Receipt #',
+          'Date',
+          'Cashier',
+          'Payment',
+          'Gross',
+          'Discount',
+          'Tax',
+          'Net',
+        ],
+        rows: rows,
+        columnAlignments: const {
+          4: pw.Alignment.centerRight,
+          5: pw.Alignment.centerRight,
+          6: pw.Alignment.centerRight,
+          7: pw.Alignment.centerRight,
+        },
+        summary: s == null
+            ? const []
+            : [
+                MapEntry('Gross Sales', '$cur${_fmtNum(s.totalGrossSales)}'),
+                MapEntry('Discounts', '$cur${_fmtNum(s.totalDiscount)}'),
+                MapEntry('Tax', '$cur${_fmtNum(s.totalTax)}'),
+                MapEntry('Net Sales', '$cur${_fmtNum(s.totalNetSales)}'),
+                MapEntry('Transactions', '${s.totalSalesCount}'),
+              ],
+        generatedAt: DateTime.now(),
+        generatedLabel: l10n.reportPdfGeneratedLabel,
+        pageLabel: l10n.reportPdfPageLabel,
+      );
+
+      await Printing.layoutPdf(
+        onLayout: (_) => pdfBytes,
+        name: 'sales_report',
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('${l10n.printerPrintFailed}: $e')));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -85,6 +197,10 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
+          IconButton(
+              icon: const Icon(Icons.print_outlined),
+              onPressed: _data == null ? null : _printReport,
+              tooltip: context.l10n.commonPrint),
           IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: _load,

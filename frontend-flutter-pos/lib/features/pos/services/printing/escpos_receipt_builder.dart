@@ -111,6 +111,12 @@ class EscPosReceiptBuilder {
     }
     if (receipt.paidAmount > 0) row('Paid', receipt.fmt(receipt.paidAmount));
     if (receipt.changeAmount > 0) {
+      // Cash Received (= paidAmount + changeAmount) makes Change legible —
+      // Paid alone is the amount APPLIED to the sale (never more than the
+      // total), so Change would otherwise look like it appeared from
+      // nowhere.
+      row('Cash Received',
+          receipt.fmt(receipt.paidAmount + receipt.changeAmount));
       row('Change', receipt.fmt(receipt.changeAmount));
     }
     if (receipt.paymentMethodLabel != null) {

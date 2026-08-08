@@ -2,9 +2,14 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
+import '../../../core/config/currency_utils.dart';
 import '../../../core/config/pos_theme.dart';
+import '../../../core/services/printing/a4_report_pdf.dart';
 import '../../../core/utils/l10n_extensions.dart';
+import '../../pos/services/settings_service.dart';
 import '../models/inventory_models.dart';
 import '../providers/inventory_provider.dart';
 
@@ -48,6 +53,63 @@ class _InventoryValuationScreenState
         .toList();
   }
 
+  Future<void> _printReport() async {
+    final report = ref.read(inventoryValuationProvider).value;
+    if (report == null) return;
+    final l10n = context.l10n;
+    try {
+      final company =
+          await ref.read(settingsServiceProvider).getCompanyProfile();
+      final cur = currencySymbol(readCurrency(ref));
+      final items = _filtered(report.items);
+
+      final rows = items
+          .map((i) => [
+                i.productName,
+                i.sku,
+                i.stock.toStringAsFixed(
+                    i.stock.truncateToDouble() == i.stock ? 0 : 2),
+                '$cur${i.cost.toStringAsFixed(2)}',
+                '$cur${i.totalValue.toStringAsFixed(2)}',
+              ])
+          .toList();
+
+      final pdfBytes = await A4ReportPdf.build(
+        title: l10n.inventoryValuationTitle,
+        subtitle: report.valuedAt != null
+            ? l10n.inventoryValuationAsOf('${report.valuedAt}')
+            : null,
+        businessName: '${company['businessName'] ?? ''}',
+        businessAddress: '${company['address'] ?? ''}',
+        businessPhone: '${company['phone'] ?? ''}',
+        columns: const ['Product', 'SKU', 'Stock', 'Cost', 'Value'],
+        rows: rows,
+        columnAlignments: const {
+          2: pw.Alignment.centerRight,
+          3: pw.Alignment.centerRight,
+          4: pw.Alignment.centerRight,
+        },
+        summary: [
+          MapEntry('Products', '${items.length}'),
+          MapEntry('Total Value', '$cur${report.totalValue.toStringAsFixed(2)}'),
+        ],
+        generatedAt: DateTime.now(),
+        generatedLabel: l10n.reportPdfGeneratedLabel,
+        pageLabel: l10n.reportPdfPageLabel,
+      );
+
+      await Printing.layoutPdf(
+        onLayout: (_) => pdfBytes,
+        name: 'inventory_valuation',
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('${l10n.printerPrintFailed}: $e')));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(inventoryValuationProvider);
@@ -57,6 +119,11 @@ class _InventoryValuationScreenState
         title: Text(context.l10n.inventoryValuationTitle),
         elevation: 0.5,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.print_outlined),
+            tooltip: context.l10n.commonPrint,
+            onPressed: state.value == null ? null : _printReport,
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: context.l10n.commonRefresh,

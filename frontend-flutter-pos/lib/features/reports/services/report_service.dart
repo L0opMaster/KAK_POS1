@@ -481,6 +481,39 @@ class ApiReportService extends ReportService {
   }
 }
 
+// ── Print/export pagination ──
+
+/// The backend's own hard cap on page size (`ReportService.paginate` in
+/// `ReportService.java`: `Math.min(Math.max(1, size), 200)`). Requesting
+/// more than this per page silently gets clamped server-side, so print/
+/// export loops request this many rows per page rather than an arbitrary
+/// "big enough" number — if the backend's cap ever changes, [fetchAllPages]
+/// still terminates correctly either way since it stops on the response's
+/// own `totalPages`, not on this constant.
+const reportPrintPageSize = 200;
+
+/// Repeatedly calls [fetchPage] for page 0, 1, 2, ... concatenating every
+/// page's rows, until the backend reports no more pages remain.
+///
+/// Report screens paginate for the UI (20 rows/page, whatever's currently
+/// scrolled into view) — but Print/Export must include every row matching
+/// the active filters, not just the page the user happened to be looking
+/// at. This is that path: same filters, same query, just walked to
+/// completion instead of stopping after one page.
+Future<List<T>> fetchAllPages<T>({
+  required Future<(List<T> rows, PageMeta meta)> Function(int page) fetchPage,
+}) async {
+  final all = <T>[];
+  var page = 0;
+  while (true) {
+    final (rows, meta) = await fetchPage(page);
+    all.addAll(rows);
+    if (rows.isEmpty || page + 1 >= meta.totalPages) break;
+    page++;
+  }
+  return all;
+}
+
 // ── Providers ──
 
 final reportServiceProvider = Provider<ReportService>((ref) {

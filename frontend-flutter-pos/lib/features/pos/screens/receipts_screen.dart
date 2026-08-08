@@ -1,13 +1,30 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:printing/printing.dart';
 import '../../../core/config/pos_theme.dart';
+import '../../../core/utils/bounded_concurrency.dart';
 import '../../../core/config/currency_utils.dart';
 import '../models/receipt_models.dart';
 import '../providers/receipt_provider.dart';
+import '../services/print_service.dart';
+import '../services/printing/printer_profile.dart';
+import '../services/printing/receipt_view_model.dart';
+import '../services/printing/thermal_printer_service.dart';
 import '../services/sale_service.dart';
 import '../../../core/utils/l10n_extensions.dart';
 import '../../../core/utils/bilingual.dart';
 import '../../../core/providers/language_provider.dart';
+
+/// Progress shown while "Print All" is preparing (fetching full receipt
+/// detail per sale) or printing (building/emitting the batch print job).
+class _PrintAllProgress {
+  const _PrintAllProgress(this.done, this.total, this.stage);
+  final int done;
+  final int total;
+  final String stage;
+}
 
 class ReceiptsScreen extends ConsumerStatefulWidget {
   final int? initialSaleId;
@@ -33,6 +50,14 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
     'REFUNDED'
   ];
   final ScrollController _listScrollCtl = ScrollController();
+
+  /// Sale ids with an in-flight "Print One" — disables that row's button
+  /// and prevents a repeated tap from firing a second print job.
+  final Set<int> _printingIds = {};
+
+  /// True while "Print All" is running (fetching details, building the
+  /// batch job, or printing) — disables the Print All button itself.
+  bool _printAllRunning = false;
 
   @override
   void initState() {
@@ -66,6 +91,19 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
         title: Text(context.l10n.navReceipts),
         actions: [
           IconButton(
+            icon: _printAllRunning
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.print_outlined),
+            tooltip: context.l10n.receiptsScreenPrintAllTooltip,
+            onPressed: displaySales.isEmpty || _printAllRunning
+                ? null
+                : () => _printAllReceipts(displaySales),
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _refresh,
           ),
@@ -89,6 +127,246 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
           .loadAllSales(status: ref.read(receiptProvider).statusFilter);
     } else {
       ref.read(receiptProvider.notifier).loadActiveShiftSales();
+    }
+  }
+
+  // ─────────────────────────────────────────────
+  // PRINT ONE — reuses PrintService.printReceipt(context, saleId)
+  // unchanged (same call the post-checkout auto-print uses), so this
+  // screen never grows a second receipt-printing pipeline.
+  // ─────────────────────────────────────────────
+
+  Future<void> _printOne(SaleResponse sale) async {
+    if (_printingIds.contains(sale.id)) return; // guard double-tap
+    setState(() => _printingIds.add(sale.id));
+    final l10n = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+    final label = sale.invoiceNumber ?? '#${sale.id}';
+    try {
+      // Fetch first, on its own, so a load failure gets its own message —
+      // PrintService.printReceipt bundles "couldn't fetch the receipt" and
+      // "couldn't reach the printer" into a single bool and can't tell
+      // them apart from the caller's side.
+      try {
+        await ref.read(saleServiceProvider).getReceipt(sale.id);
+      } catch (e) {
+        debugPrint('Print One: failed to load receipt $label: $e');
+        if (mounted) {
+          messenger.showSnackBar(SnackBar(
+              content: Text(l10n.receiptsScreenLoadReceiptFailed(label))));
+        }
+        return;
+      }
+      if (!mounted) return;
+      final ok =
+          await ref.read(printServiceProvider).printReceipt(context, sale.id);
+      if (!ok && mounted) {
+        messenger.showSnackBar(
+            SnackBar(content: Text(l10n.receiptsScreenPrintReceiptFailed)));
+      }
+    } finally {
+      if (mounted) setState(() => _printingIds.remove(sale.id));
+    }
+  }
+
+  /// Exports a single receipt to a shareable PDF file, via the exact same
+  /// [PrintService.buildReceiptPdf] the print pipelines use — no second PDF
+  /// template.
+  Future<void> _savePdf(ReceiptResponse receipt) async {
+    final l10n = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final language = ref.read(appLanguageProvider);
+      final viewModel =
+          ReceiptViewModel.fromReceiptResponse(receipt, language, l10n);
+      final config = await ref.read(thermalPrinterServiceProvider).loadConfig();
+      final bytes = await ref
+          .read(printServiceProvider)
+          .buildReceiptPdf(viewModel, config.paperSize);
+      await Printing.sharePdf(
+          bytes: bytes, filename: '${viewModel.invoiceNumber}.pdf');
+    } catch (e) {
+      debugPrint('Save PDF failed: $e');
+      if (mounted) {
+        messenger.showSnackBar(
+            SnackBar(content: Text(l10n.receiptsScreenPrintReceiptFailed)));
+      }
+    }
+  }
+
+  // ─────────────────────────────────────────────
+  // PRINT ALL — every sale matching the screen's CURRENT filters
+  // (state.filteredSales, already unbounded — see receipt_provider.dart,
+  // this screen's list endpoints have no pagination to walk), not just
+  // what's on screen. Fetches full detail per sale (bounded concurrency),
+  // then emits ONE PDF job (driver) or ONE connect/print/disconnect batch
+  // (thermal) — never one job/connection per receipt.
+  // ─────────────────────────────────────────────
+
+  Future<void> _printAllReceipts(List<SaleResponse> sales) async {
+    final l10n = context.l10n;
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.receiptsScreenPrintAllConfirmTitle),
+        content: Text(l10n.receiptsScreenPrintAllConfirmBody(sales.length)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.commonCancel),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.receiptsScreenPrintAll),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    // Defensive de-dupe by id: this screen's sale list has no pagination to
+    // overlap, but keeping the guarantee explicit costs nothing and avoids
+    // silently trusting that invariant forever.
+    final ids = {for (final s in sales) s.id}.toList();
+
+    setState(() => _printAllRunning = true);
+    final progress = ValueNotifier(
+        _PrintAllProgress(0, ids.length, l10n.receiptsScreenPreparingReceipts));
+    var cancelled = false;
+
+    unawaited(showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => PopScope(
+        canPop: false,
+        child: ValueListenableBuilder<_PrintAllProgress>(
+          valueListenable: progress,
+          builder: (ctx, p, __) => AlertDialog(
+            content: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(p.stage),
+                      const SizedBox(height: 4),
+                      Text(
+                        l10n.receiptsScreenPrintAllProgress(p.done, p.total),
+                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            actions: p.stage == l10n.receiptsScreenPreparingReceipts
+                ? [
+                    TextButton(
+                      onPressed: () => cancelled = true,
+                      child: Text(l10n.commonCancel),
+                    ),
+                  ]
+                : const [],
+          ),
+        ),
+      ),
+    ));
+
+    final failedLabels = <String>[];
+    final viewModels = <ReceiptViewModel>[];
+    var printJobFailed = false;
+    final language = ref.read(appLanguageProvider);
+    final saleService = ref.read(saleServiceProvider);
+
+    try {
+      // ── Prepare: full detail per sale, bounded concurrency (Step 14) ──
+      final results = await mapBounded<int, ReceiptViewModel>(
+        ids,
+        (id) async {
+          final raw = await saleService.getReceipt(id);
+          final receipt = ReceiptResponse.fromJson(raw);
+          return ReceiptViewModel.fromReceiptResponse(receipt, language, l10n);
+        },
+        isCancelled: () => cancelled,
+        onProgress: (done, total) => progress.value = _PrintAllProgress(
+            done, total, l10n.receiptsScreenPreparingReceipts),
+      );
+
+      if (cancelled) return;
+      for (final r in results) {
+        if (r.isOk) {
+          viewModels.add(r.value!);
+        } else {
+          debugPrint(
+              'Print All: failed to load receipt id=${r.item}: ${r.error}');
+          failedLabels.add('#${r.item}');
+        }
+      }
+      if (viewModels.isEmpty) return;
+
+      // ── Print: one PDF job, or one connect/disconnect thermal batch ──
+      progress.value = _PrintAllProgress(
+          0, viewModels.length, l10n.receiptsScreenPrintingReceipts);
+      final config = await ref.read(thermalPrinterServiceProvider).loadConfig();
+      if (!mounted) return;
+
+      if (config.transportType == PrinterTransportType.pdfDriver) {
+        final bytes = await ref
+            .read(printServiceProvider)
+            .buildReceiptsPdf(viewModels, config.paperSize);
+        progress.value = _PrintAllProgress(viewModels.length, viewModels.length,
+            l10n.receiptsScreenPrintingReceipts);
+        await Printing.layoutPdf(
+            onLayout: (_) => bytes, name: 'receipts_batch');
+      } else {
+        if (!mounted) return;
+        await ref.read(thermalPrinterServiceProvider).printReceipts(
+              context,
+              viewModels,
+              config,
+              onProgress: (d, t) => progress.value =
+                  _PrintAllProgress(d, t, l10n.receiptsScreenPrintingReceipts),
+            );
+      }
+    } catch (e) {
+      debugPrint('Print All failed: $e');
+      printJobFailed = true;
+    } finally {
+      navigator.pop(); // close the progress dialog
+      progress.dispose();
+      if (mounted) setState(() => _printAllRunning = false);
+    }
+
+    if (!mounted || cancelled) return;
+    if (printJobFailed) {
+      messenger.showSnackBar(
+          SnackBar(content: Text(l10n.receiptsScreenPrintReceiptFailed)));
+      return;
+    }
+    if (viewModels.isEmpty) {
+      messenger.showSnackBar(SnackBar(
+          content:
+              Text(l10n.receiptsScreenPrintAllPartialFailure(ids.length))));
+      return;
+    }
+    messenger.showSnackBar(SnackBar(
+        content: Text(
+            l10n.receiptsScreenPrintAllDone(viewModels.length, ids.length))));
+    if (failedLabels.isNotEmpty) {
+      messenger.showSnackBar(SnackBar(
+          content: Text(
+              l10n.receiptsScreenPrintAllPartialFailure(failedLabels.length))));
     }
   }
 
@@ -439,6 +717,22 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
                 ],
               ),
               const SizedBox(width: 4),
+              _printingIds.contains(sale.id)
+                  ? const Padding(
+                      padding: EdgeInsets.all(8),
+                      child: SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  : IconButton(
+                      icon: const Icon(Icons.print_outlined, size: 18),
+                      tooltip: context.l10n.receiptsScreenPrintReceipt,
+                      color: Colors.grey[500],
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () => _printOne(sale),
+                    ),
               Icon(Icons.chevron_right, size: 18, color: Colors.grey[400]),
             ],
           ),
@@ -531,12 +825,12 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
               if (receipt.cashierName != null)
                 _infoLine(context.l10n.receiptCashier, receipt.cashierName!),
               if (receipt.customerName != null)
-                _infoLine(
-                    context.l10n.receiptCustomer, receipt.customerName!),
+                _infoLine(context.l10n.receiptCustomer, receipt.customerName!),
               if (receipt.orderMode != null)
                 _infoLine(
                     context.l10n.receiptsScreenModeLabel, receipt.orderMode!),
-              if (receipt.tableNumber != null && receipt.tableNumber!.isNotEmpty)
+              if (receipt.tableNumber != null &&
+                  receipt.tableNumber!.isNotEmpty)
                 _infoLine(context.l10n.receiptTable, receipt.tableNumber!),
               const SizedBox(height: 14),
               _miniDivider,
@@ -640,13 +934,19 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
                     ),
                   PopupMenuButton<String>(
                     icon: const Icon(Icons.more_horiz, color: Colors.grey),
-                    onSelected: (value) {
+                    onSelected: (value) async {
                       if (value == 'print') {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                              content: Text(
-                                  context.l10n.receiptsScreenPrintNotConnected)),
-                        );
+                        final messenger = ScaffoldMessenger.of(context);
+                        final ok = await ref
+                            .read(printServiceProvider)
+                            .printReceipt(context, receipt.saleId);
+                        if (!ok && mounted) {
+                          messenger.showSnackBar(SnackBar(
+                              content: Text(context
+                                  .l10n.receiptsScreenPrintReceiptFailed)));
+                        }
+                      } else if (value == 'savePdf') {
+                        await _savePdf(receipt);
                       } else if (value == 'email') {
                         _showEmailDialog(context, receipt);
                       }
@@ -661,11 +961,19 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
                               dense: true,
                               contentPadding: EdgeInsets.zero)),
                       PopupMenuItem(
+                          value: 'savePdf',
+                          child: ListTile(
+                              leading:
+                                  const Icon(Icons.picture_as_pdf, size: 20),
+                              title: Text(context.l10n.receiptsScreenSavePdf),
+                              dense: true,
+                              contentPadding: EdgeInsets.zero)),
+                      PopupMenuItem(
                           value: 'email',
                           child: ListTile(
                               leading: const Icon(Icons.email, size: 20),
-                              title: Text(
-                                  context.l10n.receiptsScreenSendByEmail),
+                              title:
+                                  Text(context.l10n.receiptsScreenSendByEmail),
                               dense: true,
                               contentPadding: EdgeInsets.zero)),
                     ],
@@ -838,7 +1146,8 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
                     controller: reasonCtl,
                     enabled: !submitting,
                     decoration: InputDecoration(
-                        labelText: context.l10n.receiptsScreenReasonOptionalLabel,
+                        labelText:
+                            context.l10n.receiptsScreenReasonOptionalLabel,
                         isDense: true),
                   ),
                   const SizedBox(height: 8),
@@ -1004,7 +1313,8 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
         _totalRow(context.l10n.receiptSubtotal, fmt(r.subtotal)),
         if (r.discountAmount > 0)
           _totalRow(context.l10n.receiptDiscount, '-${fmt(r.discountAmount)}'),
-        if (r.taxAmount > 0) _totalRow(context.l10n.receiptTax, fmt(r.taxAmount)),
+        if (r.taxAmount > 0)
+          _totalRow(context.l10n.receiptTax, fmt(r.taxAmount)),
         if (r.deliveryCharge > 0)
           _totalRow(
               context.l10n.receiptsScreenDeliveryLabel, fmt(r.deliveryCharge)),
@@ -1015,8 +1325,15 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
             bold: true, large: true),
         if (r.paidAmount > 0 && r.paidAmount != r.total)
           _totalRow(context.l10n.receiptPaid, fmt(r.paidAmount)),
-        if (r.changeAmount > 0)
+        // Cash Received (= paidAmount + changeAmount) makes Change legible
+        // — paidAmount alone is the amount APPLIED to the sale (never more
+        // than the total), so Change would otherwise look like it appeared
+        // from nowhere.
+        if (r.changeAmount > 0) ...[
+          _totalRow(context.l10n.paymentScreenCashReceived,
+              fmt(r.paidAmount + r.changeAmount)),
           _totalRow(context.l10n.receiptChange, fmt(r.changeAmount)),
+        ],
         // Riel conversion, using the rate frozen onto this sale at the time
         // it was made — never the live Settings rate — so an old receipt
         // keeps showing the rate that was actually in effect back then.

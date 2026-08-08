@@ -12,6 +12,7 @@ import '../../../core/utils/bilingual.dart';
 import '../../../core/utils/l10n_extensions.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../services/sale_service.dart';
+import '../services/settings_service.dart';
 import '../services/print_service.dart';
 import '../providers/cart_provider.dart';
 import '../providers/held_ticket_provider.dart';
@@ -172,6 +173,25 @@ class SplitRow {
   });
 }
 
+/// Amount to actually send to the backend for one authorized payment split.
+///
+/// [split.amount] is the amount APPLIED to the sale — for cash it's
+/// capped at the total (see `_chargeCash`) so it never overshoots on
+/// screen. For a cash split, [cashReceived] is what the customer actually
+/// tendered; when that's more than what was applied, this sends the
+/// tendered amount instead, so the backend's own
+/// `appliedAmount = min(requestTotal, remaining)` /
+/// `changeAmount = requestTotal - appliedAmount` (see `SaleService.pay`)
+/// computes the customer's real change — sending the pre-capped amount
+/// made the backend see exactly the total every time, so change was
+/// always recorded as zero regardless of what was handed over.
+Map<String, dynamic> paymentRequestEntry(SplitRow split, double? cashReceived) {
+  final tendered = split.method == PaymentMethod.cash ? cashReceived : null;
+  final amount =
+      (tendered != null && tendered > split.amount) ? tendered : split.amount;
+  return {'method': split.method.code, 'amount': amount};
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // Screen
 // ═══════════════════════════════════════════════════════════════════
@@ -214,6 +234,11 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   // Holds the completed sale response from backend
   SaleResponse? _completedSale;
   ReceiptResponse? _completedReceipt;
+
+  /// True only while the Print button is waiting on [_ensureCompletedReceipt]
+  /// — normally near-instant since the background fetch usually already
+  /// finished by the time the cashier taps Print.
+  bool _preparingPrint = false;
   List<CartItem> _savedSaleItems = [];
   bool _isSubmitting = false;
   String _currency = 'USD';
@@ -548,12 +573,12 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       final OrderMode saleOrderMode = cartSnapshot.orderMode;
 
       final saleService = ref.read(saleServiceProvider);
-      final printService = ref.read(printServiceProvider);
 
-      // Build sale request from splits
+      // Build sale request from splits — see paymentRequestEntry for why a
+      // cash split sends the tendered amount, not the amount applied.
       final payments = _splits
           .where((s) => s.status == SplitStatus.authorized)
-          .map((s) => {'method': s.method.code, 'amount': s.amount})
+          .map((s) => paymentRequestEntry(s, _cashReceived))
           .toList();
 
       final request = <String, dynamic>{
@@ -563,6 +588,14 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
         if (widget.tableId != null) 'tableId': widget.tableId,
         'orderMode': _getOrderModeFromCart(),
         if (payments.isNotEmpty) 'payments': payments,
+        // The backend recomputes tax/discount/total server-side from these
+        // — see SaleService.createSale (taxable = subtotal - discount,
+        // taxAmount = taxable * taxRate) — but only if it's told the rate
+        // and discount actually applied on this cart; omitting them here is
+        // exactly why every finalized sale used to record zero tax.
+        'taxRate': cartSnapshot.taxRate,
+        if (cartSnapshot.discountAmount > 0)
+          'invoiceDiscount': cartSnapshot.discountAmount,
       };
 
       // Create sale
@@ -615,8 +648,8 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                  context.l10n.paymentScreenWaitingTicketSaveFailed('$e')),
+              content:
+                  Text(context.l10n.paymentScreenWaitingTicketSaveFailed('$e')),
               backgroundColor: PosTheme.warningAmber,
             ),
           );
@@ -646,23 +679,17 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
             currencySymbol: currencySymbol(_currency),
           );
 
-      // Fetch receipt data (non-blocking — UI already shows success)
-      unawaited(() async {
-        try {
-          if (mounted) {
-            final raw = await saleService.getReceipt(saleId);
-            if (mounted) {
-              setState(() => _completedReceipt = ReceiptResponse.fromJson(raw));
-            }
-          }
-        } catch (e) {
-          debugPrint('Receipt fetch failed (non-fatal): $e');
-        }
-      }());
+      // Fetch receipt data (non-blocking — UI already shows success). This
+      // is the authoritative source for the printed receipt's financial
+      // breakdown (subtotal/tax/discount/paid/change) — see
+      // _ensureCompletedReceipt, used by the Print button below.
+      unawaited(_fetchCompletedReceipt(saleId));
 
-      // Auto-print if enabled in settings (fire-and-forget, won't block UX)
+      // Auto-print only when Settings → POS → "Auto-print after payment"
+      // is actually turned on (off by default) — this used to fire
+      // unconditionally on every sale regardless of the setting.
       if (mounted) {
-        unawaited(printService.printReceipt(context, saleId));
+        unawaited(_autoPrintIfEnabled(context, saleId));
       }
     } catch (e) {
       debugPrint('Sale submission failed: $e');
@@ -696,6 +723,54 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     // Return to the POS. The completed sale's waiting number remains active.
     ref.read(customerDisplayProvider.notifier).broadcastIdle();
     Navigator.of(context).popUntil((r) => r.isFirst);
+  }
+
+  /// Fetches the finalized sale's full receipt (subtotal/tax/discount/
+  /// paid/change, all computed server-side) and stores it in
+  /// [_completedReceipt]. This is the single source of truth the printed
+  /// receipt must use — never re-derived from the cart or from
+  /// [widget.total] alone, which is only ever the tax-inclusive grand
+  /// total and carries no tax/discount breakdown of its own.
+  Future<ReceiptResponse?> _fetchCompletedReceipt(int saleId) async {
+    try {
+      final raw = await ref.read(saleServiceProvider).getReceipt(saleId);
+      final receipt = ReceiptResponse.fromJson(raw);
+      if (mounted) setState(() => _completedReceipt = receipt);
+      return receipt;
+    } catch (e) {
+      debugPrint('Receipt fetch failed (non-fatal): $e');
+      return null;
+    }
+  }
+
+  /// Returns [_completedReceipt] if it already loaded (the common case —
+  /// the background fetch kicked off right after payment success usually
+  /// finishes well before the cashier taps Print), otherwise fetches it
+  /// fresh rather than letting the receipt print with cart-derived
+  /// placeholder values.
+  Future<ReceiptResponse?> _ensureCompletedReceipt() async {
+    final existing = _completedReceipt;
+    if (existing != null) return existing;
+    final saleId = _completedSale?.id;
+    if (saleId == null) return null;
+    return _fetchCompletedReceipt(saleId);
+  }
+
+  /// Prints [saleId]'s receipt automatically, but only when Settings → POS
+  /// → "Auto-print after payment" (`BusinessSettings.autoPrintReceipt`,
+  /// off by default) is actually enabled — this used to call
+  /// `printService.printReceipt` unconditionally on every completed sale.
+  Future<void> _autoPrintIfEnabled(BuildContext context, int saleId) async {
+    bool enabled;
+    try {
+      final pos = await ref.read(settingsServiceProvider).getPosSettings();
+      enabled = pos['autoPrintReceipt'] as bool? ?? false;
+    } catch (e) {
+      debugPrint('Auto-print setting check failed (non-fatal): $e');
+      return;
+    }
+    if (!enabled || !mounted) return;
+    await ref.read(printServiceProvider).printReceipt(context, saleId);
   }
 
   /// Show dialog to edit a split's amount.
@@ -834,8 +909,8 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                         size: 18, color: PosTheme.textSecondaryOf(context)),
                     const SizedBox(width: 8),
                     Text(
-                        context.l10n
-                            .paymentScreenCartCount(cart.items.length.toString()),
+                        context.l10n.paymentScreenCartCount(
+                            cart.items.length.toString()),
                         style: const TextStyle(
                             fontSize: 16, fontWeight: FontWeight.w700)),
                   ]),
@@ -868,11 +943,9 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                           '-${formatAmount(cart.discountAmount, _currency)}',
                           valueColor: PosTheme.errorRed),
                     const Divider(height: 16),
-                    _calcRow(
-                        context.l10n.cartTotal,
+                    _calcRow(context.l10n.cartTotal,
                         formatAmount(widget.total, _currency),
-                        bold: true,
-                        large: true),
+                        bold: true, large: true),
                   ]),
                 ),
               ],
@@ -914,8 +987,8 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                   item.product.localizedName(ref.watch(appLanguageProvider)),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style:
-                      const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.w500),
                 ),
                 // Show the modifier's own price before the combined
                 // (base + modifier) total on the right, so the cashier can
@@ -1026,8 +1099,8 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                                 color: selected
                                     ? PosTheme.primaryGreen
                                     : Colors.white,
-                                borderRadius: BorderRadius.circular(
-                                    PosTheme.radiusPill),
+                                borderRadius:
+                                    BorderRadius.circular(PosTheme.radiusPill),
                                 border: Border.all(
                                     color: selected
                                         ? PosTheme.primaryGreen
@@ -1081,14 +1154,12 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                     final totalInTender =
                         _convert(widget.total, _currency, _tenderCurrency);
                     final tolerance = _tenderCurrency == 'KHR' ? 50 : 0.01;
-                    final isExact =
-                        (amount - totalInTender).abs() < tolerance;
+                    final isExact = (amount - totalInTender).abs() < tolerance;
                     return SizedBox(
                       width: 82,
                       height: 44,
                       child: ElevatedButton(
-                        onPressed: () =>
-                            _selectCashReceived(amount.toDouble()),
+                        onPressed: () => _selectCashReceived(amount.toDouble()),
                         style: ElevatedButton.styleFrom(
                           backgroundColor:
                               isExact ? PosTheme.primaryGreen : Colors.white,
@@ -1172,8 +1243,8 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
               child: ElevatedButton.icon(
                 icon: const Icon(Icons.money, size: 22),
                 label: Text(context.l10n.paymentScreenChargeCash,
-                    style:
-                        const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+                    style: const TextStyle(
+                        fontSize: 17, fontWeight: FontWeight.w700)),
                 onPressed: _chargeCash,
                 style: ElevatedButton.styleFrom(
                     backgroundColor: PosTheme.primaryGreen,
@@ -1193,8 +1264,8 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
               child: ElevatedButton.icon(
                 icon: const Icon(Icons.call_split, size: 22),
                 label: Text(context.l10n.paymentScreenSplitPayment,
-                    style:
-                        const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+                    style: const TextStyle(
+                        fontSize: 17, fontWeight: FontWeight.w700)),
                 onPressed: _enterSplitMode,
                 style: ElevatedButton.styleFrom(
                     backgroundColor: PosTheme.accentBlue,
@@ -1214,8 +1285,8 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
               child: ElevatedButton.icon(
                 icon: const Icon(Icons.payment, size: 22),
                 label: Text(context.l10n.paymentScreenPayFullAmount,
-                    style:
-                        const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+                    style: const TextStyle(
+                        fontSize: 17, fontWeight: FontWeight.w700)),
                 onPressed: _payFullAmount,
                 style: ElevatedButton.styleFrom(
                     backgroundColor: PosTheme.accentBlue,
@@ -1268,8 +1339,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
             // +/- counter
             Container(
               decoration: BoxDecoration(
-                  border:
-                      Border.all(color: PosTheme.borderColorOf(context)),
+                  border: Border.all(color: PosTheme.borderColorOf(context)),
                   borderRadius: BorderRadius.circular(PosTheme.radiusMedium)),
               child: Row(mainAxisSize: MainAxisSize.min, children: [
                 IconButton(
@@ -1566,11 +1636,9 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                   const SizedBox(height: 8),
 
                   // Total
-                  _receiptRow(
-                      context.l10n.cartTotal,
+                  _receiptRow(context.l10n.cartTotal,
                       formatAmount(widget.total, _currency),
-                      bold: true,
-                      large: true),
+                      bold: true, large: true),
                   const SizedBox(height: 12),
                   Divider(color: PosTheme.dividerColorOf(context)),
                   const SizedBox(height: 8),
@@ -1599,8 +1667,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                   if (_cashReceived != null) ...[
                     _receiptRow(
                         context.l10n.paymentScreenCashReceived,
-                        formatAmount(
-                            _cashReceivedRaw ?? _cashReceived!,
+                        formatAmount(_cashReceivedRaw ?? _cashReceived!,
                             _tenderCurrency)),
                     Padding(
                       padding: const EdgeInsets.only(top: 2),
@@ -1636,51 +1703,77 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
               height: 48,
               width: double.infinity,
               child: OutlinedButton.icon(
-                icon: const Icon(Icons.print, size: 20),
+                icon: _preparingPrint
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.print, size: 20),
                 label: Text(context.l10n.paymentScreenPrintReceipt,
                     style: const TextStyle(fontSize: 16)),
-                onPressed: () {
-                  final r = _completedReceipt;
-                  String? saleDate;
-                  String? saleTime;
-                  if (r?.createdAt != null) {
-                    try {
-                      final dt = DateTime.parse(r!.createdAt!);
-                      saleDate =
-                          '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
-                      saleTime =
-                          '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}:${dt.second.toString().padLeft(2, '0')}';
-                    } catch (_) {}
-                  }
-                  Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => ReceiptPreviewScreen(
-                      total: widget.total,
-                      subtotal: widget.total,
-                      splits: _splits
-                          .where((s) => s.status == SplitStatus.authorized)
-                          .map((s) => SplitRowReceipt(
-                              methodLabel: s.method.label(context.l10n),
-                              amount: s.amount))
-                          .toList(),
-                      invoiceNumber: _completedSale?.invoiceNumber,
-                      cashierName: _completedSale?.cashierName ?? '',
-                      saleItems: _savedSaleItems,
-                      businessName: r?.businessName,
-                      businessAddress: r?.address,
-                      businessPhone: r?.phone,
-                      currency: r?.currency,
-                      footer: r?.footer,
-                      saleDate: saleDate,
-                      saleTime: saleTime,
-                      tableNumber: r?.tableNumber,
-                      // Prefer the rate frozen onto the sale itself; only
-                      // fall back to the live Settings rate if the receipt
-                      // hasn't finished loading yet.
-                      exchangeRateKhr:
-                          r?.exchangeRateKhr ?? _rates['KHR']?.ratePerUsd,
-                    ),
-                  ));
-                },
+                onPressed: _preparingPrint
+                    ? null
+                    : () async {
+                        setState(() => _preparingPrint = true);
+                        // Block on the authoritative receipt rather than
+                        // printing from cart-derived guesses — this is
+                        // what actually carries tax/discount/paid/change,
+                        // and normally resolves instantly since the
+                        // background fetch already started at payment
+                        // success.
+                        final r = await _ensureCompletedReceipt();
+                        if (!mounted) return;
+                        setState(() => _preparingPrint = false);
+
+                        String? saleDate;
+                        String? saleTime;
+                        if (r?.createdAt != null) {
+                          try {
+                            final dt = DateTime.parse(r!.createdAt!);
+                            saleDate =
+                                '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
+                            saleTime =
+                                '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}:${dt.second.toString().padLeft(2, '0')}';
+                          } catch (_) {}
+                        }
+                        if (!mounted) return;
+                        Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => ReceiptPreviewScreen(
+                            total: r?.total ?? widget.total,
+                            subtotal: r?.subtotal ?? widget.total,
+                            discountAmount: r?.discountAmount ?? 0,
+                            taxAmount: r?.taxAmount ?? 0,
+                            deliveryCharge: r?.deliveryCharge ?? 0,
+                            otherCharge: r?.otherCharge ?? 0,
+                            splits: _splits
+                                .where(
+                                    (s) => s.status == SplitStatus.authorized)
+                                .map((s) => SplitRowReceipt(
+                                    methodLabel: s.method.label(context.l10n),
+                                    amount: s.amount))
+                                .toList(),
+                            paidAmountOverride: r?.paidAmount,
+                            changeAmountOverride: r?.changeAmount,
+                            invoiceNumber: _completedSale?.invoiceNumber,
+                            cashierName: _completedSale?.cashierName ?? '',
+                            saleItems: _savedSaleItems,
+                            businessName: r?.businessName,
+                            businessAddress: r?.address,
+                            businessPhone: r?.phone,
+                            currency: r?.currency,
+                            footer: r?.footer,
+                            saleDate: saleDate,
+                            saleTime: saleTime,
+                            tableNumber: r?.tableNumber,
+                            // Prefer the rate frozen onto the sale itself;
+                            // only fall back to the live Settings rate if
+                            // the receipt fetch failed outright.
+                            exchangeRateKhr:
+                                r?.exchangeRateKhr ?? _rates['KHR']?.ratePerUsd,
+                          ),
+                        ));
+                      },
                 style: OutlinedButton.styleFrom(
                   foregroundColor: PosTheme.textPrimaryOf(context),
                   side: BorderSide(color: PosTheme.borderColorOf(context)),
@@ -1736,8 +1829,8 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
               child: ElevatedButton.icon(
                 icon: const Icon(Icons.add_circle_outline, size: 22),
                 label: Text(context.l10n.paymentScreenNewSale,
-                    style:
-                        const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.w700)),
                 onPressed: _newSale,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: PosTheme.primaryGreen,
@@ -1788,7 +1881,8 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
           const Icon(Icons.error_outline, size: 72, color: PosTheme.errorRed),
           const SizedBox(height: 16),
           Text(context.l10n.paymentScreenPaymentFailed,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
+              style:
+                  const TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
           const SizedBox(height: 32),
           ElevatedButton(
               onPressed: _resetSplits,

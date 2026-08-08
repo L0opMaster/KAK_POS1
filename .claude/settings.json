@@ -6,7 +6,33 @@
       "Bash(flutter gen-l10n *)",
       "Bash(tee /tmp/claude-1000/-home-luffy-KAKNNEA-write-test-pos/d8497edc-7bee-49cd-b013-99f791704188/scratchpad/item_test.log)",
       "Bash(timeout 180 npx playwright install chromium)",
-      "Bash(flutter build *)"
+      "Bash(flutter build *)",
+      "Bash(find /home/luffy/.pub-cache/hosted/pub.dev -maxdepth 1 -iname \"printing-*\")",
+      "Read(//home/luffy/.pub-cache/hosted/pub.dev/**)",
+      "Bash(/home/luffy/development/flutter/bin/flutter analyze *)",
+      "Bash(pip install *)",
+      "Bash(python3 -m pip install --quiet --user fonttools)",
+      "Bash(timeout 5 curl -sI https://raw.githubusercontent.com/googlefonts/noto-fonts/main/hinted/ttf/NotoSansKhmer/NotoSansKhmer-Regular.ttf)",
+      "Bash(timeout 5 curl -sI https://fonts.google.com)",
+      "Bash(curl -sL -o NotoSansKhmer-Regular.ttf \"https://raw.githubusercontent.com/googlefonts/noto-fonts/main/hinted/ttf/NotoSansKhmer/NotoSansKhmer-Regular.ttf\")",
+      "Bash(curl -sL -o NotoSansKhmer-Bold.ttf \"https://raw.githubusercontent.com/googlefonts/noto-fonts/main/hinted/ttf/NotoSansKhmer/NotoSansKhmer-Bold.ttf\")",
+      "Bash(cp /tmp/claude-1000/-home-luffy-KAKNNEA-write-test-pos/90fb7e7d-ef80-4a7d-9cf3-e2fc2951c8fe/scratchpad/NotoSansKhmer-Regular.ttf .)",
+      "Bash(cp /tmp/claude-1000/-home-luffy-KAKNNEA-write-test-pos/90fb7e7d-ef80-4a7d-9cf3-e2fc2951c8fe/scratchpad/NotoSansKhmer-Bold.ttf .)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8081/api/settings/general)",
+      "Bash(curl -s http://localhost:8081/api/settings/general)",
+      "Bash(/home/luffy/development/flutter/bin/flutter gen-l10n *)",
+      "Bash(/home/luffy/development/flutter/bin/flutter --version)",
+      "Bash(/home/luffy/development/flutter/bin/flutter test *)",
+      "Bash(curl -sL -o NotoSans-Regular.ttf \"https://raw.githubusercontent.com/googlefonts/noto-fonts/main/hinted/ttf/NotoSans/NotoSans-Regular.ttf\")",
+      "Bash(curl -sL -o NotoSans-Bold.ttf \"https://raw.githubusercontent.com/googlefonts/noto-fonts/main/hinted/ttf/NotoSans/NotoSans-Bold.ttf\")",
+      "Bash(grep -rn \"class FontLoader\" /home/luffy/development/flutter/packages/flutter/lib/src/services/*.dart 2>/dev/null)",
+      "Read(//home/luffy/development/flutter/packages/flutter/lib/src/services/**)",
+      "Bash(cd /home/luffy/KAKNNEA/write-test-pos/frontend-flutter-pos && sed -n '150,260' lib/main.dart)",
+      "Bash(dart --version)",
+      "Bash(dart format *)"
+    ],
+    "additionalDirectories": [
+      "/home/luffy/KAKNNEA/write-test-pos/frontend-flutter-pos/lib"
     ]
   }
 }
