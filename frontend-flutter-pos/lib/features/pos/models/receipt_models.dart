@@ -184,26 +184,3 @@ class ReceiptPayment {
     );
   }
 }
-
-/// Legacy summary model kept for compatibility.
-class ReceiptSummary {
-  final int saleId;
-  final String invoiceNumber;
-  final String status;
-  final double grandTotal;
-  final double paidAmount;
-  final DateTime createdAt;
-  final int customerId;
-  final String customerName;
-
-  ReceiptSummary({
-    required this.saleId,
-    required this.invoiceNumber,
-    required this.status,
-    required this.grandTotal,
-    required this.paidAmount,
-    required this.createdAt,
-    required this.customerId,
-    required this.customerName,
-  });
-}

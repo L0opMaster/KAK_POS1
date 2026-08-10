@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../core/utils/print_perf.dart';
 import 'bluetooth_printer_transport.dart';
 import 'escpos_receipt_builder.dart';
 import 'network_printer_transport.dart';
@@ -76,12 +77,13 @@ class ThermalPrinterService {
     PrinterConfig config,
   ) async {
     final transport = _transportFor(config);
-    await transport.connect();
+    await timePrintStage('transportConnect', () => transport.connect());
     try {
-      final bytes = await builder.build(context, receipt, config.paperSize);
-      await transport.write(bytes);
+      final bytes = await timePrintStage('builderBuild',
+          () => builder.build(context, receipt, config.paperSize));
+      await timePrintStage('transportWrite', () => transport.write(bytes));
     } finally {
-      await transport.disconnect();
+      await timePrintStage('transportDisconnect', () => transport.disconnect());
     }
   }
 
@@ -103,17 +105,19 @@ class ThermalPrinterService {
     void Function(int done, int total)? onProgress,
   }) async {
     final transport = _transportFor(config);
-    await transport.connect();
+    await timePrintStage('transportConnect', () => transport.connect());
     try {
-      for (var i = 0; i < receipts.length; i++) {
-        if (!context.mounted) return;
-        final bytes =
-            await builder.build(context, receipts[i], config.paperSize);
-        await transport.write(bytes);
-        onProgress?.call(i + 1, receipts.length);
-      }
+      await timePrintStage('printReceiptsBatchTotal', () async {
+        for (var i = 0; i < receipts.length; i++) {
+          if (!context.mounted) return;
+          final bytes = await timePrintStage('builderBuild',
+              () => builder.build(context, receipts[i], config.paperSize));
+          await timePrintStage('transportWrite', () => transport.write(bytes));
+          onProgress?.call(i + 1, receipts.length);
+        }
+      });
     } finally {
-      await transport.disconnect();
+      await timePrintStage('transportDisconnect', () => transport.disconnect());
     }
   }
 }

@@ -145,15 +145,15 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
         businessName: '${company['businessName'] ?? ''}',
         businessAddress: '${company['address'] ?? ''}',
         businessPhone: '${company['phone'] ?? ''}',
-        columns: const [
-          'Receipt #',
-          'Date',
-          'Cashier',
-          'Payment',
-          'Gross',
-          'Discount',
-          'Tax',
-          'Net',
+        columns: [
+          l10n.salesReportPdfColReceiptNo,
+          l10n.receiptDate,
+          l10n.receiptCashier,
+          l10n.salesReportPdfColPayment,
+          l10n.reportsGross,
+          l10n.receiptDiscount,
+          l10n.salesSummaryPdfColTax,
+          l10n.salesSummaryPdfColNet,
         ],
         rows: rows,
         columnAlignments: const {
@@ -165,11 +165,16 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
         summary: s == null
             ? const []
             : [
-                MapEntry('Gross Sales', '$cur${_fmtNum(s.totalGrossSales)}'),
-                MapEntry('Discounts', '$cur${_fmtNum(s.totalDiscount)}'),
-                MapEntry('Tax', '$cur${_fmtNum(s.totalTax)}'),
-                MapEntry('Net Sales', '$cur${_fmtNum(s.totalNetSales)}'),
-                MapEntry('Transactions', '${s.totalSalesCount}'),
+                MapEntry(l10n.salesSummaryPdfGrossSalesLabel,
+                    '$cur${_fmtNum(s.totalGrossSales)}'),
+                MapEntry(l10n.salesSummaryPdfDiscountsLabel,
+                    '$cur${_fmtNum(s.totalDiscount)}'),
+                MapEntry(
+                    l10n.salesSummaryPdfColTax, '$cur${_fmtNum(s.totalTax)}'),
+                MapEntry(l10n.salesSummaryPdfNetSalesLabel,
+                    '$cur${_fmtNum(s.totalNetSales)}'),
+                MapEntry(l10n.salesSummaryPdfTransactionsLabel,
+                    '${s.totalSalesCount}'),
               ],
         generatedAt: DateTime.now(),
         generatedLabel: l10n.reportPdfGeneratedLabel,
@@ -182,8 +187,8 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
       );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('${l10n.printerPrintFailed}: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${l10n.printerPrintFailed}: $e')));
       }
     }
   }

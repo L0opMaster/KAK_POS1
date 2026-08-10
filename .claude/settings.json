@@ -29,7 +29,8 @@
       "Read(//home/luffy/development/flutter/packages/flutter/lib/src/services/**)",
       "Bash(cd /home/luffy/KAKNNEA/write-test-pos/frontend-flutter-pos && sed -n '150,260' lib/main.dart)",
       "Bash(dart --version)",
-      "Bash(dart format *)"
+      "Bash(dart format *)",
+      "Bash(python3 -)"
     ],
     "additionalDirectories": [
       "/home/luffy/KAKNNEA/write-test-pos/frontend-flutter-pos/lib"

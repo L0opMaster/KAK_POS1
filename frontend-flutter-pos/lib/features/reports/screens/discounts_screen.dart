@@ -1,7 +1,13 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+import '../../../core/config/currency_utils.dart';
 import '../../../core/config/pos_theme.dart';
+import '../../../core/services/printing/a4_report_pdf.dart';
 import '../../../core/utils/l10n_extensions.dart';
+import '../../pos/services/settings_service.dart';
 import '../services/report_service.dart';
 import '../models/report_models.dart';
 import '../widgets/report_filter_bar.dart';
@@ -75,6 +81,83 @@ class _DiscountsScreenState extends ConsumerState<DiscountsScreen> {
     _load();
   }
 
+  Future<void> _printReport() async {
+    if (_data == null) return;
+    final l10n = context.l10n;
+    try {
+      final company =
+          await ref.read(settingsServiceProvider).getCompanyProfile();
+      final cur = currencySymbol(readCurrency(ref));
+
+      final svc = ref.read(reportServiceProvider);
+      final allRows = await fetchAllPages<DiscountRow>(
+        fetchPage: (page) async {
+          final pageData = await svc.discounts(
+            from: _filter.fromStr,
+            to: _filter.toStr,
+            fromHour: _filter.fromHour == 0 ? null : _filter.fromHour,
+            toHour: _filter.toHour == 23 ? null : _filter.toHour,
+            employeeId: _filter.employeeId,
+            page: page,
+            size: reportPrintPageSize,
+          );
+          return (pageData.rows, pageData.meta);
+        },
+      );
+
+      if (kDebugMode) {
+        debugPrint('[ReportPrint] rowsFetched=${allRows.length}');
+      }
+
+      final rows = allRows
+          .map((r) => [
+                r.saleNumber ?? '#${r.saleId}',
+                r.date ?? '',
+                r.employeeName ?? '',
+                r.discountType ?? '',
+                '-$cur${_fmtNum(r.amount)}',
+              ])
+          .toList();
+
+      final totalAmount = allRows.fold(0.0, (s, r) => s + r.amount);
+
+      final pdfBytes = await A4ReportPdf.build(
+        title: l10n.reportsDiscounts,
+        subtitle: '${_filter.fromStr} — ${_filter.toStr}',
+        businessName: '${company['businessName'] ?? ''}',
+        businessAddress: '${company['address'] ?? ''}',
+        businessPhone: '${company['phone'] ?? ''}',
+        columns: [
+          l10n.salesReportPdfColReceiptNo,
+          l10n.receiptDate,
+          l10n.receiptCashier,
+          l10n.stockMovementPdfColType,
+          l10n.receiptAmount,
+        ],
+        rows: rows,
+        columnAlignments: const {4: pw.Alignment.centerRight},
+        summary: [
+          MapEntry(l10n.discountsScreenDiscountsGiven, '${allRows.length}'),
+          MapEntry(l10n.discountsScreenTotalDiscountAmount,
+              '$cur${_fmtNum(totalAmount)}'),
+        ],
+        generatedAt: DateTime.now(),
+        generatedLabel: l10n.reportPdfGeneratedLabel,
+        pageLabel: l10n.reportPdfPageLabel,
+      );
+
+      await Printing.layoutPdf(
+        onLayout: (_) => pdfBytes,
+        name: 'discounts_report',
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${l10n.printerPrintFailed}: $e')));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -84,6 +167,10 @@ class _DiscountsScreenState extends ConsumerState<DiscountsScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
+          IconButton(
+              icon: const Icon(Icons.print_outlined),
+              onPressed: _data == null ? null : _printReport,
+              tooltip: context.l10n.commonPrint),
           IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: _load,

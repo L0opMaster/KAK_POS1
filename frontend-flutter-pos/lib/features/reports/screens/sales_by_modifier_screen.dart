@@ -1,7 +1,13 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+import '../../../core/config/currency_utils.dart';
 import '../../../core/config/pos_theme.dart';
+import '../../../core/services/printing/a4_report_pdf.dart';
 import '../../../core/utils/l10n_extensions.dart';
+import '../../pos/services/settings_service.dart';
 import '../services/report_service.dart';
 import '../models/report_models.dart';
 import '../widgets/report_filter_bar.dart';
@@ -76,6 +82,84 @@ class _SalesByModifierScreenState extends ConsumerState<SalesByModifierScreen> {
     _load();
   }
 
+  Future<void> _printReport() async {
+    if (_data == null) return;
+    final l10n = context.l10n;
+    try {
+      final company =
+          await ref.read(settingsServiceProvider).getCompanyProfile();
+      final cur = currencySymbol(readCurrency(ref));
+
+      final svc = ref.read(reportServiceProvider);
+      final allRows = await fetchAllPages<ModifierPerformance>(
+        fetchPage: (page) async {
+          final pageData = await svc.salesByModifier(
+            from: _filter.fromStr,
+            to: _filter.toStr,
+            fromHour: _filter.fromHour == 0 ? null : _filter.fromHour,
+            toHour: _filter.toHour == 23 ? null : _filter.toHour,
+            employeeId: _filter.employeeId,
+            page: page,
+            size: reportPrintPageSize,
+          );
+          return (pageData.content, pageData.meta);
+        },
+      );
+
+      if (kDebugMode) {
+        debugPrint('[ReportPrint] rowsFetched=${allRows.length}');
+      }
+
+      final rows = allRows
+          .map((m) => [
+                m.groupName,
+                m.optionName,
+                _fmtNum(m.quantity),
+                '$cur${_fmtNum(m.revenue)}',
+              ])
+          .toList();
+
+      final totalQty = allRows.fold(0.0, (s, m) => s + m.quantity);
+      final totalRevenue = allRows.fold(0.0, (s, m) => s + m.revenue);
+
+      final pdfBytes = await A4ReportPdf.build(
+        title: l10n.reportsSalesByModifier,
+        subtitle: '${_filter.fromStr} — ${_filter.toStr}',
+        businessName: '${company['businessName'] ?? ''}',
+        businessAddress: '${company['address'] ?? ''}',
+        businessPhone: '${company['phone'] ?? ''}',
+        columns: [
+          l10n.salesByModifierPdfColGroup,
+          l10n.salesByModifierPdfColOption,
+          l10n.cartQty,
+          l10n.reportsRevenue,
+        ],
+        rows: rows,
+        columnAlignments: const {
+          2: pw.Alignment.centerRight,
+          3: pw.Alignment.centerRight,
+        },
+        summary: [
+          MapEntry(l10n.cartQty, _fmtNum(totalQty)),
+          MapEntry(l10n.reportsRevenue, '$cur${_fmtNum(totalRevenue)}'),
+        ],
+        generatedAt: DateTime.now(),
+        generatedLabel: l10n.reportPdfGeneratedLabel,
+        pageLabel: l10n.reportPdfPageLabel,
+      );
+
+      await Printing.layoutPdf(
+        onLayout: (_) => pdfBytes,
+        name: 'sales_by_modifier_report',
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${l10n.printerPrintFailed}: $e')));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -85,6 +169,10 @@ class _SalesByModifierScreenState extends ConsumerState<SalesByModifierScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
+          IconButton(
+              icon: const Icon(Icons.print_outlined),
+              onPressed: _data == null ? null : _printReport,
+              tooltip: context.l10n.commonPrint),
           IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: _load,
@@ -142,7 +230,8 @@ class _SalesByModifierScreenState extends ConsumerState<SalesByModifierScreen> {
     }
     final content = data.content;
     final chartData = content
-        .map((m) => (label: '${m.groupName}: ${m.optionName}', value: m.revenue))
+        .map(
+            (m) => (label: '${m.groupName}: ${m.optionName}', value: m.revenue))
         .toList();
 
     return Column(

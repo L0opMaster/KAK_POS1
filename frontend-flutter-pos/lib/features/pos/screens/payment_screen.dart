@@ -10,6 +10,7 @@ import '../../../core/providers/currency_provider.dart';
 import '../../../core/providers/language_provider.dart';
 import '../../../core/utils/bilingual.dart';
 import '../../../core/utils/l10n_extensions.dart';
+import '../../../core/utils/receipt_date_format.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../services/sale_service.dart';
 import '../services/settings_service.dart';
@@ -1731,10 +1732,8 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                         if (r?.createdAt != null) {
                           try {
                             final dt = DateTime.parse(r!.createdAt!);
-                            saleDate =
-                                '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
-                            saleTime =
-                                '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}:${dt.second.toString().padLeft(2, '0')}';
+                            saleDate = formatReceiptDate(dt);
+                            saleTime = formatReceiptTime(dt);
                           } catch (_) {}
                         }
                         if (!mounted) return;

@@ -9,6 +9,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image/image.dart' as img;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -20,6 +21,7 @@ import '../services/print_service.dart';
 import '../services/printing/khmer_pdf_font.dart';
 import '../services/printing/printer_pdf_format.dart';
 import '../services/printing/printer_profile.dart';
+import '../services/printing/receipt_bitmap_renderer.dart';
 import '../services/printing/receipt_view_model.dart';
 import '../services/printing/thermal_printer_service.dart';
 
@@ -113,9 +115,8 @@ class _PrintTestScreenState extends ConsumerState<PrintTestScreen> {
     final total = subtotal + tax;
 
     return ReceiptViewModel(
-      language: content == _ReceiptContent.khmer
-          ? AppLanguage.km
-          : AppLanguage.en,
+      language:
+          content == _ReceiptContent.khmer ? AppLanguage.km : AppLanguage.en,
       businessName: 'KAKNNEA POS System',
       address: 'Phnom Penh, Cambodia',
       phone: '+855 23 123 456',
@@ -145,10 +146,10 @@ class _PrintTestScreenState extends ConsumerState<PrintTestScreen> {
       itemCount: itemCount,
       includeLongName: longName,
     );
-    final bytes =
-        await ref.read(printServiceProvider).buildReceiptPdf(receipt, paperSize);
-    _appendLog(
-        '  page: ${paperSize.name}, PDF bytes: ${bytes.length}, '
+    final bytes = await ref
+        .read(printServiceProvider)
+        .buildReceiptPdf(receipt, paperSize, context: context);
+    _appendLog('  page: ${paperSize.name}, PDF bytes: ${bytes.length}, '
         'width: ${(paperSize.pdfPageFormat.width / PdfPageFormat.mm).toStringAsFixed(1)}mm, '
         'content width: ${(paperSize.pdfPageFormat.availableWidth / PdfPageFormat.mm).toStringAsFixed(1)}mm, '
         'containsKhmer: ${receipt.containsKhmer}');
@@ -188,12 +189,48 @@ class _PrintTestScreenState extends ConsumerState<PrintTestScreen> {
     });
   }
 
+  /// Dumps the exact pre-PDF Khmer raster [ReceiptBitmapRenderer] produces
+  /// — i.e. the same [img.Image] `PrintService._khmerImagePageContent`
+  /// embeds via `pw.ImageImage` — so it can be inspected directly against
+  /// the on-screen preview and the final PDF page, per the "raster BEFORE
+  /// PDF should already match preview" regression check (see the Khmer
+  /// layout-parity report). Wrapping it in a throwaway 1:1 single-image PDF
+  /// is only so this reuses the same `Printing.sharePdf` download path as
+  /// every other debug export on this screen — this PNG encode is a
+  /// debug-only diagnostic, not a reintroduction of the PNG round-trip
+  /// removed from the production path (print_service.dart still uses
+  /// `pw.ImageImage(decoded)` directly, unaffected by this button).
+  Future<void> _saveRawRaster(
+    String label,
+    PrinterPaperSize paperSize,
+    _ReceiptContent content,
+  ) {
+    return _run('Save raw raster — $label', () async {
+      final receipt = _receiptFixture(content: content, itemCount: 12);
+      final image = await const ReceiptBitmapRenderer()
+          .renderImage(context, receipt, paperSize);
+      _appendLog('  raster: ${image.width}x${image.height}px '
+          '(paper: ${paperSize.name}, dotWidth: ${paperSize.dotWidth})');
+      final doc = pw.Document();
+      final pngBytes = img.encodePng(image);
+      doc.addPage(pw.Page(
+        pageFormat: PdfPageFormat(
+            image.width.toDouble(), image.height.toDouble(),
+            marginAll: 0),
+        build: (_) => pw.Image(pw.MemoryImage(pngBytes)),
+      ));
+      await Printing.sharePdf(
+          bytes: await doc.save(), filename: '${label}_raster.pdf');
+    });
+  }
+
   // ── Direct thermal test ──────────────────────────────────────────────
 
   Future<void> _printThermalTest() {
     return _run('Direct thermal test print', () async {
       final config = _config;
-      if (config == null || config.transportType == PrinterTransportType.pdfDriver) {
+      if (config == null ||
+          config.transportType == PrinterTransportType.pdfDriver) {
         throw StateError(
             'Configured transport is not a direct thermal transport '
             '(Settings → Printers → Connection type)');
@@ -252,12 +289,14 @@ class _PrintTestScreenState extends ConsumerState<PrintTestScreen> {
   Future<void> _saveA4Pdf(String label, String title, List<String> columns,
       List<List<String>> rows) {
     return _run('Save PDF — $label', () async {
-      final bytes = await _buildA4Bytes(title: title, columns: columns, rows: rows);
+      final bytes =
+          await _buildA4Bytes(title: title, columns: columns, rows: rows);
       await Printing.sharePdf(bytes: bytes, filename: '$label.pdf');
     });
   }
 
-  List<List<String>> _a4Rows(int count, {bool khmer = false, bool mixed = false}) {
+  List<List<String>> _a4Rows(int count,
+      {bool khmer = false, bool mixed = false}) {
     return List.generate(count, (i) {
       final n = i + 1;
       final name = mixed
@@ -265,7 +304,12 @@ class _PrintTestScreenState extends ConsumerState<PrintTestScreen> {
           : khmer
               ? 'ផលិតផលលេខ #$n'
               : 'Product #$n';
-      return [name, 'SKU-$n', '${(n % 20) + 1}', '\$${(n * 1.5).toStringAsFixed(2)}'];
+      return [
+        name,
+        'SKU-$n',
+        '${(n % 20) + 1}',
+        '\$${(n * 1.5).toStringAsFixed(2)}'
+      ];
     });
   }
 
@@ -275,7 +319,9 @@ class _PrintTestScreenState extends ConsumerState<PrintTestScreen> {
   Widget build(BuildContext context) {
     if (!kDebugMode) {
       return const Scaffold(
-        body: Center(child: Text('Print test screen is only available in debug builds.')),
+        body: Center(
+            child:
+                Text('Print test screen is only available in debug builds.')),
       );
     }
 
@@ -288,27 +334,39 @@ class _PrintTestScreenState extends ConsumerState<PrintTestScreen> {
           const SizedBox(height: 16),
           _sectionHeader('Receipt PDF tests (PDF/driver transport)'),
           _buttonGrid([
-            _TestButton('58mm English',
-                () => _printReceipt('58mm English', PrinterPaperSize.mm58, _ReceiptContent.english)),
-            _TestButton('58mm Khmer',
-                () => _printReceipt('58mm Khmer', PrinterPaperSize.mm58, _ReceiptContent.khmer)),
-            _TestButton('58mm Mixed',
-                () => _printReceipt('58mm Mixed', PrinterPaperSize.mm58, _ReceiptContent.mixed)),
-            _TestButton('80mm English',
-                () => _printReceipt('80mm English', PrinterPaperSize.mm80, _ReceiptContent.english)),
-            _TestButton('80mm Khmer',
-                () => _printReceipt('80mm Khmer', PrinterPaperSize.mm80, _ReceiptContent.khmer)),
-            _TestButton('80mm Mixed',
-                () => _printReceipt('80mm Mixed', PrinterPaperSize.mm80, _ReceiptContent.mixed)),
+            _TestButton(
+                '58mm English',
+                () => _printReceipt('58mm English', PrinterPaperSize.mm58,
+                    _ReceiptContent.english)),
+            _TestButton(
+                '58mm Khmer',
+                () => _printReceipt('58mm Khmer', PrinterPaperSize.mm58,
+                    _ReceiptContent.khmer)),
+            _TestButton(
+                '58mm Mixed',
+                () => _printReceipt('58mm Mixed', PrinterPaperSize.mm58,
+                    _ReceiptContent.mixed)),
+            _TestButton(
+                '80mm English',
+                () => _printReceipt('80mm English', PrinterPaperSize.mm80,
+                    _ReceiptContent.english)),
+            _TestButton(
+                '80mm Khmer',
+                () => _printReceipt('80mm Khmer', PrinterPaperSize.mm80,
+                    _ReceiptContent.khmer)),
+            _TestButton(
+                '80mm Mixed',
+                () => _printReceipt('80mm Mixed', PrinterPaperSize.mm80,
+                    _ReceiptContent.mixed)),
             _TestButton(
                 '58mm Long Receipt (50+)',
-                () => _printReceipt(
-                    '58mm Long Receipt', PrinterPaperSize.mm58, _ReceiptContent.mixed,
+                () => _printReceipt('58mm Long Receipt', PrinterPaperSize.mm58,
+                    _ReceiptContent.mixed,
                     itemCount: 55, longName: true)),
             _TestButton(
                 '80mm Long Receipt (50+)',
-                () => _printReceipt(
-                    '80mm Long Receipt', PrinterPaperSize.mm80, _ReceiptContent.mixed,
+                () => _printReceipt('80mm Long Receipt', PrinterPaperSize.mm80,
+                    _ReceiptContent.mixed,
                     itemCount: 55, longName: true)),
           ]),
           const SizedBox(height: 24),
@@ -374,7 +432,8 @@ class _PrintTestScreenState extends ConsumerState<PrintTestScreen> {
                     rows: _a4Rows(80))),
           ]),
           const SizedBox(height: 24),
-          _sectionHeader('Save PDF (isolate PDF generation from printer drivers)'),
+          _sectionHeader(
+              'Save PDF (isolate PDF generation from printer drivers)'),
           const Text(
             'Downloads the raw PDF instead of opening the print dialog. Open '
             'it in a PDF viewer that reports page size to confirm this app '
@@ -384,14 +443,44 @@ class _PrintTestScreenState extends ConsumerState<PrintTestScreen> {
           ),
           const SizedBox(height: 8),
           _buttonGrid([
-            _TestButton('Save 58mm receipt PDF',
-                () => _saveReceiptPdf('receipt_58mm', PrinterPaperSize.mm58, _ReceiptContent.mixed)),
-            _TestButton('Save 80mm receipt PDF',
-                () => _saveReceiptPdf('receipt_80mm', PrinterPaperSize.mm80, _ReceiptContent.mixed)),
+            _TestButton(
+                'Save 58mm receipt PDF',
+                () => _saveReceiptPdf('receipt_58mm', PrinterPaperSize.mm58,
+                    _ReceiptContent.mixed)),
+            _TestButton(
+                'Save 80mm receipt PDF',
+                () => _saveReceiptPdf('receipt_80mm', PrinterPaperSize.mm80,
+                    _ReceiptContent.mixed)),
             _TestButton(
                 'Save A4 report PDF',
-                () => _saveA4Pdf('a4_report', 'Inventory Report',
-                    const ['Product', 'SKU', 'Qty', 'Value'], _a4Rows(10, mixed: true))),
+                () => _saveA4Pdf(
+                    'a4_report',
+                    'Inventory Report',
+                    const ['Product', 'SKU', 'Qty', 'Value'],
+                    _a4Rows(10, mixed: true))),
+          ]),
+          const SizedBox(height: 24),
+          _sectionHeader('Save raw Khmer raster (preview/raster/PDF parity)'),
+          const Text(
+            'Downloads the exact pre-PDF bitmap ReceiptBitmapRenderer '
+            'produces for a Khmer receipt (wrapped 1:1 in a throwaway PDF '
+            'page purely so it can be downloaded/opened). Compare it '
+            'against the on-screen preview and "Save Khmer receipt PDF" '
+            'above — if this raster already looks wrong, the bug is in '
+            'ReceiptBitmapRenderer/ReceiptContent; if this looks right but '
+            'the final PDF above doesn\'t, the bug is in PDF embedding.',
+            style: TextStyle(color: Colors.black54, fontSize: 12),
+          ),
+          const SizedBox(height: 8),
+          _buttonGrid([
+            _TestButton(
+                'Save 58mm Khmer raster',
+                () => _saveRawRaster('khmer_58mm', PrinterPaperSize.mm58,
+                    _ReceiptContent.khmer)),
+            _TestButton(
+                'Save 80mm Khmer raster',
+                () => _saveRawRaster('khmer_80mm', PrinterPaperSize.mm80,
+                    _ReceiptContent.khmer)),
           ]),
           const SizedBox(height: 24),
           _sectionHeader('Log'),
@@ -407,7 +496,9 @@ class _PrintTestScreenState extends ConsumerState<PrintTestScreen> {
               child: SelectableText(
                 _log.isEmpty ? 'No test runs yet.' : _log,
                 style: const TextStyle(
-                    color: Colors.greenAccent, fontFamily: 'monospace', fontSize: 11),
+                    color: Colors.greenAccent,
+                    fontFamily: 'monospace',
+                    fontSize: 11),
               ),
             ),
           ),
@@ -455,13 +546,24 @@ class _PrintTestScreenState extends ConsumerState<PrintTestScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Print diagnostics', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text('Print diagnostics',
+                style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            _infoRow('Transport type', config?.transportType.name ?? 'loading…'),
-            _infoRow('Configured receipt paper', config?.paperSize.name ?? 'loading…'),
-            _infoRow('Platform',
-                kIsWeb ? 'Web (${defaultTargetPlatform.name})' : defaultTargetPlatform.name),
-            _infoRow('Currency symbol (live)', currencySymbol(watchCurrency(ref))),
+            _infoRow(
+                'Transport type', config?.transportType.name ?? 'loading…'),
+            _infoRow('Configured receipt paper',
+                config?.paperSize.name ?? 'loading…'),
+            _infoRow(
+                'Selected OS/printer paper size',
+                'cannot be read or controlled from Flutter Web — verify '
+                    'via "Save as PDF" below, not the printer driver'),
+            _infoRow(
+                'Platform',
+                kIsWeb
+                    ? 'Web (${defaultTargetPlatform.name})'
+                    : defaultTargetPlatform.name),
+            _infoRow(
+                'Currency symbol (live)', currencySymbol(watchCurrency(ref))),
             FutureBuilder<pw.ThemeData>(
               future: KhmerPdfFont.loadTheme(),
               builder: (context, snapshot) {
@@ -481,6 +583,27 @@ class _PrintTestScreenState extends ConsumerState<PrintTestScreen> {
             const Divider(height: 1),
             const SizedBox(height: 8),
             _paperFormatTable(),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF8E1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFFFE082)),
+              ),
+              child: const Text(
+                'If Chrome shows "A4" as the paper size while printing a '
+                'receipt, that is the SELECTED PRINTER\'s driver default, '
+                'not this app\'s generated PDF — the table above is what '
+                'this app actually built (never A4 for a receipt). Select '
+                'a thermal receipt printer, or configure that printer\'s '
+                'driver with a receipt/roll paper size, then use "Actual '
+                'size / 100%" instead of "Fit to page". See '
+                'docs/PRINTING_SETUP.md → "Windows client setup" for the '
+                'full walkthrough.',
+                style: TextStyle(fontSize: 11.5, color: Color(0xFF6D5300)),
+              ),
+            ),
           ],
         ),
       ),
@@ -490,7 +613,9 @@ class _PrintTestScreenState extends ConsumerState<PrintTestScreen> {
   Widget _paperFormatTable() {
     Widget headerCell(String text) => Padding(
           padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Text(text, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+          child: Text(text,
+              style:
+                  const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
         );
     Widget cell(String text) => Padding(
           padding: const EdgeInsets.symmetric(vertical: 4),
@@ -542,7 +667,9 @@ class _PrintTestScreenState extends ConsumerState<PrintTestScreen> {
           text: TextSpan(
             style: const TextStyle(fontSize: 12, color: Colors.black87),
             children: [
-              TextSpan(text: '$label: ', style: const TextStyle(fontWeight: FontWeight.w600)),
+              TextSpan(
+                  text: '$label: ',
+                  style: const TextStyle(fontWeight: FontWeight.w600)),
               TextSpan(text: value),
             ],
           ),

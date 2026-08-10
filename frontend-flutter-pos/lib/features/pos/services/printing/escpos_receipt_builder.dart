@@ -1,6 +1,7 @@
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:flutter/widgets.dart';
 
+import '../../../../core/utils/print_perf.dart';
 import 'printer_profile.dart';
 import 'receipt_bitmap_renderer.dart';
 import 'receipt_view_model.dart';
@@ -29,21 +30,27 @@ class EscPosReceiptBuilder {
     ReceiptViewModel receipt,
     PrinterPaperSize paperSize,
   ) async {
-    final profile = await CapabilityProfile.load();
-    final generator = Generator(paperSize.escPosPaperSize, profile);
-    var bytes = <int>[];
-    bytes += generator.reset();
+    return timePrintStage('escposBuildTotal', () async {
+      final profile = await timePrintStage(
+          'escposCapabilityLoad', () => CapabilityProfile.load());
+      final generator = Generator(paperSize.escPosPaperSize, profile);
+      var bytes = <int>[];
+      bytes += generator.reset();
 
-    if (receipt.containsKhmer) {
-      final image = await bitmapRenderer.render(context, receipt, paperSize);
-      bytes += generator.imageRaster(image, align: PosAlign.center);
-    } else {
-      bytes += _buildLatinText(generator, receipt);
-    }
+      if (receipt.containsKhmer) {
+        final image = await timePrintStage('escposBitmapRender',
+            () => bitmapRenderer.render(context, receipt, paperSize));
+        bytes += timePrintStageSync('escposImageRasterEncode',
+            () => generator.imageRaster(image, align: PosAlign.center));
+      } else {
+        bytes += timePrintStageSync(
+            'escposLatinText', () => _buildLatinText(generator, receipt));
+      }
 
-    bytes += generator.feed(2);
-    bytes += generator.cut();
-    return bytes;
+      bytes += generator.feed(2);
+      bytes += generator.cut();
+      return bytes;
+    });
   }
 
   List<int> _buildLatinText(Generator generator, ReceiptViewModel receipt) {
@@ -71,12 +78,14 @@ class EscPosReceiptBuilder {
       ]);
     }
 
+    final labels = receipt.labels;
+
     line(receipt.businessName, align: PosAlign.center, bold: true);
     if (receipt.address != null && receipt.address!.isNotEmpty) {
       line(receipt.address!, align: PosAlign.center);
     }
     if (receipt.phone != null && receipt.phone!.isNotEmpty) {
-      line('Tel: ${receipt.phone}', align: PosAlign.center);
+      line(labels.telFormat(receipt.phone!), align: PosAlign.center);
     }
     bytes += generator.hr();
     row(receipt.invoiceNumber, receipt.date);
@@ -95,32 +104,38 @@ class EscPosReceiptBuilder {
     }
     bytes += generator.hr(ch: '-');
 
-    row('Subtotal', receipt.fmt(receipt.subtotal));
-    if (receipt.discountAmount > 0) {
-      row('Discount', '-${receipt.fmt(receipt.discountAmount)}');
+    row(labels.subtotal, receipt.fmt(receipt.subtotal));
+    // Iterate the shared adjustments list (discount/delivery/other/tax) —
+    // previously this only ever checked discountAmount/taxAmount directly,
+    // so a receipt with a delivery or other/service charge silently never
+    // showed that line on thermal output, unlike the PDF/on-screen preview.
+    for (final adj in receipt.adjustments) {
+      row(adj.type.labelFrom(labels), receipt.fmtAdjustment(adj));
     }
-    if (receipt.taxAmount > 0) row('Tax', receipt.fmt(receipt.taxAmount));
     bytes += generator.hr();
-    row('TOTAL', receipt.fmt(receipt.total), bold: true);
+    row(labels.total.toUpperCase(), receipt.fmt(receipt.total), bold: true);
 
     if (receipt.showExchangeRate) {
-      row('Rate',
-          '1 = ${ReceiptViewModel.khrGroup(receipt.exchangeRateKhr!)} KHR');
-      row('Total (KHR)', '${ReceiptViewModel.khrGroup(receipt.khrTotal)} ៛',
+      row(
+          labels.exchangeRate,
+          labels.exchangeRateValueFormat(
+              ReceiptViewModel.khrGroup(receipt.exchangeRateKhr!)));
+      row(labels.totalRiel, '${ReceiptViewModel.khrGroup(receipt.khrTotal)} ៛',
           bold: true);
     }
-    if (receipt.paidAmount > 0) row('Paid', receipt.fmt(receipt.paidAmount));
+    if (receipt.paidAmount > 0)
+      row(labels.paid, receipt.fmt(receipt.paidAmount));
     if (receipt.changeAmount > 0) {
       // Cash Received (= paidAmount + changeAmount) makes Change legible —
       // Paid alone is the amount APPLIED to the sale (never more than the
       // total), so Change would otherwise look like it appeared from
       // nowhere.
-      row('Cash Received',
+      row(labels.cashReceived,
           receipt.fmt(receipt.paidAmount + receipt.changeAmount));
-      row('Change', receipt.fmt(receipt.changeAmount));
+      row(labels.change, receipt.fmt(receipt.changeAmount));
     }
     if (receipt.paymentMethodLabel != null) {
-      row('Payment', receipt.paymentMethodLabel!);
+      row(labels.paymentMethod, receipt.paymentMethodLabel!);
     }
     bytes += generator.hr();
     line(receipt.footer, align: PosAlign.center, bold: true);

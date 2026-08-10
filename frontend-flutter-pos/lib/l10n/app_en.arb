@@ -1,6 +1,7 @@
 {
   "@@locale": "en",
   "appName": "KAKNNEA",
+  "commonName": "Name",
   "commonSave": "Save",
   "commonCancel": "Cancel",
   "commonDelete": "Delete",
@@ -73,6 +74,8 @@
   "settingsPaymentMethods": "Payment Methods",
   "settingsPosSettings": "POS Settings",
   "settingsCurrencies": "Currencies",
+  "settingsCurrencySymbol": "Symbol",
+  "settingsExchangeRatePerUsd": "Exchange rate (per 1 USD)",
   "settingsDarkMode": "Dark mode",
   "settingsLanguage": "App language",
   "settingsSave": "Save",
@@ -2388,5 +2391,12 @@
   "salesSummaryPdfDiscountsLabel": "Discounts",
   "salesSummaryPdfNetSalesLabel": "Net Sales",
   "salesSummaryPdfTransactionsLabel": "Transactions",
-  "salesSummaryPdfItemsSoldLabel": "Items Sold"
+  "salesSummaryPdfItemsSoldLabel": "Items Sold",
+  "salesReportPdfColReceiptNo": "Receipt #",
+  "salesReportPdfColPayment": "Payment",
+  "stockMovementPdfColType": "Type",
+  "stockMovementPdfMovementsLabel": "Movements",
+  "inventoryValuationPdfTotalValueLabel": "Total Value",
+  "salesByModifierPdfColGroup": "Group",
+  "salesByModifierPdfColOption": "Option"
 }

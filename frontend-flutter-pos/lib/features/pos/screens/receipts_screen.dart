@@ -10,12 +10,13 @@ import '../models/receipt_models.dart';
 import '../providers/receipt_provider.dart';
 import '../services/print_service.dart';
 import '../services/printing/printer_profile.dart';
+import '../services/printing/receipt_bitmap_renderer.dart';
 import '../services/printing/receipt_view_model.dart';
 import '../services/printing/thermal_printer_service.dart';
 import '../services/sale_service.dart';
 import '../../../core/utils/l10n_extensions.dart';
-import '../../../core/utils/bilingual.dart';
 import '../../../core/providers/language_provider.dart';
+import '../widgets/receipt_paper_view.dart';
 
 /// Progress shown while "Print All" is preparing (fetching full receipt
 /// detail per sale) or printing (building/emitting the batch print job).
@@ -182,14 +183,16 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
       final config = await ref.read(thermalPrinterServiceProvider).loadConfig();
       final bytes = await ref
           .read(printServiceProvider)
-          .buildReceiptPdf(viewModel, config.paperSize);
+          .buildReceiptPdf(viewModel, config.paperSize, context: context);
       await Printing.sharePdf(
           bytes: bytes, filename: '${viewModel.invoiceNumber}.pdf');
     } catch (e) {
       debugPrint('Save PDF failed: $e');
       if (mounted) {
-        messenger.showSnackBar(
-            SnackBar(content: Text(l10n.receiptsScreenPrintReceiptFailed)));
+        final message = e is ReceiptRenderException
+            ? e.message
+            : l10n.receiptsScreenPrintReceiptFailed;
+        messenger.showSnackBar(SnackBar(content: Text(message)));
       }
     }
   }
@@ -286,6 +289,7 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
     final failedLabels = <String>[];
     final viewModels = <ReceiptViewModel>[];
     var printJobFailed = false;
+    String? printJobFailureMessage;
     final language = ref.read(appLanguageProvider);
     final saleService = ref.read(saleServiceProvider);
 
@@ -324,7 +328,7 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
       if (config.transportType == PrinterTransportType.pdfDriver) {
         final bytes = await ref
             .read(printServiceProvider)
-            .buildReceiptsPdf(viewModels, config.paperSize);
+            .buildReceiptsPdf(viewModels, config.paperSize, context: context);
         progress.value = _PrintAllProgress(viewModels.length, viewModels.length,
             l10n.receiptsScreenPrintingReceipts);
         await Printing.layoutPdf(
@@ -342,6 +346,7 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
     } catch (e) {
       debugPrint('Print All failed: $e');
       printJobFailed = true;
+      if (e is ReceiptRenderException) printJobFailureMessage = e.message;
     } finally {
       navigator.pop(); // close the progress dialog
       progress.dispose();
@@ -350,8 +355,9 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
 
     if (!mounted || cancelled) return;
     if (printJobFailed) {
-      messenger.showSnackBar(
-          SnackBar(content: Text(l10n.receiptsScreenPrintReceiptFailed)));
+      messenger.showSnackBar(SnackBar(
+          content: Text(printJobFailureMessage ??
+              l10n.receiptsScreenPrintReceiptFailed)));
       return;
     }
     if (viewModels.isEmpty) {
@@ -769,137 +775,20 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
   // ─────────────────────────────────────────────
 
   Widget _buildReceiptView(ReceiptResponse receipt) {
-    String _fmt(double v) => formatAmount(v, receipt.currency);
+    final language = ref.watch(appLanguageProvider);
+    final vm =
+        ReceiptViewModel.fromReceiptResponse(receipt, language, context.l10n);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Center(
-        child: Container(
+        child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 380),
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(2),
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
-                  blurRadius: 20,
-                  offset: const Offset(0, 4)),
-            ],
-          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // ═══ HEADER ═══
-              Center(
-                  child: Text(context.l10n.appName,
-                      style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 3.0))),
-              const SizedBox(height: 4),
-              if (receipt.businessName != null)
-                Center(
-                    child: Text(receipt.businessName!,
-                        style:
-                            TextStyle(fontSize: 9, color: Colors.grey[500]))),
-              if (receipt.address != null)
-                Center(
-                    child: Text(receipt.address!,
-                        style:
-                            TextStyle(fontSize: 9, color: Colors.grey[500]))),
-              if (receipt.phone != null)
-                Center(
-                    child: Text(
-                        context.l10n.receiptsScreenTelLabel(receipt.phone!),
-                        style:
-                            TextStyle(fontSize: 9, color: Colors.grey[500]))),
+              // ═══ RECEIPT — same design as the printed/on-screen preview ═══
+              ReceiptPaperView(receipt: vm, width: 380),
               const SizedBox(height: 14),
-              _miniDivider,
-              const SizedBox(height: 14),
-
-              // ═══ INFO ═══
-              _infoLine(context.l10n.receiptsScreenReceiptNoLabel,
-                  receipt.saleNumber ?? '#${receipt.saleId}'),
-              if (receipt.createdAt != null)
-                _infoLine(context.l10n.receiptDate, receipt.createdAt!),
-              if (receipt.cashierName != null)
-                _infoLine(context.l10n.receiptCashier, receipt.cashierName!),
-              if (receipt.customerName != null)
-                _infoLine(context.l10n.receiptCustomer, receipt.customerName!),
-              if (receipt.orderMode != null)
-                _infoLine(
-                    context.l10n.receiptsScreenModeLabel, receipt.orderMode!),
-              if (receipt.tableNumber != null &&
-                  receipt.tableNumber!.isNotEmpty)
-                _infoLine(context.l10n.receiptTable, receipt.tableNumber!),
-              const SizedBox(height: 14),
-              _miniDivider,
-              const SizedBox(height: 14),
-
-              // ═══ ITEMS ═══
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(context.l10n.receiptsScreenDescriptionHeader,
-                      style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.grey[700])),
-                  const Spacer(),
-                  SizedBox(
-                      width: 30,
-                      child: Text(context.l10n.receiptQty,
-                          textAlign: TextAlign.right,
-                          style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.grey[700]))),
-                  SizedBox(
-                      width: 58,
-                      child: Text(context.l10n.receiptTotal,
-                          textAlign: TextAlign.right,
-                          style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.grey[700]))),
-                ],
-              ),
-              const SizedBox(height: 4),
-              _miniDivider,
-              const SizedBox(height: 8),
-              if (receipt.lines.isNotEmpty)
-                ...receipt.lines
-                    .map((l) => _buildLineItem(l, receipt.currency)),
-              const SizedBox(height: 14),
-              _miniDivider,
-              const SizedBox(height: 14),
-
-              // ═══ TOTALS ═══
-              _buildTotals(receipt, receipt.currency),
-              const SizedBox(height: 14),
-              _miniDivider,
-              const SizedBox(height: 14),
-
-              // ═══ PAYMENTS ═══
-              if (receipt.payments.isNotEmpty) ...[
-                ...receipt.payments.map((p) => Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2),
-                      child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                                p.method ??
-                                    context.l10n.receiptsScreenPaymentFallback,
-                                style: const TextStyle(fontSize: 12)),
-                            Text(_fmt(p.amount),
-                                style: const TextStyle(
-                                    fontSize: 12, fontWeight: FontWeight.w600)),
-                          ]),
-                    )),
-                const SizedBox(height: 14),
-                _miniDivider,
-                const SizedBox(height: 14),
-              ],
 
               // ═══ STATUS ═══
               if (receipt.status != null)
@@ -980,57 +869,11 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
                   ),
                 ],
               ),
-
-              // ═══ FOOTER ═══
-              const SizedBox(height: 16),
-              if (receipt.footer != null)
-                Center(
-                    child: Text(receipt.footer!,
-                        style:
-                            TextStyle(fontSize: 10, color: Colors.grey[500])))
-              else ...[
-                Center(
-                    child: Text(context.l10n.receiptsScreenThankYouFooter,
-                        style: const TextStyle(
-                            fontSize: 11, fontWeight: FontWeight.w700))),
-                const SizedBox(height: 4),
-                Center(
-                    child: Text('www.kaknnea.com',
-                        style:
-                            TextStyle(fontSize: 8, color: Colors.grey[500]))),
-                const SizedBox(height: 2),
-                Center(
-                    child: Text(context.l10n.receiptsScreenPoweredBy,
-                        style:
-                            TextStyle(fontSize: 7, color: Colors.grey[500]))),
-              ],
             ],
           ),
         ),
       ),
     );
-  }
-
-  Widget get _miniDivider => Container(height: 1, color: Colors.grey[200]);
-
-  IconData _paymentIcon(String? method) {
-    switch (method?.toUpperCase()) {
-      case 'CASH':
-        return Icons.money;
-      case 'CARD':
-      case 'CREDIT_CARD':
-      case 'VISA':
-      case 'MASTERCARD':
-        return Icons.credit_card;
-      case 'QR':
-      case 'QR_CODE':
-        return Icons.qr_code;
-      case 'MOBILE':
-      case 'WALLET':
-        return Icons.phone_android;
-      default:
-        return Icons.payment;
-    }
   }
 
   void _showEmailDialog(BuildContext context, ReceiptResponse receipt) {
@@ -1201,191 +1044,6 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
             ],
           );
         },
-      ),
-    );
-  }
-
-  // ─────────────────────────────────────────────
-  // INFO LINE
-  // ─────────────────────────────────────────────
-
-  Widget _infoLine(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-          Text(value,
-              style:
-                  const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-        ],
-      ),
-    );
-  }
-
-  // ─────────────────────────────────────────────
-  // LINE ITEM
-  // ─────────────────────────────────────────────
-
-  Widget _buildLineItem(ReceiptLine line, String? currency) {
-    final fmt = (double v) => formatAmount(v, currency);
-    final lang = ref.watch(appLanguageProvider);
-    final localizedLineName = line.localizedName(lang);
-    final unitFallback = context.l10n.receiptsScreenEachUnitFallback;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Qty badge
-          Container(
-            width: 26,
-            height: 26,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: PosTheme.backgroundPage,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: PosTheme.dividerColor),
-            ),
-            child: Text(
-              line.qty.toStringAsFixed(0),
-              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  localizedLineName.isEmpty
-                      ? context.l10n.receiptsScreenItemFallback
-                      : localizedLineName,
-                  style: const TextStyle(
-                      fontSize: 13, fontWeight: FontWeight.w500),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 1),
-                Text(
-                  line.modifierAmount != 0
-                      ? '${context.l10n.receiptsScreenBaseWithUnit(fmt(line.basePrice), line.unitSymbol ?? unitFallback)}'
-                          ' + ${context.l10n.receiptsScreenModifiersWithUnit(fmt(line.modifierAmount), line.unitSymbol ?? unitFallback)}'
-                      : fmt(line.unitPrice) +
-                          (line.unitSymbol != null
-                              ? ' /${line.unitSymbol}'
-                              : ''),
-                  style: TextStyle(fontSize: 11, color: Colors.grey[500]),
-                ),
-                if (line.modifierSummary != null &&
-                    line.modifierSummary!.isNotEmpty) ...[
-                  const SizedBox(height: 1),
-                  Text(
-                    line.modifierSummary!,
-                    style: TextStyle(
-                        fontSize: 10.5,
-                        color: Colors.grey[500],
-                        fontStyle: FontStyle.italic),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            fmt(line.lineTotal),
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ─────────────────────────────────────────────
-  // TOTALS
-  // ─────────────────────────────────────────────
-
-  Widget _buildTotals(ReceiptResponse r, String? currency) {
-    final fmt = (double v) => formatAmount(v, currency);
-    return Column(
-      children: [
-        _totalRow(context.l10n.receiptSubtotal, fmt(r.subtotal)),
-        if (r.discountAmount > 0)
-          _totalRow(context.l10n.receiptDiscount, '-${fmt(r.discountAmount)}'),
-        if (r.taxAmount > 0)
-          _totalRow(context.l10n.receiptTax, fmt(r.taxAmount)),
-        if (r.deliveryCharge > 0)
-          _totalRow(
-              context.l10n.receiptsScreenDeliveryLabel, fmt(r.deliveryCharge)),
-        if (r.otherCharge > 0)
-          _totalRow(context.l10n.receiptsScreenOtherLabel, fmt(r.otherCharge)),
-        const Divider(height: 16),
-        _totalRow(context.l10n.receiptTotal, fmt(r.total),
-            bold: true, large: true),
-        if (r.paidAmount > 0 && r.paidAmount != r.total)
-          _totalRow(context.l10n.receiptPaid, fmt(r.paidAmount)),
-        // Cash Received (= paidAmount + changeAmount) makes Change legible
-        // — paidAmount alone is the amount APPLIED to the sale (never more
-        // than the total), so Change would otherwise look like it appeared
-        // from nowhere.
-        if (r.changeAmount > 0) ...[
-          _totalRow(context.l10n.paymentScreenCashReceived,
-              fmt(r.paidAmount + r.changeAmount)),
-          _totalRow(context.l10n.receiptChange, fmt(r.changeAmount)),
-        ],
-        // Riel conversion, using the rate frozen onto this sale at the time
-        // it was made — never the live Settings rate — so an old receipt
-        // keeps showing the rate that was actually in effect back then.
-        if ((r.exchangeRateKhr ?? 0) > 0 &&
-            currency?.toUpperCase() != 'KHR') ...[
-          const Divider(height: 16),
-          _totalRow(
-              context.l10n.receiptExchangeRate,
-              context.l10n.receiptsScreenExchangeRateValue(
-                  _khrGroup(r.exchangeRateKhr!))),
-          _totalRow(context.l10n.receiptsScreenTotalRielLabel,
-              '${_khrGroup(r.total * r.exchangeRateKhr!)} ៛',
-              bold: true),
-        ],
-      ],
-    );
-  }
-
-  /// Groups a riel amount with thousands separators and no decimals
-  /// (e.g. 82000 -> "82,000"), since riel is never quoted in cents.
-  String _khrGroup(num v) {
-    final s = v.round().toString();
-    final buf = StringBuffer();
-    for (int i = 0; i < s.length; i++) {
-      if (i > 0 && (s.length - i) % 3 == 0) buf.write(',');
-      buf.write(s[i]);
-    }
-    return buf.toString();
-  }
-
-  Widget _totalRow(String label, String value,
-      {bool bold = false, bool large = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: large ? 15 : 13,
-              fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
-            ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: large ? 18 : 13,
-              fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
-            ),
-          ),
-        ],
       ),
     );
   }

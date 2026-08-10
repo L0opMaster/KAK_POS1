@@ -1,6 +1,7 @@
 {
   "@@locale": "km",
   "appName": "គណនា",
+  "commonName": "ឈ្មោះ",
   "commonSave": "រក្សាទុក",
   "commonCancel": "បោះបង់",
   "commonDelete": "លុប",
@@ -66,6 +67,8 @@
   "settingsPaymentMethods": "វិធីទូទាត់",
   "settingsPosSettings": "ការកំណត់លក់ទំនិញ",
   "settingsCurrencies": "រូបិយប័ណ្ណ",
+  "settingsCurrencySymbol": "និមិត្តសញ្ញា",
+  "settingsExchangeRatePerUsd": "អត្រាប្តូរប្រាក់ (ក្នុង ១ ដុល្លារ)",
   "settingsDarkMode": "របៀបងងឹត",
   "settingsLanguage": "ភាសាកម្មវិធី",
   "settingsSave": "រក្សាទុក",
@@ -1138,5 +1141,12 @@
   "salesSummaryPdfDiscountsLabel": "បញ្ចុះតម្លៃ",
   "salesSummaryPdfNetSalesLabel": "ការលក់សុទ្ធ",
   "salesSummaryPdfTransactionsLabel": "ចំនួនប្រតិបត្តិការ",
-  "salesSummaryPdfItemsSoldLabel": "ទំនិញបានលក់"
+  "salesSummaryPdfItemsSoldLabel": "ទំនិញបានលក់",
+  "salesReportPdfColReceiptNo": "លេខបង្កាន់ដៃ",
+  "salesReportPdfColPayment": "ការទូទាត់",
+  "stockMovementPdfColType": "ប្រភេទ",
+  "stockMovementPdfMovementsLabel": "ចលនា",
+  "inventoryValuationPdfTotalValueLabel": "តម្លៃសរុប",
+  "salesByModifierPdfColGroup": "ក្រុម",
+  "salesByModifierPdfColOption": "ជម្រើស"
 }

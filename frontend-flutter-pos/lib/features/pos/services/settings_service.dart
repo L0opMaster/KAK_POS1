@@ -88,6 +88,21 @@ class SettingsService {
     );
   }
 
+  /// Updates a currency's editable fields — including the exchange rate
+  /// (units of this currency per 1 USD, e.g. 4000 for KHR). The backend's
+  /// `CurrencyRequest` requires code/name/symbol/exchangeRate together on
+  /// every PUT, so callers must send the full record, not just the field
+  /// that changed.
+  Future<Map<String, dynamic>> updateCurrency(
+    Object id,
+    Map<String, dynamic> request,
+  ) async {
+    return _api.put<Map<String, dynamic>>(
+      '/api/settings/currencies/$id',
+      data: request,
+    );
+  }
+
   // ── POS Layout settings (Loyverse-inspired) ───────────────────────────────
 
   Future<Map<String, dynamic>> getPosLayout() async {

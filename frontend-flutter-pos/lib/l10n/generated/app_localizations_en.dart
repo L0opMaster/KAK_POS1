@@ -12,6 +12,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appName => 'KAKNNEA';
 
   @override
+  String get commonName => 'Name';
+
+  @override
   String get commonSave => 'Save';
 
   @override
@@ -207,6 +210,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsCurrencies => 'Currencies';
+
+  @override
+  String get settingsCurrencySymbol => 'Symbol';
+
+  @override
+  String get settingsExchangeRatePerUsd => 'Exchange rate (per 1 USD)';
 
   @override
   String get settingsDarkMode => 'Dark mode';
@@ -3835,4 +3844,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get salesSummaryPdfItemsSoldLabel => 'Items Sold';
+
+  @override
+  String get salesReportPdfColReceiptNo => 'Receipt #';
+
+  @override
+  String get salesReportPdfColPayment => 'Payment';
+
+  @override
+  String get stockMovementPdfColType => 'Type';
+
+  @override
+  String get stockMovementPdfMovementsLabel => 'Movements';
+
+  @override
+  String get inventoryValuationPdfTotalValueLabel => 'Total Value';
+
+  @override
+  String get salesByModifierPdfColGroup => 'Group';
+
+  @override
+  String get salesByModifierPdfColOption => 'Option';
 }

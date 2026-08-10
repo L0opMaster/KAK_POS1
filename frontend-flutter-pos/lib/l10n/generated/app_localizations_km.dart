@@ -12,6 +12,9 @@ class AppLocalizationsKm extends AppLocalizations {
   String get appName => 'គណនា';
 
   @override
+  String get commonName => 'ឈ្មោះ';
+
+  @override
   String get commonSave => 'រក្សាទុក';
 
   @override
@@ -207,6 +210,12 @@ class AppLocalizationsKm extends AppLocalizations {
 
   @override
   String get settingsCurrencies => 'រូបិយប័ណ្ណ';
+
+  @override
+  String get settingsCurrencySymbol => 'និមិត្តសញ្ញា';
+
+  @override
+  String get settingsExchangeRatePerUsd => 'អត្រាប្តូរប្រាក់ (ក្នុង ១ ដុល្លារ)';
 
   @override
   String get settingsDarkMode => 'របៀបងងឹត';
@@ -3847,4 +3856,25 @@ class AppLocalizationsKm extends AppLocalizations {
 
   @override
   String get salesSummaryPdfItemsSoldLabel => 'ទំនិញបានលក់';
+
+  @override
+  String get salesReportPdfColReceiptNo => 'លេខបង្កាន់ដៃ';
+
+  @override
+  String get salesReportPdfColPayment => 'ការទូទាត់';
+
+  @override
+  String get stockMovementPdfColType => 'ប្រភេទ';
+
+  @override
+  String get stockMovementPdfMovementsLabel => 'ចលនា';
+
+  @override
+  String get inventoryValuationPdfTotalValueLabel => 'តម្លៃសរុប';
+
+  @override
+  String get salesByModifierPdfColGroup => 'ក្រុម';
+
+  @override
+  String get salesByModifierPdfColOption => 'ជម្រើស';
 }

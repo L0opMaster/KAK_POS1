@@ -24,11 +24,13 @@ import 'package:printing/printing.dart';
 
 import '../../../core/providers/language_provider.dart';
 import '../../../core/services/api_service.dart';
+import '../../../core/utils/print_perf.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../models/receipt_models.dart';
 import 'printing/khmer_pdf_font.dart';
 import 'printing/printer_pdf_format.dart';
 import 'printing/printer_profile.dart';
+import 'printing/receipt_bitmap_renderer.dart';
 import 'printing/receipt_layout_spec.dart';
 import 'printing/receipt_view_model.dart';
 import 'printing/thermal_printer_service.dart';
@@ -38,10 +40,17 @@ const _greyDark = PdfColor.fromInt(0xFF666666);
 const _green = PdfColor.fromInt(0xFF4CAF50);
 
 class PrintService {
-  PrintService(this._api, this._ref);
+  PrintService(this._api, this._ref,
+      {this.bitmapRenderer = const ReceiptBitmapRenderer()});
 
   final ApiService _api;
   final Ref _ref;
+
+  /// Injectable for tests — the same pattern [EscPosReceiptBuilder] already
+  /// uses to substitute a fake renderer that skips real off-screen widget
+  /// mounting (which needs a live `Overlay`/frame pump; see that class's
+  /// test file for why this matters).
+  final ReceiptBitmapRenderer bitmapRenderer;
 
   /// Print a receipt for the given [saleId]. [context] must be mounted —
   /// callers invoking this after an `await` must check `mounted` first,
@@ -62,7 +71,8 @@ class PrintService {
       final config =
           await _ref.read(thermalPrinterServiceProvider).loadConfig();
       if (config.transportType == PrinterTransportType.pdfDriver) {
-        final pdfBytes = await buildReceiptPdf(viewModel, config.paperSize);
+        final pdfBytes = await buildReceiptPdf(viewModel, config.paperSize,
+            context: context);
         await Printing.layoutPdf(
           onLayout: (_) => pdfBytes,
           name: 'receipt_$saleId',
@@ -75,7 +85,11 @@ class PrintService {
       }
       return true;
     } catch (e) {
-      debugPrint('Print failed: $e');
+      if (e is ReceiptRenderException) {
+        debugPrint('Khmer receipt render failed: ${e.message}');
+      } else {
+        debugPrint('Print failed: $e');
+      }
       return false;
     }
   }
@@ -87,20 +101,31 @@ class PrintService {
   /// (receipt_preview_screen.dart), reprints (receipts_screen.dart), and the
   /// developer print test screen, so there is exactly one PDF receipt design
   /// in the app, matching the on-screen preview section-for-section.
+  ///
+  /// [context], when given, is used only for a Khmer receipt: the page is
+  /// rendered as a Flutter-shaped bitmap (see [ReceiptBitmapRenderer]) and
+  /// embedded as an image, instead of `pw.Text` + a Khmer font fallback that
+  /// package:pdf doesn't shape as reliably as Flutter's own text engine (see
+  /// `printing/khmer_pdf_font.dart`'s doc comment). An English-only receipt
+  /// always uses the fast native `pw.Text` path regardless of [context].
+  /// Without a [context], a Khmer receipt still renders — via the older
+  /// `pw.Text` path — rather than failing to produce a PDF at all.
   Future<Uint8List> buildReceiptPdf(
     ReceiptViewModel r,
-    PrinterPaperSize paperSize,
-  ) async {
+    PrinterPaperSize paperSize, {
+    BuildContext? context,
+  }) async {
     final doc = pw.Document(theme: await KhmerPdfFont.loadTheme());
+    final content = await _pageContent(context, r, paperSize);
 
     doc.addPage(
       pw.Page(
         pageFormat: paperSize.pdfPageFormat,
-        build: (context) => _receiptPageContent(r, paperSize),
+        build: (_) => content,
       ),
     );
 
-    return doc.save();
+    return timePrintStage('receiptPdfDocSave', () => doc.save());
   }
 
   /// Builds ONE PDF document containing every receipt in [receipts], each
@@ -120,27 +145,93 @@ class PrintService {
   /// direct ESC/POS transport (bluetooth/usb/network) instead, where
   /// [ThermalPrinterService.printReceipts] issues a real cut after each
   /// receipt.
+  ///
+  /// [context] is threaded through to [buildReceiptPdf]'s Khmer bitmap path
+  /// — see that method's doc comment. Receipts are rendered one at a time,
+  /// in order (not `Future.wait`), the same sequential discipline
+  /// [ThermalPrinterService.printReceipts] already uses for its batch, since
+  /// concurrent off-screen widget mounts race against each other.
   Future<Uint8List> buildReceiptsPdf(
     List<ReceiptViewModel> receipts,
-    PrinterPaperSize paperSize,
-  ) async {
+    PrinterPaperSize paperSize, {
+    BuildContext? context,
+  }) async {
     final doc = pw.Document(theme: await KhmerPdfFont.loadTheme());
 
-    for (final r in receipts) {
-      doc.addPage(
-        pw.Page(
-          pageFormat: paperSize.pdfPageFormat,
-          build: (context) => _receiptPageContent(r, paperSize),
-        ),
-      );
-    }
+    await timePrintStage('receiptsPdfContentTotal', () async {
+      for (final r in receipts) {
+        final content = await _pageContent(context, r, paperSize);
+        doc.addPage(
+          pw.Page(
+            pageFormat: paperSize.pdfPageFormat,
+            build: (_) => content,
+          ),
+        );
+      }
+    });
 
-    return doc.save();
+    return timePrintStage('receiptsPdfDocSave', () => doc.save());
+  }
+
+  /// [context] present and [r] Khmer → Flutter-rendered bitmap embedded as
+  /// a `pw.Image`. Otherwise → the existing `pw.Text`-based layout.
+  Future<pw.Widget> _pageContent(
+    BuildContext? context,
+    ReceiptViewModel r,
+    PrinterPaperSize paperSize,
+  ) async {
+    if (r.containsKhmer && context != null && context.mounted) {
+      return _khmerImagePageContent(context, r, paperSize);
+    }
+    return _receiptPageContent(r, paperSize);
+  }
+
+  /// Renders [r] via [ReceiptBitmapRenderer] (the same renderer the ESC/POS
+  /// thermal path uses for Khmer receipts — see `escpos_receipt_builder
+  /// .dart`) and embeds it as a single full-page image, sized to exactly
+  /// fill the receipt's printable content width
+  /// (`paperSize.pdfPageFormat.availableWidth`) with height computed from
+  /// the source image's own aspect ratio, so it's never stretched/distorted
+  /// and never needs a second resize pass after rendering.
+  ///
+  /// Embeds the decoded `image` package raster directly via [pw.ImageImage]
+  /// instead of going through [pw.MemoryImage] with a PNG-encoded byte
+  /// array. `package:pdf`'s underlying `PdfImage` only ever wants raw RGBA
+  /// pixels — [pw.MemoryImage] exists to accept an already-*encoded* file
+  /// (e.g. a PNG downloaded from a server), and internally decodes it
+  /// straight back to raw pixels before embedding (`PdfImage.file` →
+  /// `image.decodeImage`). Round-tripping our own freshly-rendered pixels
+  /// through a PNG encode only to have `doc.save()` immediately decode that
+  /// same PNG again was profiled at ~2.3s encode plus a large share of a
+  /// ~4.3s `doc.save()` for one receipt (see `[PrintPerf]` logs) — pure
+  /// waste, since [pw.ImageImage] accepts [decoded] as-is and skips both
+  /// the encode and the redundant decode.
+  Future<pw.Widget> _khmerImagePageContent(
+    BuildContext context,
+    ReceiptViewModel r,
+    PrinterPaperSize paperSize,
+  ) async {
+    final decoded = await timePrintStage('receiptPdfBitmapRender',
+        () => bitmapRenderer.renderImage(context, r, paperSize));
+    if (kDebugMode) {
+      debugPrint('[PrintPerf] receiptPdfBitmapDimensions='
+          '${decoded.width}x${decoded.height} '
+          'rawBytes=${decoded.width * decoded.height * 4}');
+    }
+    final targetWidth = paperSize.pdfPageFormat.availableWidth;
+    final targetHeight = targetWidth * decoded.height / decoded.width;
+    return pw.Image(
+      pw.ImageImage(decoded),
+      width: targetWidth,
+      height: targetHeight,
+      fit: pw.BoxFit.fill,
+    );
   }
 
   pw.Widget _receiptPageContent(
       ReceiptViewModel r, PrinterPaperSize paperSize) {
     final t = paperSize.receiptTypography;
+    final labels = r.labels;
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.stretch,
       children: [
@@ -158,7 +249,7 @@ class PrintService {
               textAlign: pw.TextAlign.center),
         ],
         if (r.phone != null && r.phone!.isNotEmpty)
-          _clipped('Tel: ${r.phone}',
+          _clipped(labels.telFormat(r.phone!),
               pw.TextStyle(fontSize: t.businessInfo, color: _grey),
               textAlign: pw.TextAlign.center),
         pw.SizedBox(height: ReceiptSpacing.smallGap),
@@ -166,11 +257,13 @@ class PrintService {
         pw.SizedBox(height: ReceiptSpacing.sectionGap),
 
         // ── Invoice metadata ──
-        _metadataRow('Invoice No.', r.invoiceNumber, t),
-        _metadataRow('Date', r.date, t),
-        _metadataRow('Time', r.time, t),
-        if (r.cashierName != null) _metadataRow('Cashier', r.cashierName!, t),
-        if (r.tableNumber != null) _metadataRow('Table', r.tableNumber!, t),
+        _metadataRow(labels.invoiceNumber, r.invoiceNumber, t),
+        _metadataRow(labels.date, r.date, t),
+        _metadataRow(labels.time, r.time, t),
+        if (r.cashierName != null)
+          _metadataRow(labels.cashier, r.cashierName!, t),
+        if (r.tableNumber != null)
+          _metadataRow(labels.table, r.tableNumber!, t),
         pw.SizedBox(height: ReceiptSpacing.sectionGap),
         _dashedDivider(),
         pw.SizedBox(height: ReceiptSpacing.sectionGap),
@@ -181,7 +274,7 @@ class PrintService {
           children: [
             pw.Expanded(
                 child: _clipped(
-                    'Item',
+                    labels.item,
                     pw.TextStyle(
                         fontSize: t.tableHeader,
                         fontWeight: pw.FontWeight.bold,
@@ -189,7 +282,7 @@ class PrintService {
             pw.SizedBox(
                 width: 28,
                 child: _clipped(
-                    'Qty',
+                    labels.qty,
                     pw.TextStyle(
                         fontSize: t.tableHeader,
                         fontWeight: pw.FontWeight.bold,
@@ -198,7 +291,7 @@ class PrintService {
             pw.SizedBox(
                 width: 50,
                 child: _clipped(
-                    'Total',
+                    labels.total,
                     pw.TextStyle(
                         fontSize: t.tableHeader,
                         fontWeight: pw.FontWeight.bold,
@@ -227,28 +320,29 @@ class PrintService {
         pw.SizedBox(height: ReceiptSpacing.sectionGap),
 
         // ── Totals ──
-        _summaryRow('Subtotal', r.fmt(r.subtotal), t),
+        _summaryRow(labels.subtotal, r.fmt(r.subtotal), t),
         for (final adj in r.adjustments) ...[
           pw.SizedBox(height: ReceiptSpacing.smallGap),
-          _summaryRow(_adjustmentLabel(adj.type), r.fmtAdjustment(adj), t),
+          _summaryRow(adj.type.labelFrom(labels), r.fmtAdjustment(adj), t),
         ],
         pw.SizedBox(height: ReceiptSpacing.smallGap),
-        _totalRow('Total', r.fmt(r.total), t),
+        _totalRow(labels.total, r.fmt(r.total), t),
         pw.SizedBox(height: ReceiptSpacing.sectionGap),
         _dashedDivider(),
         pw.SizedBox(height: ReceiptSpacing.sectionGap),
 
         // ── Payment ──
-        _summaryRow('Paid', r.fmt(r.paidAmount), t, bold: true),
+        _summaryRow(labels.paid, r.fmt(r.paidAmount), t, bold: true),
         if (r.changeAmount > 0) ...[
           // Cash Received (= paidAmount + changeAmount, what the customer
           // actually handed over) makes Change legible — Paid alone is the
           // amount APPLIED to the sale (never more than the total), so
           // Change would otherwise look like it appeared from nowhere.
           pw.SizedBox(height: ReceiptSpacing.smallGap),
-          _summaryRow('Cash Received', r.fmt(r.paidAmount + r.changeAmount), t),
+          _summaryRow(
+              labels.cashReceived, r.fmt(r.paidAmount + r.changeAmount), t),
           pw.SizedBox(height: ReceiptSpacing.smallGap),
-          _summaryRow('Change', r.fmt(r.changeAmount), t, color: _green),
+          _summaryRow(labels.change, r.fmt(r.changeAmount), t, color: _green),
           pw.SizedBox(height: ReceiptSpacing.sectionGap),
           _dashedDivider(),
           pw.SizedBox(height: ReceiptSpacing.sectionGap),
@@ -259,7 +353,7 @@ class PrintService {
           _dashedDivider(),
           pw.SizedBox(height: ReceiptSpacing.dividerGap),
           _clipped(
-              'Exchange rate',
+              labels.exchangeRate,
               pw.TextStyle(
                   fontSize: t.metadataLabel,
                   fontWeight: pw.FontWeight.bold,
@@ -267,13 +361,14 @@ class PrintService {
               textAlign: pw.TextAlign.center),
           pw.SizedBox(height: ReceiptSpacing.smallGap),
           _clipped(
-              '1 USD = ${ReceiptViewModel.khrGroup(r.exchangeRateKhr!)} KHR',
+              labels.exchangeRateValueFormat(
+                  ReceiptViewModel.khrGroup(r.exchangeRateKhr!)),
               pw.TextStyle(
                   fontSize: t.summaryValue, fontWeight: pw.FontWeight.bold),
               textAlign: pw.TextAlign.center),
           pw.SizedBox(height: ReceiptSpacing.smallGap),
           _clipped(
-              'Total (Riel):  ${ReceiptViewModel.khrGroup(r.khrTotal)} ៛',
+              '${labels.totalRiel}:  ${ReceiptViewModel.khrGroup(r.khrTotal)} ៛',
               pw.TextStyle(
                   fontSize: t.summaryValue, fontWeight: pw.FontWeight.bold),
               textAlign: pw.TextAlign.center),
@@ -292,7 +387,7 @@ class PrintService {
             pw.TextStyle(fontSize: t.footerSmall, color: _grey),
             textAlign: pw.TextAlign.center),
         pw.SizedBox(height: 2),
-        _clipped('Powered by ${r.businessName}',
+        _clipped(labels.poweredBy,
             pw.TextStyle(fontSize: t.footerSmall, color: _grey),
             textAlign: pw.TextAlign.center),
       ],
@@ -332,23 +427,6 @@ class PrintService {
               fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal,
               color: color)),
     );
-  }
-
-  /// Plain-English label for a [ReceiptAdjustment] row — this PDF pipeline
-  /// doesn't have a BuildContext/l10n available at every call site (e.g.
-  /// reprints, the developer test screen), matching every other label in
-  /// this file (Item/Qty/Total/Subtotal/Paid/...).
-  String _adjustmentLabel(ReceiptAdjustmentType type) {
-    switch (type) {
-      case ReceiptAdjustmentType.discount:
-        return 'Discount';
-      case ReceiptAdjustmentType.delivery:
-        return 'Delivery';
-      case ReceiptAdjustmentType.otherCharge:
-        return 'Other Charge';
-      case ReceiptAdjustmentType.tax:
-        return 'Tax';
-    }
   }
 
   pw.Widget _totalRow(String label, String value, ReceiptTypography t) {

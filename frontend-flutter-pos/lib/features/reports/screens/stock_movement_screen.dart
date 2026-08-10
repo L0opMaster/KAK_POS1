@@ -94,10 +94,17 @@ class _StockMovementScreenState extends ConsumerState<StockMovementScreen> {
         businessName: '${company['businessName'] ?? ''}',
         businessAddress: '${company['address'] ?? ''}',
         businessPhone: '${company['phone'] ?? ''}',
-        columns: const ['Product', 'Type', 'Qty', 'Date'],
+        columns: [
+          l10n.inventoryValuationColProduct,
+          l10n.stockMovementPdfColType,
+          l10n.receiptQty,
+          l10n.receiptDate,
+        ],
         rows: rows,
         columnAlignments: const {2: pw.Alignment.centerRight},
-        summary: [MapEntry('Movements', '${_data.length}')],
+        summary: [
+          MapEntry(l10n.stockMovementPdfMovementsLabel, '${_data.length}')
+        ],
         generatedAt: DateTime.now(),
         generatedLabel: l10n.reportPdfGeneratedLabel,
         pageLabel: l10n.reportPdfPageLabel,
@@ -109,8 +116,8 @@ class _StockMovementScreenState extends ConsumerState<StockMovementScreen> {
       );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('${l10n.printerPrintFailed}: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${l10n.printerPrintFailed}: $e')));
       }
     }
   }

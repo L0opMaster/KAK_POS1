@@ -48,6 +48,9 @@ import 'features/reports/screens/sales_report_screen.dart';
 import 'features/reports/screens/sales_by_modifier_screen.dart';
 import 'features/reports/screens/discounts_screen.dart';
 import 'features/reports/screens/taxes_screen.dart';
+import 'features/pos/services/printing/khmer_pdf_font.dart';
+import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
+import 'dart:async';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -58,7 +61,27 @@ Future<void> main() async {
   // restoreCart(), table_selection_provider.dart's load, etc. — is instant
   // instead of paying the first-call initialization cost.
   await SharedPreferences.getInstance();
+  // Printing: both of these cache themselves after the first call anyway
+  // (KhmerPdfFont.loadTheme's static Font fields; esc_pos_utils_plus's own
+  // internal capabilities map) — firing them here, unawaited, moves that
+  // one-time cost to app launch instead of the cashier's first Khmer
+  // print/receipt of the day. Never awaited and never allowed to throw:
+  // printing must still work even if this prewarm fails or is still in
+  // flight when the first real print happens (loadTheme/load() just run
+  // again on demand in that case).
+  unawaited(_prewarmPrinting());
   runApp(const ProviderScope(child: PosApp()));
+}
+
+Future<void> _prewarmPrinting() async {
+  try {
+    await KhmerPdfFont.loadTheme();
+    await CapabilityProfile.load();
+  } catch (_) {
+    // Printing must still work on demand even if this prewarm fails —
+    // loadTheme()/load() simply run again the first time a real print
+    // needs them.
+  }
 }
 
 class PosApp extends ConsumerWidget {
@@ -131,8 +154,7 @@ class PosApp extends ConsumerWidget {
             const InventoryCountsScreen(),
         '/productions': (final BuildContext context) =>
             const ProductionsScreen(),
-        '/suppliers': (final BuildContext context) =>
-            const SuppliersScreen(),
+        '/suppliers': (final BuildContext context) => const SuppliersScreen(),
         '/inventory-history': (final BuildContext context) =>
             const InventoryHistoryScreen(),
         '/inventory-valuation': (final BuildContext context) =>

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
+import 'package:printing/printing.dart';
 
 import '../../../core/config/pos_theme.dart';
 import '../../../core/providers/currency_provider.dart';
@@ -12,8 +13,10 @@ import '../../../core/services/api_service.dart';
 import '../../../core/utils/l10n_extensions.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import 'print_test_screen.dart';
+import '../services/print_service.dart';
 import '../services/printing/bluetooth_printer_transport.dart';
 import '../services/printing/printer_profile.dart';
+import '../services/printing/receipt_bitmap_renderer.dart';
 import '../services/printing/receipt_view_model.dart';
 import '../services/printing/thermal_printer_service.dart';
 import '../services/settings_service.dart';
@@ -159,7 +162,16 @@ class _SettingsModulesScreenState extends ConsumerState<SettingsModulesScreen> {
       );
       final sample = _sampleReceipt(language, l10n);
       if (config.transportType == PrinterTransportType.pdfDriver) {
-        _toast(l10n.printerTestPrint);
+        // Same PrintService.buildReceiptPdf every real receipt renders
+        // through — a test print must exercise the actual PDF pipeline
+        // (Khmer font, layout, ...), not just show a fake success toast.
+        final pdfBytes = await ref
+            .read(printServiceProvider)
+            .buildReceiptPdf(sample, config.paperSize, context: context);
+        await Printing.layoutPdf(
+          onLayout: (format) async => pdfBytes,
+          name: 'receipt_test',
+        );
       } else {
         if (!mounted) return;
         await ref
@@ -169,8 +181,12 @@ class _SettingsModulesScreenState extends ConsumerState<SettingsModulesScreen> {
       if (mounted) _toast(l10n.printerPrintSuccess);
     } catch (e) {
       if (mounted) {
-        _toast(e is ApiException ? e.message : l10n.printerPrintFailed,
-            isError: true);
+        final message = e is ApiException
+            ? e.message
+            : e is ReceiptRenderException
+                ? e.message
+                : l10n.printerPrintFailed;
+        _toast(message, isError: true);
       }
     } finally {
       if (mounted) setState(() => _testPrinting = false);
@@ -381,6 +397,98 @@ class _SettingsModulesScreenState extends ConsumerState<SettingsModulesScreen> {
     }
   }
 
+  /// Opens a dialog to edit a currency's exchange rate (units of that
+  /// currency per 1 USD — e.g. 4000 for KHR), name, and symbol. There is
+  /// no other UI for this — the currencies list otherwise only exposes an
+  /// active/inactive toggle, even though the backend has supported editing
+  /// these fields since `PUT /api/settings/currencies/{id}` was added.
+  Future<void> _editCurrency(int index) async {
+    final l10n = context.l10n;
+    final currency = _currencies[index];
+    final nameCtl = TextEditingController(text: '${currency['name'] ?? ''}');
+    final symbolCtl =
+        TextEditingController(text: '${currency['symbol'] ?? ''}');
+    final rateCtl = TextEditingController(
+        text: '${(currency['exchangeRate'] as num?) ?? ''}');
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('${l10n.settingsCurrencies} — ${currency['code']}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _textField(nameCtl, l10n.commonName),
+            _textField(symbolCtl, l10n.settingsCurrencySymbol),
+            _textField(
+              rateCtl,
+              l10n.settingsExchangeRatePerUsd,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.commonCancel),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.commonSave),
+          ),
+        ],
+      ),
+    );
+    if (saved != true || !mounted) return;
+
+    final rate = double.tryParse(rateCtl.text.trim());
+    if (rate == null || rate <= 0) {
+      _toast(l10n.errorValidation, isError: true);
+      return;
+    }
+
+    final id = currency['id'];
+    final updated = {
+      ...currency,
+      'name': nameCtl.text.trim(),
+      'symbol': symbolCtl.text.trim(),
+      'exchangeRate': rate,
+    };
+    setState(() {
+      _currencies = List<Map<String, dynamic>>.from(_currencies);
+      _currencies[index] = updated;
+    });
+    try {
+      final service = ref.read(settingsServiceProvider);
+      await service.updateCurrency(id, {
+        'code': currency['code'],
+        'name': updated['name'],
+        'symbol': updated['symbol'],
+        'exchangeRate': rate,
+        'displayOrder': currency['displayOrder'] ?? 0,
+        'defaultCurrency': currency['defaultCurrency'] ?? false,
+        'active': currency['active'] ?? true,
+      });
+      // The rate that matters for NEW receipts is whatever Settings has
+      // right now — refresh the cached provider so the rest of the app
+      // (payment screen, receipt preview) picks it up immediately instead
+      // of waiting for its own next unrelated reload.
+      ref.invalidate(tenderCurrenciesProvider);
+      if (mounted) _toast(l10n.settingsSaveGeneral);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _currencies = List<Map<String, dynamic>>.from(_currencies);
+        _currencies[index] = currency;
+      });
+      _toast(e is ApiException ? e.message : l10n.errorGeneric, isError: true);
+    }
+  }
+
   void _toast(String message, {bool isError = false}) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -524,7 +632,8 @@ class _SettingsModulesScreenState extends ConsumerState<SettingsModulesScreen> {
                             onChanged: (value) =>
                                 setState(() => _showTax = value),
                           ),
-                          _saveButton(l10n.settingsSaveTax, _savingTax, _saveTax),
+                          _saveButton(
+                              l10n.settingsSaveTax, _savingTax, _saveTax),
                         ],
                       ),
                       _SectionCard(
@@ -534,8 +643,7 @@ class _SettingsModulesScreenState extends ConsumerState<SettingsModulesScreen> {
                           _textField(_printerNameCtl, l10n.formName),
                           _textField(
                               _printerTypeCtl, l10n.printerTransportType),
-                          _textField(
-                              _printerAddressCtl, l10n.printerIpAddress),
+                          _textField(_printerAddressCtl, l10n.printerIpAddress),
                           _textField(
                               _printerFooterCtl, l10n.settingsReceiptFooter),
                           _saveButton(
@@ -606,17 +714,35 @@ class _SettingsModulesScreenState extends ConsumerState<SettingsModulesScreen> {
                                 .asMap()
                                 .entries
                                 .map(
-                                  (entry) => SwitchListTile(
+                                  (entry) => ListTile(
                                     dense: true,
                                     contentPadding: EdgeInsets.zero,
-                                    value: entry.value['active'] == true,
+                                    onTap: () => _editCurrency(entry.key),
                                     title: Text(
                                       '${entry.value['code']} ${entry.value['symbol'] ?? ''}',
                                     ),
-                                    subtitle: Text('${entry.value['name']}'
-                                        '${entry.value['defaultCurrency'] == true ? ' · ${l10n.commonActive}' : ''}'),
-                                    onChanged: (value) =>
-                                        _toggleCurrency(entry.key, value),
+                                    subtitle: Text(
+                                      '${entry.value['name']}'
+                                      ' · 1 USD = ${entry.value['exchangeRate'] ?? '—'}'
+                                      '${entry.value['defaultCurrency'] == true ? ' · ${l10n.commonActive}' : ''}',
+                                    ),
+                                    trailing: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(Icons.edit_outlined,
+                                              size: 20),
+                                          tooltip: l10n.commonEdit,
+                                          onPressed: () =>
+                                              _editCurrency(entry.key),
+                                        ),
+                                        Switch(
+                                          value: entry.value['active'] == true,
+                                          onChanged: (value) =>
+                                              _toggleCurrency(entry.key, value),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 )
                                 .toList(),
@@ -716,9 +842,10 @@ class _SettingsModulesScreenState extends ConsumerState<SettingsModulesScreen> {
               return Padding(
                 padding: const EdgeInsets.only(bottom: PosTheme.spacingMd),
                 child: DropdownButtonFormField<String>(
-                  initialValue: devices.any((d) => d.macAdress == _bluetoothAddress)
-                      ? _bluetoothAddress
-                      : null,
+                  initialValue:
+                      devices.any((d) => d.macAdress == _bluetoothAddress)
+                          ? _bluetoothAddress
+                          : null,
                   decoration:
                       InputDecoration(labelText: l10n.printerSelectDevice),
                   items: devices
@@ -771,7 +898,8 @@ class _SettingsModulesScreenState extends ConsumerState<SettingsModulesScreen> {
               label: Text(l10n.printerTestPrint),
             ),
             const SizedBox(width: PosTheme.spacingSm),
-            _saveButton(l10n.commonSave, _savingThermalConfig, _saveThermalConfig),
+            _saveButton(
+                l10n.commonSave, _savingThermalConfig, _saveThermalConfig),
           ],
         ),
       ],
@@ -786,8 +914,7 @@ class _SettingsModulesScreenState extends ConsumerState<SettingsModulesScreen> {
     final options = <String>{
       for (final currency in _currencies)
         if (currency['active'] == true) '${currency['code']}',
-      if (_selectedCurrencyCode != null &&
-          _selectedCurrencyCode!.isNotEmpty)
+      if (_selectedCurrencyCode != null && _selectedCurrencyCode!.isNotEmpty)
         _selectedCurrencyCode!,
     }.toList()
       ..sort();

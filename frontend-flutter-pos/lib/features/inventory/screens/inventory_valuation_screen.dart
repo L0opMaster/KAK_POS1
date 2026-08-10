@@ -34,7 +34,8 @@ class _InventoryValuationScreenState
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => ref.read(inventoryValuationProvider.notifier).loadReport());
+    Future.microtask(
+        () => ref.read(inventoryValuationProvider.notifier).loadReport());
   }
 
   @override
@@ -82,7 +83,13 @@ class _InventoryValuationScreenState
         businessName: '${company['businessName'] ?? ''}',
         businessAddress: '${company['address'] ?? ''}',
         businessPhone: '${company['phone'] ?? ''}',
-        columns: const ['Product', 'SKU', 'Stock', 'Cost', 'Value'],
+        columns: [
+          l10n.inventoryValuationColProduct,
+          l10n.formSku,
+          l10n.inventoryValuationColStock,
+          l10n.formCost,
+          l10n.inventoryValuationColValue,
+        ],
         rows: rows,
         columnAlignments: const {
           2: pw.Alignment.centerRight,
@@ -90,8 +97,9 @@ class _InventoryValuationScreenState
           4: pw.Alignment.centerRight,
         },
         summary: [
-          MapEntry('Products', '${items.length}'),
-          MapEntry('Total Value', '$cur${report.totalValue.toStringAsFixed(2)}'),
+          MapEntry(l10n.inventoryValuationProductsLabel, '${items.length}'),
+          MapEntry(l10n.inventoryValuationPdfTotalValueLabel,
+              '$cur${report.totalValue.toStringAsFixed(2)}'),
         ],
         generatedAt: DateTime.now(),
         generatedLabel: l10n.reportPdfGeneratedLabel,
@@ -104,8 +112,8 @@ class _InventoryValuationScreenState
       );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('${l10n.printerPrintFailed}: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${l10n.printerPrintFailed}: $e')));
       }
     }
   }
@@ -127,14 +135,16 @@ class _InventoryValuationScreenState
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: context.l10n.commonRefresh,
-            onPressed: () => ref.read(inventoryValuationProvider.notifier).loadReport(),
+            onPressed: () =>
+                ref.read(inventoryValuationProvider.notifier).loadReport(),
           ),
         ],
       ),
       body: SafeArea(
         child: state.when(
           data: (report) {
-            if (report == null) return const Center(child: CircularProgressIndicator());
+            if (report == null)
+              return const Center(child: CircularProgressIndicator());
             return _buildContent(report);
           },
           loading: () => const Center(child: CircularProgressIndicator()),
@@ -154,7 +164,8 @@ class _InventoryValuationScreenState
     final pageItems = filtered.sublist(startIndex, endIndex);
 
     return RefreshIndicator(
-      onRefresh: () => ref.read(inventoryValuationProvider.notifier).loadReport(),
+      onRefresh: () =>
+          ref.read(inventoryValuationProvider.notifier).loadReport(),
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(28),
@@ -162,7 +173,8 @@ class _InventoryValuationScreenState
           Card(
             elevation: 0,
             color: PosTheme.primaryGreen,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Row(
@@ -172,17 +184,21 @@ class _InventoryValuationScreenState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(context.l10n.inventoryValuationTotalValue,
-                            style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                            style: const TextStyle(
+                                color: Colors.white70, fontSize: 13)),
                         const SizedBox(height: 6),
                         Text('\$${report.totalValue.toStringAsFixed(2)}',
                             style: const TextStyle(
-                                color: Colors.white, fontSize: 30, fontWeight: FontWeight.bold)),
+                                color: Colors.white,
+                                fontSize: 30,
+                                fontWeight: FontWeight.bold)),
                         if (report.valuedAt != null) ...[
                           const SizedBox(height: 6),
                           Text(
                               context.l10n
                                   .inventoryValuationAsOf('${report.valuedAt}'),
-                              style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                              style: const TextStyle(
+                                  color: Colors.white70, fontSize: 12)),
                         ],
                       ],
                     ),
@@ -192,9 +208,12 @@ class _InventoryValuationScreenState
                     children: [
                       Text('${report.totalProducts}',
                           style: const TextStyle(
-                              color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold)),
                       Text(context.l10n.inventoryValuationProductsLabel,
-                          style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                          style: const TextStyle(
+                              color: Colors.white70, fontSize: 12)),
                     ],
                   ),
                 ],
@@ -212,8 +231,10 @@ class _InventoryValuationScreenState
                   child: Row(
                     children: [
                       Expanded(
-                        child: Text(context.l10n.inventoryValuationStockByProduct,
-                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        child: Text(
+                            context.l10n.inventoryValuationStockByProduct,
+                            style: const TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.bold)),
                       ),
                       SizedBox(
                         width: 260,
@@ -236,11 +257,12 @@ class _InventoryValuationScreenState
                             filled: true,
                             fillColor: PosTheme.backgroundPage,
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(PosTheme.radiusMedium),
+                              borderRadius:
+                                  BorderRadius.circular(PosTheme.radiusMedium),
                               borderSide: BorderSide.none,
                             ),
-                            contentPadding:
-                                const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                            contentPadding: const EdgeInsets.symmetric(
+                                vertical: 0, horizontal: 12),
                             isDense: true,
                           ),
                           style: const TextStyle(fontSize: 14),
@@ -251,27 +273,36 @@ class _InventoryValuationScreenState
                 ),
                 const Divider(height: 1),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
                   child: Row(
                     children: [
                       Expanded(
                           child: Text(context.l10n.inventoryValuationColProduct,
-                              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black54))),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black54))),
                       SizedBox(
                           width: 70,
                           child: Text(context.l10n.inventoryValuationColStock,
                               textAlign: TextAlign.right,
-                              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black54))),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black54))),
                       SizedBox(
                           width: 90,
                           child: Text(context.l10n.formCost,
                               textAlign: TextAlign.right,
-                              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black54))),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black54))),
                       SizedBox(
                           width: 100,
                           child: Text(context.l10n.inventoryValuationColValue,
                               textAlign: TextAlign.right,
-                              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black54))),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black54))),
                     ],
                   ),
                 ),
@@ -283,11 +314,14 @@ class _InventoryValuationScreenState
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.inventory_2_outlined, size: 44, color: Colors.grey.shade400),
+                          Icon(Icons.inventory_2_outlined,
+                              size: 44, color: Colors.grey.shade400),
                           const SizedBox(height: 12),
                           Text(context.l10n.inventoryNoProductsFound,
                               style: const TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.w500, color: Colors.black54)),
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.black54)),
                         ],
                       ),
                     ),
@@ -296,7 +330,8 @@ class _InventoryValuationScreenState
                   ...pageItems.map(_buildRow),
                 if (pageItems.isNotEmpty)
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 16),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
@@ -315,7 +350,8 @@ class _InventoryValuationScreenState
                         IconButton(
                           onPressed: safeCurrentPage == 0
                               ? null
-                              : () => setState(() => _currentPage = safeCurrentPage - 1),
+                              : () => setState(
+                                  () => _currentPage = safeCurrentPage - 1),
                           icon: const Icon(Icons.chevron_left),
                         ),
                         Container(
@@ -324,18 +360,21 @@ class _InventoryValuationScreenState
                           child: Text(
                               context.l10n.inventoryPaginationPage(
                                   '${safeCurrentPage + 1}', '$totalPages'),
-                              style: const TextStyle(fontWeight: FontWeight.w500)),
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w500)),
                         ),
                         IconButton(
                           onPressed: safeCurrentPage >= totalPages - 1
                               ? null
-                              : () => setState(() => _currentPage = safeCurrentPage + 1),
+                              : () => setState(
+                                  () => _currentPage = safeCurrentPage + 1),
                           icon: const Icon(Icons.chevron_right),
                         ),
                         IconButton(
                           onPressed: safeCurrentPage >= totalPages - 1
                               ? null
-                              : () => setState(() => _currentPage = totalPages - 1),
+                              : () =>
+                                  setState(() => _currentPage = totalPages - 1),
                           icon: const Icon(Icons.last_page),
                         ),
                       ],
@@ -361,29 +400,37 @@ class _InventoryValuationScreenState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(item.productName,
-                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                        style: const TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w600)),
                     if (item.sku.isNotEmpty)
                       Text('${context.l10n.formSku}: ${item.sku}',
-                          style: const TextStyle(fontSize: 11, color: Colors.black45)),
+                          style: const TextStyle(
+                              fontSize: 11, color: Colors.black45)),
                   ],
                 ),
               ),
               SizedBox(
                 width: 70,
-                child: Text(item.stock.toStringAsFixed(item.stock.truncateToDouble() == item.stock ? 0 : 2),
-                    textAlign: TextAlign.right, style: const TextStyle(fontSize: 13)),
+                child: Text(
+                    item.stock.toStringAsFixed(
+                        item.stock.truncateToDouble() == item.stock ? 0 : 2),
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(fontSize: 13)),
               ),
               SizedBox(
                 width: 90,
                 child: Text('\$${item.cost.toStringAsFixed(2)}',
-                    textAlign: TextAlign.right, style: const TextStyle(fontSize: 13)),
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(fontSize: 13)),
               ),
               SizedBox(
                 width: 100,
                 child: Text('\$${item.totalValue.toStringAsFixed(2)}',
                     textAlign: TextAlign.right,
                     style: const TextStyle(
-                        fontSize: 13, fontWeight: FontWeight.w700, color: PosTheme.primaryGreen)),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: PosTheme.primaryGreen)),
               ),
             ],
           ),
@@ -405,7 +452,8 @@ class _InventoryValuationScreenState
             Text(error, textAlign: TextAlign.center),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () => ref.read(inventoryValuationProvider.notifier).loadReport(),
+              onPressed: () =>
+                  ref.read(inventoryValuationProvider.notifier).loadReport(),
               child: Text(context.l10n.commonRetry.toUpperCase()),
             ),
           ],

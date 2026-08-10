@@ -1,9 +1,11 @@
 import '../../../../core/config/currency_utils.dart';
 import '../../../../core/providers/language_provider.dart';
 import '../../../../core/utils/bilingual.dart';
+import '../../../../core/utils/khmer_text.dart';
 import '../../../../l10n/generated/app_localizations.dart';
 import '../../models/cart_models.dart';
 import '../../models/receipt_models.dart';
+import 'receipt_labels.dart';
 
 /// One printable line item, already localized and formatted — the on-screen
 /// preview, the PDF builder and the ESC/POS/bitmap builder all read from
@@ -31,10 +33,26 @@ class ReceiptLineViewModel {
 }
 
 /// Which financial adjustment a [ReceiptAdjustment] row represents. Kept
-/// separate from display text — each renderer (on-screen l10n, plain-English
-/// PDF) supplies its own label for a given type, matching how the rest of
-/// this app's PDF content is labeled (see print_service.dart).
+/// separate from display text — [ReceiptAdjustmentTypeLabel.labelFrom] below
+/// is the one place that maps a type to its localized word, shared by every
+/// renderer (PDF, ESC/POS, Khmer bitmap) instead of each repeating its own
+/// switch statement.
 enum ReceiptAdjustmentType { discount, delivery, otherCharge, tax }
+
+extension ReceiptAdjustmentTypeLabel on ReceiptAdjustmentType {
+  String labelFrom(ReceiptLabels labels) {
+    switch (this) {
+      case ReceiptAdjustmentType.discount:
+        return labels.discount;
+      case ReceiptAdjustmentType.delivery:
+        return labels.delivery;
+      case ReceiptAdjustmentType.otherCharge:
+        return labels.otherCharge;
+      case ReceiptAdjustmentType.tax:
+        return labels.tax;
+    }
+  }
+}
 
 /// One non-zero row to show between Subtotal and Total. See
 /// [ReceiptViewModel.adjustments].
@@ -84,6 +102,7 @@ class ReceiptViewModel {
     this.logoUrl,
     required this.footer,
     this.paymentMethodLabel,
+    this.labels = ReceiptLabels.fallback,
   });
 
   final AppLanguage language;
@@ -112,12 +131,15 @@ class ReceiptViewModel {
   final String footer;
   final String? paymentMethodLabel;
 
+  /// Field labels for this receipt's UI language — see `receipt_labels.dart`
+  /// for why every renderer reads from here instead of hardcoding English.
+  final ReceiptLabels labels;
+
   /// Whether this receipt has any Khmer text in it (Khmer UI language, or a
   /// Khmer-only line/customer/business name) — the printing pipeline uses
   /// this to decide whether to fall back to bitmap rendering (see
   /// [EscPosReceiptBuilder]).
-  bool get containsKhmer =>
-      language.isKhmer || _khmerPattern.hasMatch(_allText);
+  bool get containsKhmer => language.isKhmer || containsKhmerText(_allText);
 
   String get _allText => [
         businessName,
@@ -126,8 +148,6 @@ class ReceiptViewModel {
         footer,
         ...lines.map((l) => l.name),
       ].whereType<String>().join();
-
-  static final RegExp _khmerPattern = RegExp(r'[ក-៿]');
 
   bool get showExchangeRate =>
       (exchangeRateKhr ?? 0) > 0 && currencyCode?.toUpperCase() != 'KHR';
@@ -223,6 +243,7 @@ class ReceiptViewModel {
           : l10n.receiptThankYou,
       paymentMethodLabel:
           r.payments.isNotEmpty ? r.payments.first.method : null,
+      labels: ReceiptLabels.fromL10n(l10n),
     );
   }
 
@@ -295,6 +316,7 @@ class ReceiptViewModel {
       footer:
           (footer != null && footer.isNotEmpty) ? footer : l10n.receiptThankYou,
       paymentMethodLabel: paymentMethodLabel,
+      labels: ReceiptLabels.fromL10n(l10n),
     );
   }
 }

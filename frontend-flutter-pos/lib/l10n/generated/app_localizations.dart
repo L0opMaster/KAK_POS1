@@ -104,6 +104,12 @@ abstract class AppLocalizations {
   /// **'KAKNNEA'**
   String get appName;
 
+  /// No description provided for @commonName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get commonName;
+
   /// No description provided for @commonSave.
   ///
   /// In en, this message translates to:
@@ -493,6 +499,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Currencies'**
   String get settingsCurrencies;
+
+  /// No description provided for @settingsCurrencySymbol.
+  ///
+  /// In en, this message translates to:
+  /// **'Symbol'**
+  String get settingsCurrencySymbol;
+
+  /// No description provided for @settingsExchangeRatePerUsd.
+  ///
+  /// In en, this message translates to:
+  /// **'Exchange rate (per 1 USD)'**
+  String get settingsExchangeRatePerUsd;
 
   /// No description provided for @settingsDarkMode.
   ///
@@ -6934,6 +6952,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Items Sold'**
   String get salesSummaryPdfItemsSoldLabel;
+
+  /// No description provided for @salesReportPdfColReceiptNo.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt #'**
+  String get salesReportPdfColReceiptNo;
+
+  /// No description provided for @salesReportPdfColPayment.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment'**
+  String get salesReportPdfColPayment;
+
+  /// No description provided for @stockMovementPdfColType.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get stockMovementPdfColType;
+
+  /// No description provided for @stockMovementPdfMovementsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Movements'**
+  String get stockMovementPdfMovementsLabel;
+
+  /// No description provided for @inventoryValuationPdfTotalValueLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Value'**
+  String get inventoryValuationPdfTotalValueLabel;
+
+  /// No description provided for @salesByModifierPdfColGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Group'**
+  String get salesByModifierPdfColGroup;
+
+  /// No description provided for @salesByModifierPdfColOption.
+  ///
+  /// In en, this message translates to:
+  /// **'Option'**
+  String get salesByModifierPdfColOption;
 }
 
 class _AppLocalizationsDelegate
