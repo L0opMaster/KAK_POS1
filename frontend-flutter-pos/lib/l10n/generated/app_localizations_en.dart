@@ -69,6 +69,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonPrint => 'Print';
 
   @override
+  String get commonSavePdf => 'Save PDF';
+
+  @override
+  String get commonGeneratingPdf => 'Generating PDF...';
+
+  @override
   String get commonSubmit => 'Submit';
 
   @override
@@ -539,6 +545,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get formAddress => 'Address';
 
   @override
+  String get formWebsite => 'Website';
+
+  @override
   String get formPleaseEnterValue => 'Please enter a value';
 
   @override
@@ -939,6 +948,75 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get categoryManagementSaveFailedPrefix => 'Failed to save';
+
+  @override
+  String get unitManagementUpdateFailedPrefix => 'Failed to update';
+
+  @override
+  String get unitManagementSaveFailedPrefix => 'Failed to save';
+
+  @override
+  String get unitManagementEmptyTitle => 'No units yet';
+
+  @override
+  String get unitManagementEmptyHint => 'Tap + to add a unit';
+
+  @override
+  String get unitManagementAddButton => 'Add Unit';
+
+  @override
+  String get unitManagementEditTitle => 'Edit Unit';
+
+  @override
+  String get unitManagementNewTitle => 'New Unit';
+
+  @override
+  String get unitManagementUpdatedSuffix => 'updated';
+
+  @override
+  String get unitManagementCreatedSuffix => 'created';
+
+  @override
+  String get unitManagementCodeLabel => 'Code';
+
+  @override
+  String get unitManagementSymbolLabel => 'Symbol';
+
+  @override
+  String get unitManagementGroupLabel => 'Unit group';
+
+  @override
+  String get unitManagementGroupHelper =>
+      'Units that convert to each other share the same group, e.g. \"weight\"';
+
+  @override
+  String get unitManagementBaseUnitGroupLabel => 'Group';
+
+  @override
+  String get unitManagementBaseUnitLabel => 'Base unit';
+
+  @override
+  String get unitManagementBaseUnitSubtitle =>
+      'The reference unit other units in this group convert against';
+
+  @override
+  String get unitManagementBaseUnitPickerLabel => 'Convert to';
+
+  @override
+  String get unitManagementNoCandidatesHelper =>
+      'No other units in this group yet — add the base unit first';
+
+  @override
+  String get unitManagementConversionFactorLabel => 'Conversion factor';
+
+  @override
+  String unitManagementConversionFactorHelper(Object symbol) {
+    return 'How many $symbol equal 1 of the base unit';
+  }
+
+  @override
+  String get unitManagementPickBaseUnitError =>
+      'Choose which unit this converts to';
 
   @override
   String get customerManagementDeleteTitle => 'Delete customers';
@@ -2064,6 +2142,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Manage stock quantity';
 
   @override
+  String get itemManagementPurchasableTitle => 'Allow purchasing from supplier';
+
+  @override
+  String get itemManagementPurchasableSubtitle =>
+      'Can be added to a Purchase Order';
+
+  @override
   String get itemManagementInitialStockLabel => 'Initial Stock';
 
   @override
@@ -2801,6 +2886,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get receiptsScreenRefund => 'Refund';
 
   @override
+  String get receiptsScreenStatusVoid => 'Void';
+
+  @override
+  String get receiptsScreenStatusRefunded => 'Refunded';
+
+  @override
+  String get receiptsScreenStatusPartiallyRefunded => 'Partially Refunded';
+
+  @override
+  String get receiptsScreenStatusCredit => 'Credit';
+
+  @override
+  String get receiptsScreenStatusDraft => 'Draft';
+
+  @override
+  String get receiptsScreenStatusHold => 'On Hold';
+
+  @override
   String receiptsScreenRefundReceiptFallback(Object id) {
     return 'receipt #$id';
   }
@@ -2966,6 +3069,47 @@ class AppLocalizationsEn extends AppLocalizations {
   String shiftScreenVariance(Object amount) {
     return 'Variance: $amount';
   }
+
+  @override
+  String get posDrawerManageShift => 'Manage Shift';
+
+  @override
+  String get posDrawerShiftHistory => 'Shift History';
+
+  @override
+  String get shiftHistoryScreenTitle => 'Shift History';
+
+  @override
+  String get shiftHistoryEmpty => 'No shifts yet';
+
+  @override
+  String shiftHistoryLoadFailed(Object error) {
+    return 'Failed to load shift history: $error';
+  }
+
+  @override
+  String shiftHistoryClosed(Object time) {
+    return 'Closed $time';
+  }
+
+  @override
+  String shiftHistoryClosingCash(Object amount) {
+    return 'Closing cash: $amount';
+  }
+
+  @override
+  String shiftHistorySales(Object amount) {
+    return 'Sales: $amount';
+  }
+
+  @override
+  String get shiftHistoryStatusOpen => 'Open';
+
+  @override
+  String get shiftHistoryStatusClosed => 'Closed';
+
+  @override
+  String get shiftHistoryStatusPendingApproval => 'Pending approval';
 
   @override
   String paginationPageOfTotal(Object page, Object totalPages) {
@@ -3865,4 +4009,150 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get salesByModifierPdfColOption => 'Option';
+
+  @override
+  String get commonLocation => 'Location';
+
+  @override
+  String get commonUser => 'User';
+
+  @override
+  String get commonStatus => 'Status';
+
+  @override
+  String get formSupplier => 'Supplier';
+
+  @override
+  String get formFromStore => 'From Store';
+
+  @override
+  String get formToStore => 'To Store';
+
+  @override
+  String get formStore => 'Store';
+
+  @override
+  String get formRecipe => 'Recipe';
+
+  @override
+  String get inventoryHubInStockLabel => 'In Stock';
+
+  @override
+  String inventoryHistoryPdfFilterProduct(Object name) {
+    return 'Product: $name';
+  }
+
+  @override
+  String stockAdjustmentsPdfFilterQuery(Object query) {
+    return 'Search: $query';
+  }
+
+  @override
+  String get purchaseOrderPdfTitle => 'Purchase Order';
+
+  @override
+  String get purchaseOrderPdfNumberLabel => 'PO Number';
+
+  @override
+  String get purchaseOrderPdfLineTotalLabel => 'Line Total';
+
+  @override
+  String get transferOrderPdfTitle => 'Stock Transfer';
+
+  @override
+  String get transferOrderPdfNumberLabel => 'Transfer Number';
+
+  @override
+  String get productionOrderPdfTitle => 'Production Order';
+
+  @override
+  String get productionOrderPdfNumberLabel => 'Production Order #';
+
+  @override
+  String get productionOrderPdfStartedLabel => 'Started';
+
+  @override
+  String get productionOrderPdfCompletedLabel => 'Completed';
+
+  @override
+  String get productionOrderPdfYieldLabel => 'Yield %';
+
+  @override
+  String get productionOrderPdfWasteLabel => 'Waste Qty';
+
+  @override
+  String get productionOrderPdfComponentLabel => 'Component';
+
+  @override
+  String get productionOrderPdfRequiredLabel => 'Required';
+
+  @override
+  String get productionOrderPdfConsumedLabel => 'Consumed';
+
+  @override
+  String get inventoryCountPdfSheetTitle => 'Count Sheet';
+
+  @override
+  String get inventoryCountPdfReportTitle => 'Count Report';
+
+  @override
+  String get inventoryCountPdfExpectedLabel => 'Expected';
+
+  @override
+  String get inventoryCountPdfCountedLabel => 'Counted';
+
+  @override
+  String get inventoryCountPdfVarianceLabel => 'Variance';
+
+  @override
+  String get inventoryCountPdfPrintSheet => 'Print Count Sheet';
+
+  @override
+  String get inventoryCountPdfSaveSheet => 'Save Count Sheet PDF';
+
+  @override
+  String get inventoryCountPdfPrintReport => 'Print Count Report';
+
+  @override
+  String get inventoryCountPdfSaveReport => 'Save Count Report PDF';
+
+  @override
+  String get inventoryDocumentActionsTooltip => 'Print / Save PDF';
+
+  @override
+  String get itemManagementProductTypeLabel => 'Product Type';
+
+  @override
+  String get itemManagementProductTypeSubtitle =>
+      'What kind of item this is — determines how it can be sold, stocked, and purchased.';
+
+  @override
+  String get itemManagementProductTypeSaleItem => 'Sale Item';
+
+  @override
+  String get itemManagementProductTypeStockItem => 'Stock Item';
+
+  @override
+  String get itemManagementProductTypeService => 'Service';
+
+  @override
+  String get itemManagementProductTypeIngredient => 'Ingredient';
+
+  @override
+  String get itemManagementProductTypeConversionOnly => 'Conversion Only';
+
+  @override
+  String get itemManagementSectionUnits => 'Units';
+
+  @override
+  String get itemManagementSaleUnitLabel => 'Sale Unit';
+
+  @override
+  String get itemManagementPurchaseUnitLabel => 'Purchase Unit';
+
+  @override
+  String get itemManagementStockUnitLabel => 'Stock Unit';
+
+  @override
+  String get itemManagementUnitDefaultOption => 'Default (EACH)';
 }

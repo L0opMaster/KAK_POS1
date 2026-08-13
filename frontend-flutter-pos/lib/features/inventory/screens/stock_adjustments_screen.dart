@@ -1,14 +1,19 @@
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 import '../../../core/config/pos_theme.dart';
 import '../../../core/providers/language_provider.dart';
+import '../../../core/services/printing/a4_report_pdf.dart';
 import '../../../core/utils/bilingual.dart';
 import '../../../core/utils/l10n_extensions.dart';
 import '../../pos/models/product_models.dart';
 import '../../pos/providers/product_provider.dart';
+import '../../pos/services/settings_service.dart';
 import '../models/inventory_models.dart';
 import '../providers/inventory_provider.dart';
 import '../services/inventory_service.dart' show defaultInventoryStoreId;
@@ -59,6 +64,7 @@ class _StockAdjustmentsScreenState
   final TextEditingController _searchCtl = TextEditingController();
   int _currentPage = 0;
   bool _hasLoadedOnce = false;
+  bool _generatingPdf = false;
 
   @override
   void initState() {
@@ -84,6 +90,100 @@ class _StockAdjustmentsScreenState
             m.productName.toLowerCase().contains(needle) ||
             (m.reason ?? '').toLowerCase().contains(needle))
         .toList();
+  }
+
+  /// Reports every movement entry (there's no adjustment reference/batch id
+  /// in the backend data — see StockMovementEntry — so this is a filtered
+  /// log, not a single bundled "adjustment document"), over the FULL
+  /// dataset already loaded in movementsProvider with the same search
+  /// filter applied on screen.
+  Future<Uint8List?> _buildPdfBytes() async {
+    final movements = ref.read(movementsProvider).value;
+    if (movements == null) return null;
+    final l10n = context.l10n;
+    final sorted = [...movements]
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final filtered = _filtered(sorted);
+    final company = await ref.read(settingsServiceProvider).getCompanyProfile();
+    final query = _searchCtl.text.trim();
+
+    final rows = filtered
+        .map((m) => [
+              _fmtDate(m.createdAt),
+              m.productName,
+              m.movementType.replaceAll('_', ' '),
+              m.quantity.toStringAsFixed(
+                  m.quantity.truncateToDouble() == m.quantity ? 0 : 2),
+              m.reason ?? '',
+              m.storeName ?? '',
+              m.createdBy ?? '',
+            ])
+        .toList();
+
+    return A4ReportPdf.build(
+      title: l10n.stockAdjustmentsTitle,
+      subtitle:
+          query.isNotEmpty ? l10n.stockAdjustmentsPdfFilterQuery(query) : null,
+      businessName: '${company['businessName'] ?? ''}',
+      businessAddress: '${company['address'] ?? ''}',
+      businessPhone: '${company['phone'] ?? ''}',
+      columns: [
+        l10n.receiptDate,
+        l10n.receiptItem,
+        l10n.stockMovementPdfColType,
+        l10n.receiptQty,
+        l10n.shiftScreenReasonLabel,
+        l10n.commonLocation,
+        l10n.commonUser,
+      ],
+      rows: rows,
+      columnAlignments: const {3: pw.Alignment.centerRight},
+      summary: [
+        MapEntry(l10n.stockMovementPdfMovementsLabel, '${filtered.length}'),
+      ],
+      generatedAt: DateTime.now(),
+      generatedLabel: l10n.reportPdfGeneratedLabel,
+      pageLabel: l10n.reportPdfPageLabel,
+      landscape: true,
+    );
+  }
+
+  String _fmtDate(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')} '
+      '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+
+  Future<void> _printReport() async {
+    if (_generatingPdf) return;
+    setState(() => _generatingPdf = true);
+    try {
+      final bytes = await _buildPdfBytes();
+      if (bytes == null) return;
+      await Printing.layoutPdf(onLayout: (_) => bytes, name: 'stock_adjustments');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${context.l10n.printerPrintFailed}: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _generatingPdf = false);
+    }
+  }
+
+  Future<void> _savePdf() async {
+    if (_generatingPdf) return;
+    setState(() => _generatingPdf = true);
+    try {
+      final bytes = await _buildPdfBytes();
+      if (bytes == null) return;
+      await Printing.sharePdf(bytes: bytes, filename: 'stock_adjustments.pdf');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${context.l10n.printerPrintFailed}: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _generatingPdf = false);
+    }
   }
 
   Future<void> _openNewAdjustmentDialog() async {
@@ -227,6 +327,27 @@ class _StockAdjustmentsScreenState
         title: Text(context.l10n.stockAdjustmentsTitle),
         elevation: 0.5,
         actions: [
+          if (_generatingPdf)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          else ...[
+            IconButton(
+              icon: const Icon(Icons.print_outlined),
+              tooltip: context.l10n.commonPrint,
+              onPressed: state.value == null ? null : _printReport,
+            ),
+            IconButton(
+              icon: const Icon(Icons.picture_as_pdf_outlined),
+              tooltip: context.l10n.commonSavePdf,
+              onPressed: state.value == null ? null : _savePdf,
+            ),
+          ],
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: context.l10n.commonRefresh,

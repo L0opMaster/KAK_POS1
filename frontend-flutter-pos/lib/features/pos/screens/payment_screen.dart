@@ -1729,12 +1729,14 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
 
                         String? saleDate;
                         String? saleTime;
-                        if (r?.createdAt != null) {
-                          try {
-                            final dt = DateTime.parse(r!.createdAt!);
-                            saleDate = formatReceiptDate(dt);
-                            saleTime = formatReceiptTime(dt);
-                          } catch (_) {}
+                        // r.createdAt is UTC (Instant.toString()) —
+                        // parseBackendTimestamp converts to local time; a
+                        // bare DateTime.parse() here previously left it UTC
+                        // and formatted the UTC clock fields directly.
+                        final dt = parseBackendTimestamp(r?.createdAt);
+                        if (dt != null) {
+                          saleDate = formatReceiptDate(dt);
+                          saleTime = formatReceiptTime(dt);
                         }
                         if (!mounted) return;
                         Navigator.of(context).push(MaterialPageRoute(
@@ -1760,6 +1762,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                             businessName: r?.businessName,
                             businessAddress: r?.address,
                             businessPhone: r?.phone,
+                            website: r?.website,
                             currency: r?.currency,
                             footer: r?.footer,
                             saleDate: saleDate,

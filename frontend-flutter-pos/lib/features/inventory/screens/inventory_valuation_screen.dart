@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -30,6 +31,7 @@ class _InventoryValuationScreenState
 
   final TextEditingController _searchCtl = TextEditingController();
   int _currentPage = 0;
+  bool _generatingPdf = false;
 
   @override
   void initState() {
@@ -54,67 +56,88 @@ class _InventoryValuationScreenState
         .toList();
   }
 
-  Future<void> _printReport() async {
+  Future<Uint8List?> _buildPdfBytes() async {
     final report = ref.read(inventoryValuationProvider).value;
-    if (report == null) return;
+    if (report == null) return null;
     final l10n = context.l10n;
+    final company = await ref.read(settingsServiceProvider).getCompanyProfile();
+    final cur = currencySymbol(readCurrency(ref));
+    final items = _filtered(report.items);
+
+    final rows = items
+        .map((i) => [
+              i.productName,
+              i.sku,
+              i.stock.toStringAsFixed(
+                  i.stock.truncateToDouble() == i.stock ? 0 : 2),
+              '$cur${i.cost.toStringAsFixed(2)}',
+              '$cur${i.totalValue.toStringAsFixed(2)}',
+            ])
+        .toList();
+
+    return A4ReportPdf.build(
+      title: l10n.inventoryValuationTitle,
+      subtitle: report.valuedAt != null
+          ? l10n.inventoryValuationAsOf('${report.valuedAt}')
+          : null,
+      businessName: '${company['businessName'] ?? ''}',
+      businessAddress: '${company['address'] ?? ''}',
+      businessPhone: '${company['phone'] ?? ''}',
+      columns: [
+        l10n.inventoryValuationColProduct,
+        l10n.formSku,
+        l10n.inventoryValuationColStock,
+        l10n.formCost,
+        l10n.inventoryValuationColValue,
+      ],
+      rows: rows,
+      columnAlignments: const {
+        2: pw.Alignment.centerRight,
+        3: pw.Alignment.centerRight,
+        4: pw.Alignment.centerRight,
+      },
+      summary: [
+        MapEntry(l10n.inventoryValuationProductsLabel, '${items.length}'),
+        MapEntry(l10n.inventoryValuationPdfTotalValueLabel,
+            '$cur${report.totalValue.toStringAsFixed(2)}'),
+      ],
+      generatedAt: DateTime.now(),
+      generatedLabel: l10n.reportPdfGeneratedLabel,
+      pageLabel: l10n.reportPdfPageLabel,
+    );
+  }
+
+  Future<void> _printReport() async {
+    if (_generatingPdf) return;
+    setState(() => _generatingPdf = true);
     try {
-      final company =
-          await ref.read(settingsServiceProvider).getCompanyProfile();
-      final cur = currencySymbol(readCurrency(ref));
-      final items = _filtered(report.items);
-
-      final rows = items
-          .map((i) => [
-                i.productName,
-                i.sku,
-                i.stock.toStringAsFixed(
-                    i.stock.truncateToDouble() == i.stock ? 0 : 2),
-                '$cur${i.cost.toStringAsFixed(2)}',
-                '$cur${i.totalValue.toStringAsFixed(2)}',
-              ])
-          .toList();
-
-      final pdfBytes = await A4ReportPdf.build(
-        title: l10n.inventoryValuationTitle,
-        subtitle: report.valuedAt != null
-            ? l10n.inventoryValuationAsOf('${report.valuedAt}')
-            : null,
-        businessName: '${company['businessName'] ?? ''}',
-        businessAddress: '${company['address'] ?? ''}',
-        businessPhone: '${company['phone'] ?? ''}',
-        columns: [
-          l10n.inventoryValuationColProduct,
-          l10n.formSku,
-          l10n.inventoryValuationColStock,
-          l10n.formCost,
-          l10n.inventoryValuationColValue,
-        ],
-        rows: rows,
-        columnAlignments: const {
-          2: pw.Alignment.centerRight,
-          3: pw.Alignment.centerRight,
-          4: pw.Alignment.centerRight,
-        },
-        summary: [
-          MapEntry(l10n.inventoryValuationProductsLabel, '${items.length}'),
-          MapEntry(l10n.inventoryValuationPdfTotalValueLabel,
-              '$cur${report.totalValue.toStringAsFixed(2)}'),
-        ],
-        generatedAt: DateTime.now(),
-        generatedLabel: l10n.reportPdfGeneratedLabel,
-        pageLabel: l10n.reportPdfPageLabel,
-      );
-
-      await Printing.layoutPdf(
-        onLayout: (_) => pdfBytes,
-        name: 'inventory_valuation',
-      );
+      final bytes = await _buildPdfBytes();
+      if (bytes == null) return;
+      await Printing.layoutPdf(onLayout: (_) => bytes, name: 'inventory_valuation');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${l10n.printerPrintFailed}: $e')));
+            SnackBar(content: Text('${context.l10n.printerPrintFailed}: $e')));
       }
+    } finally {
+      if (mounted) setState(() => _generatingPdf = false);
+    }
+  }
+
+  Future<void> _savePdf() async {
+    if (_generatingPdf) return;
+    setState(() => _generatingPdf = true);
+    try {
+      final bytes = await _buildPdfBytes();
+      if (bytes == null) return;
+      await Printing.sharePdf(bytes: bytes, filename: 'inventory_valuation.pdf');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${context.l10n.printerPrintFailed}: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _generatingPdf = false);
     }
   }
 
@@ -127,11 +150,27 @@ class _InventoryValuationScreenState
         title: Text(context.l10n.inventoryValuationTitle),
         elevation: 0.5,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.print_outlined),
-            tooltip: context.l10n.commonPrint,
-            onPressed: state.value == null ? null : _printReport,
-          ),
+          if (_generatingPdf)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          else ...[
+            IconButton(
+              icon: const Icon(Icons.print_outlined),
+              tooltip: context.l10n.commonPrint,
+              onPressed: state.value == null ? null : _printReport,
+            ),
+            IconButton(
+              icon: const Icon(Icons.picture_as_pdf_outlined),
+              tooltip: context.l10n.commonSavePdf,
+              onPressed: state.value == null ? null : _savePdf,
+            ),
+          ],
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: context.l10n.commonRefresh,

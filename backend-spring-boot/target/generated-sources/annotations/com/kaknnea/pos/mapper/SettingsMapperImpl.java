@@ -8,8 +8,8 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-08-10T13:50:22+0700",
-    comments = "version: 1.5.5.Final, compiler: Eclipse JDT (IDE) 3.46.100.v20260624-0231, environment: Java 21.0.11 (Eclipse Adoptium)"
+    date = "2026-08-11T10:57:04+0700",
+    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 17.0.19 (Ubuntu)"
 )
 @Component
 public class SettingsMapperImpl implements SettingsMapper {
@@ -22,17 +22,17 @@ public class SettingsMapperImpl implements SettingsMapper {
 
         BusinessSettings businessSettings = new BusinessSettings();
 
-        businessSettings.setAddress( request.getAddress() );
         businessSettings.setBusinessName( request.getBusinessName() );
-        businessSettings.setCurrency( request.getCurrency() );
-        businessSettings.setDefaultLanguage( request.getDefaultLanguage() );
         businessSettings.setLogoUrl( request.getLogoUrl() );
+        businessSettings.setAddress( request.getAddress() );
         businessSettings.setPhone( request.getPhone() );
+        businessSettings.setTaxRate( request.getTaxRate() );
+        businessSettings.setCurrency( request.getCurrency() );
         businessSettings.setReceiptFooter( request.getReceiptFooter() );
+        businessSettings.setDefaultLanguage( request.getDefaultLanguage() );
         if ( request.getRequireShiftForSales() != null ) {
             businessSettings.setRequireShiftForSales( request.getRequireShiftForSales() );
         }
-        businessSettings.setTaxRate( request.getTaxRate() );
 
         return businessSettings;
     }
@@ -45,16 +45,16 @@ public class SettingsMapperImpl implements SettingsMapper {
 
         SettingsDtos.BusinessSettingsResponse businessSettingsResponse = new SettingsDtos.BusinessSettingsResponse();
 
-        businessSettingsResponse.setAddress( entity.getAddress() );
-        businessSettingsResponse.setBusinessName( entity.getBusinessName() );
-        businessSettingsResponse.setCurrency( entity.getCurrency() );
-        businessSettingsResponse.setDefaultLanguage( entity.getDefaultLanguage() );
         businessSettingsResponse.setId( entity.getId() );
+        businessSettingsResponse.setBusinessName( entity.getBusinessName() );
         businessSettingsResponse.setLogoUrl( entity.getLogoUrl() );
+        businessSettingsResponse.setAddress( entity.getAddress() );
         businessSettingsResponse.setPhone( entity.getPhone() );
-        businessSettingsResponse.setReceiptFooter( entity.getReceiptFooter() );
-        businessSettingsResponse.setRequireShiftForSales( entity.isRequireShiftForSales() );
         businessSettingsResponse.setTaxRate( entity.getTaxRate() );
+        businessSettingsResponse.setCurrency( entity.getCurrency() );
+        businessSettingsResponse.setReceiptFooter( entity.getReceiptFooter() );
+        businessSettingsResponse.setDefaultLanguage( entity.getDefaultLanguage() );
+        businessSettingsResponse.setRequireShiftForSales( entity.isRequireShiftForSales() );
 
         return businessSettingsResponse;
     }
@@ -67,20 +67,20 @@ public class SettingsMapperImpl implements SettingsMapper {
 
         InvoiceSettings invoiceSettings = new InvoiceSettings();
 
-        invoiceSettings.setDefaultInvoiceFormat( request.getDefaultInvoiceFormat() );
-        invoiceSettings.setDefaultReceiptFormat( request.getDefaultReceiptFormat() );
-        invoiceSettings.setFooter( request.getFooter() );
-        invoiceSettings.setNextNumber( request.getNextNumber() );
         invoiceSettings.setPrefix( request.getPrefix() );
-        invoiceSettings.setPrinterAddress( request.getPrinterAddress() );
-        invoiceSettings.setPrinterName( request.getPrinterName() );
-        invoiceSettings.setPrinterType( request.getPrinterType() );
-        if ( request.getShowKhqr() != null ) {
-            invoiceSettings.setShowKhqr( request.getShowKhqr() );
-        }
+        invoiceSettings.setNextNumber( request.getNextNumber() );
+        invoiceSettings.setFooter( request.getFooter() );
         if ( request.getShowTax() != null ) {
             invoiceSettings.setShowTax( request.getShowTax() );
         }
+        if ( request.getShowKhqr() != null ) {
+            invoiceSettings.setShowKhqr( request.getShowKhqr() );
+        }
+        invoiceSettings.setPrinterName( request.getPrinterName() );
+        invoiceSettings.setPrinterType( request.getPrinterType() );
+        invoiceSettings.setPrinterAddress( request.getPrinterAddress() );
+        invoiceSettings.setDefaultInvoiceFormat( request.getDefaultInvoiceFormat() );
+        invoiceSettings.setDefaultReceiptFormat( request.getDefaultReceiptFormat() );
 
         return invoiceSettings;
     }
@@ -93,17 +93,17 @@ public class SettingsMapperImpl implements SettingsMapper {
 
         SettingsDtos.InvoiceSettingsResponse invoiceSettingsResponse = new SettingsDtos.InvoiceSettingsResponse();
 
-        invoiceSettingsResponse.setDefaultInvoiceFormat( entity.getDefaultInvoiceFormat() );
-        invoiceSettingsResponse.setDefaultReceiptFormat( entity.getDefaultReceiptFormat() );
-        invoiceSettingsResponse.setFooter( entity.getFooter() );
         invoiceSettingsResponse.setId( entity.getId() );
-        invoiceSettingsResponse.setNextNumber( entity.getNextNumber() );
         invoiceSettingsResponse.setPrefix( entity.getPrefix() );
-        invoiceSettingsResponse.setPrinterAddress( entity.getPrinterAddress() );
+        invoiceSettingsResponse.setNextNumber( entity.getNextNumber() );
+        invoiceSettingsResponse.setFooter( entity.getFooter() );
+        invoiceSettingsResponse.setShowTax( entity.isShowTax() );
+        invoiceSettingsResponse.setShowKhqr( entity.isShowKhqr() );
         invoiceSettingsResponse.setPrinterName( entity.getPrinterName() );
         invoiceSettingsResponse.setPrinterType( entity.getPrinterType() );
-        invoiceSettingsResponse.setShowKhqr( entity.isShowKhqr() );
-        invoiceSettingsResponse.setShowTax( entity.isShowTax() );
+        invoiceSettingsResponse.setPrinterAddress( entity.getPrinterAddress() );
+        invoiceSettingsResponse.setDefaultInvoiceFormat( entity.getDefaultInvoiceFormat() );
+        invoiceSettingsResponse.setDefaultReceiptFormat( entity.getDefaultReceiptFormat() );
 
         return invoiceSettingsResponse;
     }

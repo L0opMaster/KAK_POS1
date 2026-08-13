@@ -1,8 +1,14 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 import '../../../core/config/pos_theme.dart';
+import '../../../core/services/printing/a4_report_pdf.dart';
 import '../../../core/utils/l10n_extensions.dart';
+import '../../pos/services/settings_service.dart';
 import '../models/inventory_models.dart';
 import '../providers/inventory_provider.dart';
 
@@ -21,6 +27,7 @@ class _InventoryCountsScreenState extends ConsumerState<InventoryCountsScreen> {
   bool _hasLoadedOnce = false;
   bool _starting = false;
   bool _posting = false;
+  bool _generatingPdf = false;
 
   @override
   void initState() {
@@ -187,6 +194,126 @@ class _InventoryCountsScreenState extends ConsumerState<InventoryCountsScreen> {
     }
   }
 
+  /// The physical walk-around count sheet: expected/system quantity is
+  /// shown as reference (the on-screen count-entry dialog already shows it
+  /// too — see _editCount above — so the sheet isn't hiding anything the
+  /// app itself doesn't already reveal), with a blank "Counted" column to
+  /// fill in by hand and a blank Notes column.
+  Future<Uint8List?> _buildSheetPdf(InventoryCount? count, String snapshotDate) async {
+    if (count == null) return null;
+    final l10n = context.l10n;
+    final company = await ref.read(settingsServiceProvider).getCompanyProfile();
+    final rows = count.items
+        .map((i) => [i.productName, _fmt(i.expectedStock), '', ''])
+        .toList();
+
+    return A4ReportPdf.build(
+      title: l10n.inventoryCountPdfSheetTitle,
+      subtitle: l10n.inventoryCountsForDate(snapshotDate),
+      businessName: '${company['businessName'] ?? ''}',
+      businessAddress: '${company['address'] ?? ''}',
+      businessPhone: '${company['phone'] ?? ''}',
+      columns: [
+        l10n.receiptItem,
+        l10n.inventoryCountPdfExpectedLabel,
+        l10n.inventoryCountPdfCountedLabel,
+        l10n.inventoryNotesLabel,
+      ],
+      rows: rows,
+      columnAlignments: const {1: pw.Alignment.centerRight},
+      generatedAt: DateTime.now(),
+      generatedLabel: l10n.reportPdfGeneratedLabel,
+      pageLabel: l10n.reportPdfPageLabel,
+    );
+  }
+
+  /// Reconciliation report: expected vs. counted vs. variance, using the
+  /// same backend-computed `discrepancy` shown on screen — not
+  /// recalculated here. No SKU/location/"counted by" fields exist on
+  /// InventoryCountItem, so those columns are omitted rather than invented.
+  Future<Uint8List?> _buildReportPdf(InventoryCount? count, String snapshotDate) async {
+    if (count == null) return null;
+    final l10n = context.l10n;
+    final company = await ref.read(settingsServiceProvider).getCompanyProfile();
+    final rows = count.items
+        .map((i) => [
+              i.productName,
+              _fmt(i.expectedStock),
+              _fmt(i.countedStock),
+              '${i.discrepancy > 0 ? '+' : ''}${_fmt(i.discrepancy)}',
+              i.countStatus ?? '',
+            ])
+        .toList();
+
+    return A4ReportPdf.build(
+      title: l10n.inventoryCountPdfReportTitle,
+      subtitle: l10n.inventoryCountsForDate(snapshotDate),
+      businessName: '${company['businessName'] ?? ''}',
+      businessAddress: '${company['address'] ?? ''}',
+      businessPhone: '${company['phone'] ?? ''}',
+      columns: [
+        l10n.receiptItem,
+        l10n.inventoryCountPdfExpectedLabel,
+        l10n.inventoryCountPdfCountedLabel,
+        l10n.inventoryCountPdfVarianceLabel,
+        l10n.commonStatus,
+      ],
+      rows: rows,
+      columnAlignments: const {
+        1: pw.Alignment.centerRight,
+        2: pw.Alignment.centerRight,
+        3: pw.Alignment.centerRight,
+      },
+      summary: [
+        MapEntry(l10n.inventoryValuationProductsLabel, '${count.itemCount}'),
+        MapEntry(l10n.inventoryCountPdfVarianceLabel, '${count.totalDiscrepancies}'),
+      ],
+      generatedAt: DateTime.now(),
+      generatedLabel: l10n.reportPdfGeneratedLabel,
+      pageLabel: l10n.reportPdfPageLabel,
+    );
+  }
+
+  Future<void> _runPdfAction(
+    Future<Uint8List?> Function() build,
+    Future<void> Function(Uint8List bytes) action,
+  ) async {
+    if (_generatingPdf) return;
+    setState(() => _generatingPdf = true);
+    try {
+      final bytes = await build();
+      if (bytes == null) return;
+      await action(bytes);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${context.l10n.printerPrintFailed}: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _generatingPdf = false);
+    }
+  }
+
+  Future<void> _printSheet(InventoryCount? count, String snapshotDate) => _runPdfAction(
+        () => _buildSheetPdf(count, snapshotDate),
+        (bytes) => Printing.layoutPdf(onLayout: (_) => bytes, name: 'count_sheet'),
+      );
+
+  Future<void> _saveSheet(InventoryCount? count, String snapshotDate) => _runPdfAction(
+        () => _buildSheetPdf(count, snapshotDate),
+        (bytes) => Printing.sharePdf(bytes: bytes, filename: 'count_sheet.pdf'),
+      );
+
+  Future<void> _printCountReport(InventoryCount? count, String snapshotDate) => _runPdfAction(
+        () => _buildReportPdf(count, snapshotDate),
+        (bytes) => Printing.layoutPdf(onLayout: (_) => bytes, name: 'count_report'),
+      );
+
+  Future<void> _saveCountReport(InventoryCount? count, String snapshotDate) => _runPdfAction(
+        () => _buildReportPdf(count, snapshotDate),
+        (bytes) => Printing.sharePdf(bytes: bytes, filename: 'count_report.pdf'),
+      );
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(inventoryCountProvider);
@@ -197,6 +324,48 @@ class _InventoryCountsScreenState extends ConsumerState<InventoryCountsScreen> {
         title: Text(context.l10n.inventoryCountsTitle),
         elevation: 0.5,
         actions: [
+          if (_generatingPdf)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          else
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.picture_as_pdf_outlined),
+              tooltip: context.l10n.inventoryDocumentActionsTooltip,
+              enabled: state.value != null,
+              onSelected: (action) {
+                final count = state.value;
+                switch (action) {
+                  case 'printSheet':
+                    _printSheet(count, notifier.snapshotDate);
+                    break;
+                  case 'saveSheet':
+                    _saveSheet(count, notifier.snapshotDate);
+                    break;
+                  case 'printReport':
+                    _printCountReport(count, notifier.snapshotDate);
+                    break;
+                  case 'saveReport':
+                    _saveCountReport(count, notifier.snapshotDate);
+                    break;
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                    value: 'printSheet', child: Text(context.l10n.inventoryCountPdfPrintSheet)),
+                PopupMenuItem(
+                    value: 'saveSheet', child: Text(context.l10n.inventoryCountPdfSaveSheet)),
+                PopupMenuItem(
+                    value: 'printReport', child: Text(context.l10n.inventoryCountPdfPrintReport)),
+                PopupMenuItem(
+                    value: 'saveReport', child: Text(context.l10n.inventoryCountPdfSaveReport)),
+              ],
+            ),
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: context.l10n.commonRefresh,

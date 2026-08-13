@@ -596,6 +596,7 @@ import 'package:printing/printing.dart';
 import '../../../core/config/currency_utils.dart';
 import '../../../core/config/pos_theme.dart';
 import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/company_provider.dart';
 import '../../../core/services/printing/a4_report_pdf.dart';
 import '../../../core/utils/l10n_extensions.dart';
 import '../../reports/models/report_models.dart';
@@ -646,7 +647,14 @@ class PosDrawer extends ConsumerWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  '${context.l10n.appName} ${context.l10n.navPos}',
+                  // Live business name from Settings → Company Profile —
+                  // see core/providers/company_provider.dart. Falls back
+                  // to the generic app name while loading/offline/unset.
+                  watchCompanyName(ref,
+                      fallback:
+                          '${context.l10n.appName} ${context.l10n.navPos}'),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 22,
@@ -748,12 +756,8 @@ class PosDrawer extends ConsumerWidget {
                 // Clicking Tables expands its child menu.
                 _tablesExpansionMenu(context),
 
-                _navTile(
-                  icon: Icons.schedule_rounded,
-                  title: context.l10n.navShifts,
-                  route: 'shifts',
-                  context: context,
-                ),
+                // Clicking Shifts expands its child menu.
+                _shiftsExpansionMenu(context),
 
                 const SizedBox(height: 8),
 
@@ -1167,6 +1171,60 @@ class PosDrawer extends ConsumerWidget {
           icon: Icons.add_box_outlined,
           title: context.l10n.posDrawerAddTable,
           route: 'add-table',
+        ),
+      ],
+    );
+  }
+
+  //  ───────────────── Shifts expandable menu ─────────────────
+
+  Widget _shiftsExpansionMenu(BuildContext context) {
+    return ExpansionTile(
+      key: const PageStorageKey<String>('shifts-expansion-menu'),
+      initiallyExpanded: false,
+      leading: Icon(
+        Icons.schedule_rounded,
+        color: PosTheme.textPrimaryOf(context),
+        size: 24,
+      ),
+      title: Text(
+        context.l10n.navShifts,
+        style: TextStyle(
+          fontSize: 17,
+          fontWeight: FontWeight.w500,
+          color: PosTheme.textPrimaryOf(context),
+        ),
+      ),
+
+      iconColor: PosTheme.primaryGreen,
+      collapsedIconColor: PosTheme.textHintOf(context),
+
+      tilePadding: const EdgeInsets.symmetric(
+        horizontal: 16,
+      ),
+
+      childrenPadding: const EdgeInsets.only(
+        left: 20,
+        right: 4,
+        bottom: 8,
+      ),
+
+      // Removes the default borders.
+      shape: const Border(),
+      collapsedShape: const Border(),
+
+      children: [
+        _subNavTile(
+          context: context,
+          icon: Icons.lock_open_rounded,
+          title: context.l10n.posDrawerManageShift,
+          route: 'shifts',
+        ),
+        _subNavTile(
+          context: context,
+          icon: Icons.history_rounded,
+          title: context.l10n.posDrawerShiftHistory,
+          route: 'shift-history',
         ),
       ],
     );

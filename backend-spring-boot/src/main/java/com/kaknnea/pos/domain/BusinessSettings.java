@@ -28,6 +28,10 @@ public class BusinessSettings extends BaseEntity {
     @Column(length = 50)
     private String phone;
 
+    /** Website/link shown at the bottom of printed receipts (e.g. "www.example.com"). */
+    @Column(length = 255)
+    private String website;
+
     @Column(name = "tax_rate", nullable = false)
     private double taxRate;
 

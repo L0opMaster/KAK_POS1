@@ -23,9 +23,12 @@ import 'khmer_text_rasterizer.dart';
 class A4ReportPdf {
   A4ReportPdf._();
 
-  /// Builds an A4 PDF: business header, report title/subtitle, a table of
-  /// [columns]/[rows], and an optional right-aligned block of
-  /// label/value [summary] lines (e.g. grand totals) beneath it.
+  /// Builds an A4 PDF: business header, report title/subtitle, an optional
+  /// left-aligned block of label/value [details] lines (e.g. a purchase
+  /// order's supplier/status/dates — the fields a business document needs
+  /// that a plain report never has) above the table of [columns]/[rows],
+  /// and an optional right-aligned block of label/value [summary] lines
+  /// (e.g. grand totals) beneath it.
   ///
   /// This builder never hardcodes report wording itself — [title],
   /// [columns] and [summary] are supplied by the caller (typically via
@@ -46,6 +49,7 @@ class A4ReportPdf {
     required List<List<String>> rows,
     Map<int, pw.Alignment> columnAlignments = const {},
     List<MapEntry<String, String>> summary = const [],
+    List<MapEntry<String, String>> details = const [],
     required DateTime generatedAt,
     required String generatedLabel,
     required String pageLabel,
@@ -103,6 +107,13 @@ class A4ReportPdf {
             fontSize: 11, bold: true);
         return MapEntry(key, value);
       }));
+      final detailWidgets = await Future.wait(details.map((e) async {
+        final key =
+            await KhmerTextRasterizer.textOrImage('${e.key}: ', fontSize: 10);
+        final value = await KhmerTextRasterizer.textOrImage(e.value,
+            fontSize: 10, bold: true);
+        return MapEntry(key, value);
+      }));
 
       return (
         businessNameWidget: businessNameWidget,
@@ -115,6 +126,7 @@ class A4ReportPdf {
         headerCells: headerCells,
         rowCells: rowCells,
         summaryWidgets: summaryWidgets,
+        detailWidgets: detailWidgets,
       );
     });
     final businessNameWidget = rasterized.businessNameWidget;
@@ -127,6 +139,7 @@ class A4ReportPdf {
     final headerCells = rasterized.headerCells;
     final rowCells = rasterized.rowCells;
     final summaryWidgets = rasterized.summaryWidgets;
+    final detailWidgets = rasterized.detailWidgets;
 
     doc.addPage(
       pw.MultiPage(
@@ -168,6 +181,20 @@ class A4ReportPdf {
           ],
         ),
         build: (context) => [
+          if (detailWidgets.isNotEmpty) ...[
+            pw.Wrap(
+              spacing: 28,
+              runSpacing: 6,
+              children: detailWidgets
+                  .map((e) => pw.Row(
+                        mainAxisSize: pw.MainAxisSize.min,
+                        crossAxisAlignment: pw.CrossAxisAlignment.end,
+                        children: [e.key, e.value],
+                      ))
+                  .toList(),
+            ),
+            pw.SizedBox(height: 14),
+          ],
           pw.TableHelper.fromTextArray(
             headers: headerCells,
             data: rowCells,

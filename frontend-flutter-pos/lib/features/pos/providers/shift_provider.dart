@@ -50,3 +50,58 @@ final StateNotifierProvider<ShiftNotifier, ShiftState> shiftProvider =
   final ShiftService service = ref.watch(shiftServiceProvider);
   return ShiftNotifier(service);
 });
+
+/// State for the Shift History screen.
+class ShiftHistoryState {
+  final bool loading;
+  final String? error;
+  final List<Shift> shifts;
+
+  ShiftHistoryState({
+    required this.loading,
+    this.error,
+    required this.shifts,
+  });
+
+  factory ShiftHistoryState.initial() =>
+      ShiftHistoryState(loading: false, shifts: const []);
+
+  ShiftHistoryState copyWith({
+    bool? loading,
+    String? error,
+    List<Shift>? shifts,
+    bool clearError = false,
+  }) {
+    return ShiftHistoryState(
+      loading: loading ?? this.loading,
+      error: clearError ? null : error ?? this.error,
+      shifts: shifts ?? this.shifts,
+    );
+  }
+}
+
+class ShiftHistoryNotifier extends StateNotifier<ShiftHistoryState> {
+  final ShiftService service;
+  ShiftHistoryNotifier(this.service) : super(ShiftHistoryState.initial());
+
+  Future<void> loadHistory() async {
+    state = state.copyWith(loading: true, clearError: true);
+    try {
+      // Sorts a copy — the list `service.getShiftHistory()` returns isn't
+      // guaranteed to be growable/mutable.
+      final shifts = [...await service.getShiftHistory()]
+        ..sort((a, b) => b.startTime.compareTo(a.startTime));
+      state = state.copyWith(loading: false, shifts: shifts, clearError: true);
+    } catch (e) {
+      state = state.copyWith(loading: false, error: e.toString());
+    }
+  }
+}
+
+final StateNotifierProvider<ShiftHistoryNotifier, ShiftHistoryState>
+    shiftHistoryProvider =
+    StateNotifierProvider<ShiftHistoryNotifier, ShiftHistoryState>(
+        (final ref) {
+  final ShiftService service = ref.watch(shiftServiceProvider);
+  return ShiftHistoryNotifier(service);
+});

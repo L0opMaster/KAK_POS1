@@ -139,6 +139,12 @@ class EscPosReceiptBuilder {
     }
     bytes += generator.hr();
     line(receipt.footer, align: PosAlign.center, bold: true);
+    // Settings → Company Profile's "Website" field — same source as the
+    // PDF/preview footer (ReceiptViewModel.website); never printed at all
+    // when unset, never a hardcoded placeholder.
+    if (receipt.website != null && receipt.website!.isNotEmpty) {
+      line(receipt.website!, align: PosAlign.center);
+    }
     return bytes;
   }
 }

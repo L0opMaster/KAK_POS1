@@ -11,9 +11,11 @@ import '../../../core/utils/l10n_extensions.dart';
 import '../providers/product_provider.dart';
 import '../models/modifier_models.dart';
 import '../models/product_models.dart';
+import '../models/unit_models.dart';
 import '../services/category_service.dart';
 import '../services/demo_product_service.dart';
 import '../services/modifier_service.dart';
+import '../services/unit_service.dart';
 
 /// Full end-to-end Item management screen — follows the same list UI as
 /// Employees: inline ADD button, checkbox multi-select + bulk delete,
@@ -69,7 +71,8 @@ class _ItemManagementScreenState extends ConsumerState<ItemManagementScreen> {
   }
 
   Future<void> _refresh() async {
-    await _loadAll(query: _searchCtl.text.trim().isEmpty ? null : _searchCtl.text.trim());
+    await _loadAll(
+        query: _searchCtl.text.trim().isEmpty ? null : _searchCtl.text.trim());
   }
 
   void _search(String query) {
@@ -275,8 +278,8 @@ class _ItemManagementScreenState extends ConsumerState<ItemManagementScreen> {
                       ),
                       const SizedBox(width: 12),
                       IconButton(
-                        tooltip:
-                            context.l10n.itemManagementDeleteSelectedItemsTooltip,
+                        tooltip: context
+                            .l10n.itemManagementDeleteSelectedItemsTooltip,
                         onPressed: _selectedProductIds.isEmpty
                             ? null
                             : _deleteSelectedProducts,
@@ -498,8 +501,7 @@ class _ItemManagementScreenState extends ConsumerState<ItemManagementScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                p.localizedName(
-                                    ref.watch(appLanguageProvider)),
+                                p.localizedName(ref.watch(appLanguageProvider)),
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -672,7 +674,8 @@ class _ItemManagementScreenState extends ConsumerState<ItemManagementScreen> {
                     Text(
                       context.l10n.itemManagementEmptyStateDescription,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 18, color: Colors.black54),
+                      style:
+                          const TextStyle(fontSize: 18, color: Colors.black54),
                     ),
                     const SizedBox(height: 28),
                     ElevatedButton.icon(
@@ -719,6 +722,35 @@ class _ItemManagementScreenState extends ConsumerState<ItemManagementScreen> {
   }
 }
 
+/// Product types selectable from the form — limited to the ones
+/// ProductService.validateProduct accepts with no other linked data
+/// (VARIANT_PARENT/VARIANT need a parent product, BUNDLE needs a bundle
+/// mode + components — this form has no UI for either, so offering them
+/// here would let a save fail with a confusing backend validation error).
+const List<String> _productTypeOptions = [
+  'SALE_ITEM',
+  'STOCK_ITEM',
+  'SERVICE',
+  'INGREDIENT',
+  'CONVERSION_ONLY',
+];
+
+String _productTypeLabel(BuildContext context, String type) {
+  switch (type) {
+    case 'STOCK_ITEM':
+      return context.l10n.itemManagementProductTypeStockItem;
+    case 'SERVICE':
+      return context.l10n.itemManagementProductTypeService;
+    case 'INGREDIENT':
+      return context.l10n.itemManagementProductTypeIngredient;
+    case 'CONVERSION_ONLY':
+      return context.l10n.itemManagementProductTypeConversionOnly;
+    case 'SALE_ITEM':
+    default:
+      return context.l10n.itemManagementProductTypeSaleItem;
+  }
+}
+
 /// Full-screen form for creating or editing a product.
 /// Integrates with backend API via ProductService.
 class ProductFormScreen extends ConsumerStatefulWidget {
@@ -756,6 +788,15 @@ class ProductFormScreenState extends ConsumerState<ProductFormScreen> {
   bool _saving = false;
   List<Category> _categories = [];
 
+  // ── Units ──
+  // null means "use the store default (EACH)" — matches
+  // ProductService.resolveUnit's backend fallback, so leaving these unset
+  // is a valid, intentional choice, not a validation error.
+  int? _saleUnitId;
+  int? _purchaseUnitId;
+  int? _stockUnitId;
+  List<Unit> _units = [];
+
   // ── Modifiers ──
   // A modifier GROUP (e.g. "Size", "Toppings") is applied to a product with
   // a switch here; the customer picks individual OPTIONS from that group
@@ -786,7 +827,7 @@ class ProductFormScreenState extends ConsumerState<ProductFormScreen> {
     _lowStockCtl = TextEditingController(
         text: p != null ? p.lowStockThreshold.toInt().toString() : '5');
     _imageUrlCtl = TextEditingController(text: p?.imageUrl ?? '');
-    _descriptionCtl = TextEditingController(text: p?.nameKm ?? '');
+    _descriptionCtl = TextEditingController(text: p?.description ?? '');
     if (p != null) {
       _active = p.active;
       _sellable = p.sellable;
@@ -794,6 +835,9 @@ class ProductFormScreenState extends ConsumerState<ProductFormScreen> {
       _trackInventory = p.trackInventory;
       _categoryId = p.categoryId;
       _productType = p.productType;
+      _saleUnitId = p.saleUnitId;
+      _purchaseUnitId = p.purchaseUnitId;
+      _stockUnitId = p.stockUnitId;
     }
     // Load categories
     Future.microtask(() async {
@@ -807,7 +851,17 @@ class ProductFormScreenState extends ConsumerState<ProductFormScreen> {
         }
       } catch (_) {}
     });
+    // Load units (for the Sale/Purchase/Stock unit dropdowns).
+    Future.microtask(() async {
+      try {
+        final units = await ref.read(unitServiceProvider).list(active: true);
+        if (mounted) setState(() => _units = units);
+      } catch (_) {}
+    });
   }
+
+  int? _safeUnitValue(int? id) =>
+      id != null && _units.any((u) => u.id == id) ? id : null;
 
   Future<void> _loadModifierGroups() async {
     try {
@@ -965,6 +1019,9 @@ class ProductFormScreenState extends ConsumerState<ProductFormScreen> {
         nameKm: _nameKmCtl.text.trim(),
         imageUrl:
             _imageUrlCtl.text.trim().isEmpty ? null : _imageUrlCtl.text.trim(),
+        description: _descriptionCtl.text.trim().isEmpty
+            ? null
+            : _descriptionCtl.text.trim(),
         cost: cost,
         price: price,
         active: _active,
@@ -975,6 +1032,15 @@ class ProductFormScreenState extends ConsumerState<ProductFormScreen> {
         lowStockThreshold: (int.tryParse(_lowStockCtl.text) ?? 5).toDouble(),
         categoryId: _categoryId,
         stock: stock.toDouble(),
+        // This form has no UI for parent/variant — carry the existing
+        // product's values through unchanged rather than dropping them,
+        // which previously reset them to null (clearing the parent link)
+        // on every edit.
+        parentProductId: widget.product?.parentProductId,
+        variantLabel: widget.product?.variantLabel,
+        saleUnitId: _saleUnitId,
+        purchaseUnitId: _purchaseUnitId,
+        stockUnitId: _stockUnitId,
       );
 
       final saved = widget.isEdit
@@ -1016,8 +1082,10 @@ class ProductFormScreenState extends ConsumerState<ProductFormScreen> {
   /// failure here is reported as a non-fatal warning rather than failing the
   /// whole save.
   Future<void> _syncModifierGroups(int productId) async {
-    final added = _selectedModifierGroupIds.difference(_initialModifierGroupIds);
-    final removed = _initialModifierGroupIds.difference(_selectedModifierGroupIds);
+    final added =
+        _selectedModifierGroupIds.difference(_initialModifierGroupIds);
+    final removed =
+        _initialModifierGroupIds.difference(_selectedModifierGroupIds);
     if (added.isEmpty && removed.isEmpty) return;
 
     final service = ref.read(modifierServiceProvider);
@@ -1038,8 +1106,7 @@ class ProductFormScreenState extends ConsumerState<ProductFormScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content:
-                Text(context.l10n.itemManagementModifiersNotUpdated('$e')),
+            content: Text(context.l10n.itemManagementModifiersNotUpdated('$e')),
             backgroundColor: PosTheme.warningAmber,
           ),
         );
@@ -1065,7 +1132,8 @@ class ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : Text(context.l10n.commonSave,
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w600, color: Colors.white)),
           ),
         ],
       ),
@@ -1154,8 +1222,33 @@ class ProductFormScreenState extends ConsumerState<ProductFormScreen> {
             ),
             const SizedBox(height: 16),
 
+            // ── Product Type ──
+            _sectionHeader(context.l10n.itemManagementProductTypeLabel),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              initialValue: _productType,
+              decoration: const InputDecoration(border: OutlineInputBorder()),
+              items: _productTypeOptions
+                  .map((t) => DropdownMenuItem(
+                        value: t,
+                        child: Text(_productTypeLabel(context, t)),
+                      ))
+                  .toList(),
+              onChanged: (v) {
+                if (v != null) setState(() => _productType = v);
+              },
+            ),
+            const SizedBox(height: 4),
+            Text(
+              context.l10n.itemManagementProductTypeSubtitle,
+              style:
+                  const TextStyle(fontSize: 12, color: PosTheme.textSecondary),
+            ),
+            const SizedBox(height: 16),
+
             // ── Description (Loyverse-style) ──
-            _sectionHeader(context.l10n.itemManagementSectionDescriptionOptional),
+            _sectionHeader(
+                context.l10n.itemManagementSectionDescriptionOptional),
             const SizedBox(height: 8),
             TextFormField(
               controller: _descriptionCtl,
@@ -1164,6 +1257,7 @@ class ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                 border: const OutlineInputBorder(),
               ),
               maxLines: 2,
+              maxLength: 255,
             ),
             const SizedBox(height: 16),
 
@@ -1210,6 +1304,74 @@ class ProductFormScreenState extends ConsumerState<ProductFormScreen> {
             ),
             const SizedBox(height: 16),
 
+            // ── Units ──
+            // Leaving a dropdown unset (null) is a valid choice — the
+            // backend resolves it to the store's default unit ("EACH"),
+            // it's not a validation error.
+            //
+            // `initialValue` must be null or match exactly one item in
+            // `items`, or DropdownButtonFormField throws — which would
+            // happen on the very first frame (units haven't finished
+            // loading yet) or if a product's unit was since deactivated.
+            // _safeUnitValue only shows a selection once it can actually be
+            // rendered; the real _saleUnitId/etc. is still what gets saved.
+            _sectionHeader(context.l10n.itemManagementSectionUnits),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<int?>(
+              initialValue: _safeUnitValue(_saleUnitId),
+              isExpanded: true,
+              decoration: InputDecoration(
+                labelText: context.l10n.itemManagementSaleUnitLabel,
+                hintText: context.l10n.itemManagementUnitDefaultOption,
+                border: const OutlineInputBorder(),
+              ),
+              items: _units
+                  .map((u) => DropdownMenuItem<int?>(
+                        value: u.id,
+                        child: Text('${u.nameEn} (${u.code})',
+                            overflow: TextOverflow.ellipsis),
+                      ))
+                  .toList(),
+              onChanged: (v) => setState(() => _saleUnitId = v),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<int?>(
+              initialValue: _safeUnitValue(_purchaseUnitId),
+              isExpanded: true,
+              decoration: InputDecoration(
+                labelText: context.l10n.itemManagementPurchaseUnitLabel,
+                hintText: context.l10n.itemManagementUnitDefaultOption,
+                border: const OutlineInputBorder(),
+              ),
+              items: _units
+                  .map((u) => DropdownMenuItem<int?>(
+                        value: u.id,
+                        child: Text('${u.nameEn} (${u.code})',
+                            overflow: TextOverflow.ellipsis),
+                      ))
+                  .toList(),
+              onChanged: (v) => setState(() => _purchaseUnitId = v),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<int?>(
+              initialValue: _safeUnitValue(_stockUnitId),
+              isExpanded: true,
+              decoration: InputDecoration(
+                labelText: context.l10n.itemManagementStockUnitLabel,
+                hintText: context.l10n.itemManagementUnitDefaultOption,
+                border: const OutlineInputBorder(),
+              ),
+              items: _units
+                  .map((u) => DropdownMenuItem<int?>(
+                        value: u.id,
+                        child: Text('${u.nameEn} (${u.code})',
+                            overflow: TextOverflow.ellipsis),
+                      ))
+                  .toList(),
+              onChanged: (v) => setState(() => _stockUnitId = v),
+            ),
+            const SizedBox(height: 16),
+
             // ── Inventory ──
             _sectionHeader(context.l10n.itemManagementSectionInventory),
             const SizedBox(height: 8),
@@ -1219,7 +1381,15 @@ class ProductFormScreenState extends ConsumerState<ProductFormScreen> {
               title: Text(context.l10n.itemManagementTrackInventoryTitle),
               subtitle:
                   Text(context.l10n.itemManagementManageStockQuantitySubtitle),
-              onChanged: (v) => setState(() => _trackInventory = v),
+              onChanged: (v) => setState(() {
+                _trackInventory = v;
+                // The backend only allows a Purchase Order line for a
+                // product that is BOTH purchasable AND inventory-tracked
+                // (PurchasingWorkflowService) — turning tracking off would
+                // otherwise leave a stale, hidden "purchasable = true"
+                // that the PO screen can no longer show a control for.
+                if (!v) _purchasable = false;
+              }),
             ),
             if (_trackInventory) ...[
               const SizedBox(height: 8),
@@ -1240,13 +1410,22 @@ class ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                     child: TextFormField(
                       controller: _lowStockCtl,
                       decoration: InputDecoration(
-                        labelText: context.l10n.itemManagementLowStockAlertLabel,
+                        labelText:
+                            context.l10n.itemManagementLowStockAlertLabel,
                         border: const OutlineInputBorder(),
                       ),
                       keyboardType: TextInputType.number,
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 8),
+              SwitchListTile(
+                value: _purchasable,
+                contentPadding: EdgeInsets.zero,
+                title: Text(context.l10n.itemManagementPurchasableTitle),
+                subtitle: Text(context.l10n.itemManagementPurchasableSubtitle),
+                onChanged: (v) => setState(() => _purchasable = v),
               ),
             ],
             const SizedBox(height: 16),
@@ -1266,8 +1445,7 @@ class ProductFormScreenState extends ConsumerState<ProductFormScreen> {
               value: _sellable,
               contentPadding: EdgeInsets.zero,
               title: Text(context.l10n.itemManagementSellableTitle),
-              subtitle:
-                  Text(context.l10n.itemManagementCanBeSoldInPosSubtitle),
+              subtitle: Text(context.l10n.itemManagementCanBeSoldInPosSubtitle),
               onChanged: (v) => setState(() => _sellable = v),
             ),
             const SizedBox(height: 16),
@@ -1294,7 +1472,9 @@ class ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                 final name = group.localizedName(lang);
                 final optionNames = group.options.isEmpty
                     ? context.l10n.itemManagementNoOptions
-                    : group.options.map((o) => o.localizedName(lang)).join(', ');
+                    : group.options
+                        .map((o) => o.localizedName(lang))
+                        .join(', ');
                 return SwitchListTile(
                   value: _selectedModifierGroupIds.contains(group.id),
                   contentPadding: EdgeInsets.zero,

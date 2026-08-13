@@ -218,6 +218,18 @@ abstract class AppLocalizations {
   /// **'Print'**
   String get commonPrint;
 
+  /// No description provided for @commonSavePdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Save PDF'**
+  String get commonSavePdf;
+
+  /// No description provided for @commonGeneratingPdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Generating PDF...'**
+  String get commonGeneratingPdf;
+
   /// No description provided for @commonSubmit.
   ///
   /// In en, this message translates to:
@@ -1148,6 +1160,12 @@ abstract class AppLocalizations {
   /// **'Address'**
   String get formAddress;
 
+  /// No description provided for @formWebsite.
+  ///
+  /// In en, this message translates to:
+  /// **'Website'**
+  String get formWebsite;
+
   /// No description provided for @formPleaseEnterValue.
   ///
   /// In en, this message translates to:
@@ -1921,6 +1939,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to save'**
   String get categoryManagementSaveFailedPrefix;
+
+  /// No description provided for @unitManagementUpdateFailedPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update'**
+  String get unitManagementUpdateFailedPrefix;
+
+  /// No description provided for @unitManagementSaveFailedPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save'**
+  String get unitManagementSaveFailedPrefix;
+
+  /// No description provided for @unitManagementEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No units yet'**
+  String get unitManagementEmptyTitle;
+
+  /// No description provided for @unitManagementEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap + to add a unit'**
+  String get unitManagementEmptyHint;
+
+  /// No description provided for @unitManagementAddButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Unit'**
+  String get unitManagementAddButton;
+
+  /// No description provided for @unitManagementEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Unit'**
+  String get unitManagementEditTitle;
+
+  /// No description provided for @unitManagementNewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New Unit'**
+  String get unitManagementNewTitle;
+
+  /// No description provided for @unitManagementUpdatedSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **'updated'**
+  String get unitManagementUpdatedSuffix;
+
+  /// No description provided for @unitManagementCreatedSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **'created'**
+  String get unitManagementCreatedSuffix;
+
+  /// No description provided for @unitManagementCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Code'**
+  String get unitManagementCodeLabel;
+
+  /// No description provided for @unitManagementSymbolLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Symbol'**
+  String get unitManagementSymbolLabel;
+
+  /// No description provided for @unitManagementGroupLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit group'**
+  String get unitManagementGroupLabel;
+
+  /// No description provided for @unitManagementGroupHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Units that convert to each other share the same group, e.g. \"weight\"'**
+  String get unitManagementGroupHelper;
+
+  /// No description provided for @unitManagementBaseUnitGroupLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Group'**
+  String get unitManagementBaseUnitGroupLabel;
+
+  /// No description provided for @unitManagementBaseUnitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Base unit'**
+  String get unitManagementBaseUnitLabel;
+
+  /// No description provided for @unitManagementBaseUnitSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The reference unit other units in this group convert against'**
+  String get unitManagementBaseUnitSubtitle;
+
+  /// No description provided for @unitManagementBaseUnitPickerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Convert to'**
+  String get unitManagementBaseUnitPickerLabel;
+
+  /// No description provided for @unitManagementNoCandidatesHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'No other units in this group yet — add the base unit first'**
+  String get unitManagementNoCandidatesHelper;
+
+  /// No description provided for @unitManagementConversionFactorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversion factor'**
+  String get unitManagementConversionFactorLabel;
+
+  /// No description provided for @unitManagementConversionFactorHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'How many {symbol} equal 1 of the base unit'**
+  String unitManagementConversionFactorHelper(Object symbol);
+
+  /// No description provided for @unitManagementPickBaseUnitError.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose which unit this converts to'**
+  String get unitManagementPickBaseUnitError;
 
   /// No description provided for @customerManagementDeleteTitle.
   ///
@@ -3879,6 +4023,18 @@ abstract class AppLocalizations {
   /// **'Manage stock quantity'**
   String get itemManagementManageStockQuantitySubtitle;
 
+  /// No description provided for @itemManagementPurchasableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow purchasing from supplier'**
+  String get itemManagementPurchasableTitle;
+
+  /// No description provided for @itemManagementPurchasableSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Can be added to a Purchase Order'**
+  String get itemManagementPurchasableSubtitle;
+
   /// No description provided for @itemManagementInitialStockLabel.
   ///
   /// In en, this message translates to:
@@ -5129,6 +5285,42 @@ abstract class AppLocalizations {
   /// **'Refund'**
   String get receiptsScreenRefund;
 
+  /// No description provided for @receiptsScreenStatusVoid.
+  ///
+  /// In en, this message translates to:
+  /// **'Void'**
+  String get receiptsScreenStatusVoid;
+
+  /// No description provided for @receiptsScreenStatusRefunded.
+  ///
+  /// In en, this message translates to:
+  /// **'Refunded'**
+  String get receiptsScreenStatusRefunded;
+
+  /// No description provided for @receiptsScreenStatusPartiallyRefunded.
+  ///
+  /// In en, this message translates to:
+  /// **'Partially Refunded'**
+  String get receiptsScreenStatusPartiallyRefunded;
+
+  /// No description provided for @receiptsScreenStatusCredit.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit'**
+  String get receiptsScreenStatusCredit;
+
+  /// No description provided for @receiptsScreenStatusDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get receiptsScreenStatusDraft;
+
+  /// No description provided for @receiptsScreenStatusHold.
+  ///
+  /// In en, this message translates to:
+  /// **'On Hold'**
+  String get receiptsScreenStatusHold;
+
   /// No description provided for @receiptsScreenRefundReceiptFallback.
   ///
   /// In en, this message translates to:
@@ -5392,6 +5584,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Variance: {amount}'**
   String shiftScreenVariance(Object amount);
+
+  /// No description provided for @posDrawerManageShift.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage Shift'**
+  String get posDrawerManageShift;
+
+  /// No description provided for @posDrawerShiftHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift History'**
+  String get posDrawerShiftHistory;
+
+  /// No description provided for @shiftHistoryScreenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift History'**
+  String get shiftHistoryScreenTitle;
+
+  /// No description provided for @shiftHistoryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No shifts yet'**
+  String get shiftHistoryEmpty;
+
+  /// No description provided for @shiftHistoryLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load shift history: {error}'**
+  String shiftHistoryLoadFailed(Object error);
+
+  /// No description provided for @shiftHistoryClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed {time}'**
+  String shiftHistoryClosed(Object time);
+
+  /// No description provided for @shiftHistoryClosingCash.
+  ///
+  /// In en, this message translates to:
+  /// **'Closing cash: {amount}'**
+  String shiftHistoryClosingCash(Object amount);
+
+  /// No description provided for @shiftHistorySales.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales: {amount}'**
+  String shiftHistorySales(Object amount);
+
+  /// No description provided for @shiftHistoryStatusOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get shiftHistoryStatusOpen;
+
+  /// No description provided for @shiftHistoryStatusClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed'**
+  String get shiftHistoryStatusClosed;
+
+  /// No description provided for @shiftHistoryStatusPendingApproval.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending approval'**
+  String get shiftHistoryStatusPendingApproval;
 
   /// No description provided for @paginationPageOfTotal.
   ///
@@ -6994,6 +7252,288 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Option'**
   String get salesByModifierPdfColOption;
+
+  /// No description provided for @commonLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get commonLocation;
+
+  /// No description provided for @commonUser.
+  ///
+  /// In en, this message translates to:
+  /// **'User'**
+  String get commonUser;
+
+  /// No description provided for @commonStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get commonStatus;
+
+  /// No description provided for @formSupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier'**
+  String get formSupplier;
+
+  /// No description provided for @formFromStore.
+  ///
+  /// In en, this message translates to:
+  /// **'From Store'**
+  String get formFromStore;
+
+  /// No description provided for @formToStore.
+  ///
+  /// In en, this message translates to:
+  /// **'To Store'**
+  String get formToStore;
+
+  /// No description provided for @formStore.
+  ///
+  /// In en, this message translates to:
+  /// **'Store'**
+  String get formStore;
+
+  /// No description provided for @formRecipe.
+  ///
+  /// In en, this message translates to:
+  /// **'Recipe'**
+  String get formRecipe;
+
+  /// No description provided for @inventoryHubInStockLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'In Stock'**
+  String get inventoryHubInStockLabel;
+
+  /// No description provided for @inventoryHistoryPdfFilterProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Product: {name}'**
+  String inventoryHistoryPdfFilterProduct(Object name);
+
+  /// No description provided for @stockAdjustmentsPdfFilterQuery.
+  ///
+  /// In en, this message translates to:
+  /// **'Search: {query}'**
+  String stockAdjustmentsPdfFilterQuery(Object query);
+
+  /// No description provided for @purchaseOrderPdfTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase Order'**
+  String get purchaseOrderPdfTitle;
+
+  /// No description provided for @purchaseOrderPdfNumberLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'PO Number'**
+  String get purchaseOrderPdfNumberLabel;
+
+  /// No description provided for @purchaseOrderPdfLineTotalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Line Total'**
+  String get purchaseOrderPdfLineTotalLabel;
+
+  /// No description provided for @transferOrderPdfTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock Transfer'**
+  String get transferOrderPdfTitle;
+
+  /// No description provided for @transferOrderPdfNumberLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer Number'**
+  String get transferOrderPdfNumberLabel;
+
+  /// No description provided for @productionOrderPdfTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Production Order'**
+  String get productionOrderPdfTitle;
+
+  /// No description provided for @productionOrderPdfNumberLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Production Order #'**
+  String get productionOrderPdfNumberLabel;
+
+  /// No description provided for @productionOrderPdfStartedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Started'**
+  String get productionOrderPdfStartedLabel;
+
+  /// No description provided for @productionOrderPdfCompletedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get productionOrderPdfCompletedLabel;
+
+  /// No description provided for @productionOrderPdfYieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Yield %'**
+  String get productionOrderPdfYieldLabel;
+
+  /// No description provided for @productionOrderPdfWasteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Waste Qty'**
+  String get productionOrderPdfWasteLabel;
+
+  /// No description provided for @productionOrderPdfComponentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Component'**
+  String get productionOrderPdfComponentLabel;
+
+  /// No description provided for @productionOrderPdfRequiredLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get productionOrderPdfRequiredLabel;
+
+  /// No description provided for @productionOrderPdfConsumedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Consumed'**
+  String get productionOrderPdfConsumedLabel;
+
+  /// No description provided for @inventoryCountPdfSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Count Sheet'**
+  String get inventoryCountPdfSheetTitle;
+
+  /// No description provided for @inventoryCountPdfReportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Count Report'**
+  String get inventoryCountPdfReportTitle;
+
+  /// No description provided for @inventoryCountPdfExpectedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Expected'**
+  String get inventoryCountPdfExpectedLabel;
+
+  /// No description provided for @inventoryCountPdfCountedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Counted'**
+  String get inventoryCountPdfCountedLabel;
+
+  /// No description provided for @inventoryCountPdfVarianceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Variance'**
+  String get inventoryCountPdfVarianceLabel;
+
+  /// No description provided for @inventoryCountPdfPrintSheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Print Count Sheet'**
+  String get inventoryCountPdfPrintSheet;
+
+  /// No description provided for @inventoryCountPdfSaveSheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Count Sheet PDF'**
+  String get inventoryCountPdfSaveSheet;
+
+  /// No description provided for @inventoryCountPdfPrintReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Print Count Report'**
+  String get inventoryCountPdfPrintReport;
+
+  /// No description provided for @inventoryCountPdfSaveReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Count Report PDF'**
+  String get inventoryCountPdfSaveReport;
+
+  /// No description provided for @inventoryDocumentActionsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Print / Save PDF'**
+  String get inventoryDocumentActionsTooltip;
+
+  /// No description provided for @itemManagementProductTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Product Type'**
+  String get itemManagementProductTypeLabel;
+
+  /// No description provided for @itemManagementProductTypeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What kind of item this is — determines how it can be sold, stocked, and purchased.'**
+  String get itemManagementProductTypeSubtitle;
+
+  /// No description provided for @itemManagementProductTypeSaleItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Sale Item'**
+  String get itemManagementProductTypeSaleItem;
+
+  /// No description provided for @itemManagementProductTypeStockItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock Item'**
+  String get itemManagementProductTypeStockItem;
+
+  /// No description provided for @itemManagementProductTypeService.
+  ///
+  /// In en, this message translates to:
+  /// **'Service'**
+  String get itemManagementProductTypeService;
+
+  /// No description provided for @itemManagementProductTypeIngredient.
+  ///
+  /// In en, this message translates to:
+  /// **'Ingredient'**
+  String get itemManagementProductTypeIngredient;
+
+  /// No description provided for @itemManagementProductTypeConversionOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversion Only'**
+  String get itemManagementProductTypeConversionOnly;
+
+  /// No description provided for @itemManagementSectionUnits.
+  ///
+  /// In en, this message translates to:
+  /// **'Units'**
+  String get itemManagementSectionUnits;
+
+  /// No description provided for @itemManagementSaleUnitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sale Unit'**
+  String get itemManagementSaleUnitLabel;
+
+  /// No description provided for @itemManagementPurchaseUnitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase Unit'**
+  String get itemManagementPurchaseUnitLabel;
+
+  /// No description provided for @itemManagementStockUnitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock Unit'**
+  String get itemManagementStockUnitLabel;
+
+  /// No description provided for @itemManagementUnitDefaultOption.
+  ///
+  /// In en, this message translates to:
+  /// **'Default (EACH)'**
+  String get itemManagementUnitDefaultOption;
 }
 
 class _AppLocalizationsDelegate

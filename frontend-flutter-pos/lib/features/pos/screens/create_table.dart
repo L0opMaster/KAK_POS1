@@ -5,7 +5,12 @@ import 'package:frontend_flutter_pos/features/pos/models/table_models.dart';
 import 'package:frontend_flutter_pos/features/pos/providers/table_provider.dart';
 import '../../../core/utils/l10n_extensions.dart';
 
-const List<String> _statuses = ['AVAILABLE', 'OCCUPIED', 'RESERVED', 'OUT_OF_ORDER'];
+const List<String> _statuses = [
+  'AVAILABLE',
+  'OCCUPIED',
+  'RESERVED',
+  'OUT_OF_ORDER'
+];
 
 class CreateTable extends ConsumerStatefulWidget {
   final RestaurantTable? initialTable;
@@ -145,7 +150,10 @@ class _CreateTableState extends ConsumerState<CreateTable> {
                     height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : Text(context.l10n.commonSave),
+                : Text(
+                    context.l10n.commonSave,
+                    style: const TextStyle(color: Colors.white),
+                  ),
           ),
         ],
       ),

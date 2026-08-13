@@ -21,6 +21,10 @@ abstract class ShiftService {
   Future<Shift> closeShift(int shiftId, double closingCash);
 
   Future<Map<String, dynamic>> getClosePrecheck(int shiftId);
+
+  /// All shifts (any status, any cashier/store) — requires
+  /// PERM_SHIFT_MANAGE on the backend, unlike the other methods above.
+  Future<List<Shift>> getShiftHistory();
 }
 
 /// Concrete implementation of ShiftService using ApiService.
@@ -61,6 +65,14 @@ class ApiShiftService extends ShiftService {
       '/api/shifts/$shiftId/close-precheck',
     );
     return response;
+  }
+
+  @override
+  Future<List<Shift>> getShiftHistory() async {
+    final response = await api.get<List<dynamic>>('/api/shifts/history');
+    return response
+        .map((e) => Shift.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 }
 

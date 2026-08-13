@@ -76,8 +76,7 @@ class _CreateEmployeeState extends ConsumerState<CreateEmployee> {
           : DateTime.tryParse(employee.hireDate!);
       _payType =
           _payTypes.contains(employee.payType) ? employee.payType : _payType;
-      _status =
-          _statuses.contains(employee.status) ? employee.status : _status;
+      _status = _statuses.contains(employee.status) ? employee.status : _status;
       _hasUserAccount = employee.linkedUserId != null;
     }
 
@@ -338,7 +337,8 @@ class _CreateEmployeeState extends ConsumerState<CreateEmployee> {
             ),
             hint: Text(context.l10n.createEmployeeSelectRoleHint),
             items: roles
-                .map((r) => DropdownMenuItem(value: r.name, child: Text(r.name)))
+                .map(
+                    (r) => DropdownMenuItem(value: r.name, child: Text(r.name)))
                 .toList(),
             onChanged: (value) => setState(() => _selectedRoleName = value),
           ),
@@ -388,7 +388,10 @@ class _CreateEmployeeState extends ConsumerState<CreateEmployee> {
                     height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : Text(context.l10n.commonSave),
+                : Text(
+                    context.l10n.commonSave,
+                    style: const TextStyle(color: Colors.white),
+                  ),
           ),
         ],
       ),

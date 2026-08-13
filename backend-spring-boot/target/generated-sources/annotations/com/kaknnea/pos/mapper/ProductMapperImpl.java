@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-08-10T13:50:22+0700",
+    date = "2026-08-12T14:48:57+0700",
     comments = "version: 1.5.5.Final, compiler: Eclipse JDT (IDE) 3.46.100.v20260624-0231, environment: Java 21.0.11 (Eclipse Adoptium)"
 )
 @Component
@@ -45,22 +45,23 @@ public class ProductMapperImpl implements ProductMapper {
         productResponse.setBundleComponents( productBundleComponentListToProductBundleComponentResponseList( product.getBundleComponents() ) );
         productResponse.setImages( productImageListToProductImageResponseList( product.getImages() ) );
         productResponse.setModifierGroups( modifierGroupListToModifierGroupSummaryList( product.getModifierGroups() ) );
-        productResponse.setActive( product.isActive() );
-        productResponse.setBarcode( product.getBarcode() );
-        productResponse.setBundleMode( product.getBundleMode() );
-        productResponse.setCost( product.getCost() );
         productResponse.setId( product.getId() );
-        productResponse.setImageUrl( product.getImageUrl() );
-        productResponse.setLowStockThreshold( product.getLowStockThreshold() );
+        productResponse.setSku( product.getSku() );
+        productResponse.setBarcode( product.getBarcode() );
         productResponse.setNameEn( product.getNameEn() );
         productResponse.setNameKm( product.getNameKm() );
+        productResponse.setImageUrl( product.getImageUrl() );
+        productResponse.setDescription( product.getDescription() );
+        productResponse.setCost( product.getCost() );
         productResponse.setPrice( product.getPrice() );
-        productResponse.setProductType( product.getProductType() );
-        productResponse.setPurchasable( product.isPurchasable() );
+        productResponse.setActive( product.isActive() );
         productResponse.setSellable( product.isSellable() );
-        productResponse.setSku( product.getSku() );
+        productResponse.setPurchasable( product.isPurchasable() );
         productResponse.setTrackInventory( product.isTrackInventory() );
+        productResponse.setProductType( product.getProductType() );
+        productResponse.setLowStockThreshold( product.getLowStockThreshold() );
         productResponse.setVariantLabel( product.getVariantLabel() );
+        productResponse.setBundleMode( product.getBundleMode() );
 
         return productResponse;
     }
@@ -74,11 +75,11 @@ public class ProductMapperImpl implements ProductMapper {
         ProductDtos.ModifierGroupSummary modifierGroupSummary = new ProductDtos.ModifierGroupSummary();
 
         modifierGroupSummary.setId( group.getId() );
-        modifierGroupSummary.setMultiSelect( group.isMultiSelect() );
         modifierGroupSummary.setNameEn( group.getNameEn() );
         modifierGroupSummary.setNameKm( group.getNameKm() );
-        modifierGroupSummary.setOptions( modifierOptionListToModifierOptionSummaryList( group.getOptions() ) );
         modifierGroupSummary.setRequired( group.isRequired() );
+        modifierGroupSummary.setMultiSelect( group.isMultiSelect() );
+        modifierGroupSummary.setOptions( modifierOptionListToModifierOptionSummaryList( group.getOptions() ) );
 
         return modifierGroupSummary;
     }

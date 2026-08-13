@@ -1,14 +1,19 @@
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 import '../../../core/config/pos_theme.dart';
 import '../../../core/providers/language_provider.dart';
+import '../../../core/services/printing/a4_report_pdf.dart';
 import '../../../core/utils/bilingual.dart';
 import '../../../core/utils/l10n_extensions.dart';
 import '../../pos/models/product_models.dart';
 import '../../pos/providers/product_provider.dart';
+import '../../pos/services/settings_service.dart';
 import '../models/inventory_models.dart';
 import '../providers/inventory_provider.dart';
 
@@ -31,6 +36,7 @@ class _InventoryHistoryScreenState
   int _currentPage = 0;
   int? _productFilterId;
   bool _hasLoadedOnce = false;
+  bool _generatingPdf = false;
 
   @override
   void initState() {
@@ -50,6 +56,102 @@ class _InventoryHistoryScreenState
     ref.read(movementsProvider.notifier).load(productId: productId);
   }
 
+  /// Builds the report over the FULL filtered movement list (already fully
+  /// loaded in `movementsProvider` — this endpoint has no server pagination,
+  /// see inventory_service.dart), not just the current on-screen page.
+  Future<Uint8List?> _buildPdfBytes() async {
+    final movements = ref.read(movementsProvider).value;
+    if (movements == null) return null;
+    final l10n = context.l10n;
+    final sorted = [...movements]
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final company = await ref.read(settingsServiceProvider).getCompanyProfile();
+
+    String? filterSubtitle;
+    if (_productFilterId != null) {
+      final products = ref.read(productsProvider).products;
+      final match = products.where((p) => p.id == _productFilterId);
+      if (match.isNotEmpty) {
+        final lang = ref.read(appLanguageProvider);
+        filterSubtitle =
+            l10n.inventoryHistoryPdfFilterProduct(match.first.localizedName(lang));
+      }
+    }
+
+    final rows = sorted
+        .map((m) => [
+              _fmtDate(m.createdAt),
+              m.productName,
+              m.movementType.replaceAll('_', ' '),
+              m.quantity.toStringAsFixed(
+                  m.quantity.truncateToDouble() == m.quantity ? 0 : 2),
+              m.reason ?? '',
+              m.storeName ?? '',
+              m.createdBy ?? '',
+            ])
+        .toList();
+
+    return A4ReportPdf.build(
+      title: l10n.inventoryHistoryTitle,
+      subtitle: filterSubtitle ?? l10n.inventoryHistoryAllProducts,
+      businessName: '${company['businessName'] ?? ''}',
+      businessAddress: '${company['address'] ?? ''}',
+      businessPhone: '${company['phone'] ?? ''}',
+      columns: [
+        l10n.receiptDate,
+        l10n.receiptItem,
+        l10n.stockMovementPdfColType,
+        l10n.receiptQty,
+        l10n.shiftScreenReasonLabel,
+        l10n.commonLocation,
+        l10n.commonUser,
+      ],
+      rows: rows,
+      columnAlignments: const {3: pw.Alignment.centerRight},
+      summary: [
+        MapEntry(l10n.stockMovementPdfMovementsLabel, '${sorted.length}'),
+      ],
+      generatedAt: DateTime.now(),
+      generatedLabel: l10n.reportPdfGeneratedLabel,
+      pageLabel: l10n.reportPdfPageLabel,
+      landscape: true,
+    );
+  }
+
+  Future<void> _printReport() async {
+    if (_generatingPdf) return;
+    setState(() => _generatingPdf = true);
+    try {
+      final bytes = await _buildPdfBytes();
+      if (bytes == null) return;
+      await Printing.layoutPdf(onLayout: (_) => bytes, name: 'inventory_history');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${context.l10n.printerPrintFailed}: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _generatingPdf = false);
+    }
+  }
+
+  Future<void> _savePdf() async {
+    if (_generatingPdf) return;
+    setState(() => _generatingPdf = true);
+    try {
+      final bytes = await _buildPdfBytes();
+      if (bytes == null) return;
+      await Printing.sharePdf(bytes: bytes, filename: 'inventory_history.pdf');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${context.l10n.printerPrintFailed}: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _generatingPdf = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(movementsProvider);
@@ -61,6 +163,27 @@ class _InventoryHistoryScreenState
         title: Text(context.l10n.inventoryHistoryTitle),
         elevation: 0.5,
         actions: [
+          if (_generatingPdf)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          else ...[
+            IconButton(
+              icon: const Icon(Icons.print_outlined),
+              tooltip: context.l10n.commonPrint,
+              onPressed: state.value == null ? null : _printReport,
+            ),
+            IconButton(
+              icon: const Icon(Icons.picture_as_pdf_outlined),
+              tooltip: context.l10n.commonSavePdf,
+              onPressed: state.value == null ? null : _savePdf,
+            ),
+          ],
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: context.l10n.commonRefresh,

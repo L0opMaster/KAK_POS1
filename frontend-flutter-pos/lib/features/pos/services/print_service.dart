@@ -382,10 +382,14 @@ class PrintService {
         _clipped(r.footer,
             pw.TextStyle(fontSize: t.footer, fontWeight: pw.FontWeight.bold),
             textAlign: pw.TextAlign.center),
-        pw.SizedBox(height: ReceiptSpacing.smallGap),
-        _clipped('www.kaknnea.com',
-            pw.TextStyle(fontSize: t.footerSmall, color: _grey),
-            textAlign: pw.TextAlign.center),
+        // Settings → Company Profile's "Website" field — never a hardcoded
+        // placeholder, and never rendered at all when unset.
+        if (r.website != null && r.website!.isNotEmpty) ...[
+          pw.SizedBox(height: ReceiptSpacing.smallGap),
+          _clipped(r.website!,
+              pw.TextStyle(fontSize: t.footerSmall, color: _grey),
+              textAlign: pw.TextAlign.center),
+        ],
         pw.SizedBox(height: 2),
         _clipped(labels.poweredBy,
             pw.TextStyle(fontSize: t.footerSmall, color: _grey),

@@ -58,6 +58,7 @@ void main() {
       'businessName': 'Kaknnea Cafe',
       'address': 'Phnom Penh',
       'phone': '012345678',
+      'website': 'www.kaknnea.com',
     };
     fakeApi.getResponses['/api/settings/tax'] = {
       'taxRate': 0.1,
@@ -160,6 +161,74 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Business name is required'), findsOneWidget);
+  });
+
+  group('Company Profile — Website field', () {
+    testWidgets('the existing saved website loads into the field',
+        (tester) async {
+      await pumpScreen(tester);
+
+      expect(find.text('www.kaknnea.com'), findsOneWidget);
+    });
+
+    testWidgets(
+        'editing and saving sends the new (trimmed) value via PUT, and '
+        'reopening (reloading) the screen shows the saved value — not the '
+        'old one, not blank', (tester) async {
+      await pumpScreen(tester);
+
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Website'),
+        '  pos.example.com  ',
+      );
+      await tester.tap(find.text('Save Company'));
+      await tester.pumpAndSettle();
+
+      expect(
+        fakeApi.calls.any((c) =>
+            c.startsWith('PUT /api/settings/company-profile') &&
+            c.contains('website: pos.example.com') &&
+            !c.contains('website:   pos.example.com  ')),
+        isTrue,
+        reason: 'website must be sent trimmed',
+      );
+
+      // Simulate "close and reopen Settings": pumping a differently-shaped
+      // widget first forces Flutter to actually dispose the old
+      // SettingsModulesScreen State (otherwise pumpWidget would just diff
+      // against and reuse it in place, never re-running initState()/_load()
+      // — the same widget type at the same tree position doesn't remount).
+      // The fake backend now has the new value (the PUT handler in this
+      // harness echoes back what was sent), so the fresh screen instance
+      // must load THAT, not the original fixture value.
+      fakeApi.getResponses['/api/settings/company-profile'] = {
+        'businessName': 'Kaknnea Cafe',
+        'address': 'Phnom Penh',
+        'phone': '012345678',
+        'website': 'pos.example.com',
+      };
+      await tester.pumpWidget(const SizedBox.shrink());
+      await pumpScreen(tester, buildScreen());
+
+      expect(find.text('pos.example.com'), findsOneWidget);
+      expect(find.text('www.kaknnea.com'), findsNothing);
+    });
+
+    testWidgets('an emptied website still saves successfully (no forced '
+        'default/placeholder)', (tester) async {
+      await pumpScreen(tester);
+
+      await tester.enterText(find.widgetWithText(TextField, 'Website'), '');
+      await tester.tap(find.text('Save Company'));
+      await tester.pumpAndSettle();
+
+      final putCall = fakeApi.calls.firstWhere(
+          (c) => c.startsWith('PUT /api/settings/company-profile'));
+      // Sent as an empty string, not omitted and not the old fixture value —
+      // proves the field can genuinely be cleared, not just left as-is.
+      expect(putCall, contains('website: ,'));
+      expect(putCall.contains('www.kaknnea.com'), isFalse);
+    });
   });
 
   testWidgets('toggling a payment method calls the status PATCH endpoint',

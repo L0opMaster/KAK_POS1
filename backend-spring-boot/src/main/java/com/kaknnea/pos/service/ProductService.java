@@ -160,6 +160,7 @@ public class ProductService {
                 before.setNameEn(product.getNameEn());
                 before.setNameKm(product.getNameKm());
                 before.setImageUrl(product.getImageUrl());
+                before.setDescription(product.getDescription());
                 before.setCost(product.getCost());
                 before.setPrice(product.getPrice());
                 before.setActive(product.isActive());
@@ -419,6 +420,9 @@ public class ProductService {
                 product.setNameEn(request.getNameEn().trim());
                 product.setNameKm(request.getNameKm().trim());
                 product.setImageUrl(request.getImageUrl());
+                product.setDescription(request.getDescription() == null || request.getDescription().isBlank()
+                                ? null
+                                : request.getDescription().trim());
                 product.setCost(request.getCost());
                 product.setPrice(request.getPrice());
                 product.setActive(request.isActive());

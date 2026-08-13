@@ -1,18 +1,119 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 import '../../../core/config/pos_theme.dart';
 import '../../../core/providers/language_provider.dart';
+import '../../../core/services/printing/a4_report_pdf.dart';
 import '../../../core/utils/bilingual.dart';
 import '../../../core/utils/l10n_extensions.dart';
 import '../../pos/models/product_models.dart';
 import '../../pos/providers/product_provider.dart';
+import '../../pos/services/demo_product_service.dart';
+import '../../pos/services/settings_service.dart';
 
-class InventoryHubScreen extends ConsumerWidget {
+class InventoryHubScreen extends ConsumerStatefulWidget {
   const InventoryHubScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<InventoryHubScreen> createState() =>
+      _InventoryHubScreenState();
+}
+
+class _InventoryHubScreenState extends ConsumerState<InventoryHubScreen> {
+  bool _generatingPdf = false;
+
+  /// The on-screen list watches `productsProvider`, which may hold only a
+  /// partial/filtered/paged set depending on what other screen (typically
+  /// the POS grid) last touched it — see ProductService.getProducts: it
+  /// only returns the full catalog in one call when both `query` and
+  /// `categoryId` are null. So printing fetches its own full, unfiltered
+  /// catalog directly rather than trusting whatever's currently in the
+  /// shared provider.
+  Future<Uint8List?> _buildPdfBytes() async {
+    final l10n = context.l10n;
+    final lang = ref.read(appLanguageProvider);
+    final company = await ref.read(settingsServiceProvider).getCompanyProfile();
+    final products = await ref.read(productServiceProvider).getProducts();
+
+    String statusLabel(Product p) {
+      if (p.stock <= 0) return l10n.inventoryHubOutOfStockLabel;
+      if (p.stock <= 5) return l10n.inventoryHubLowStockLabel;
+      return l10n.inventoryHubInStockLabel;
+    }
+
+    final rows = products
+        .map((p) => [
+              p.localizedName(lang),
+              p.sku,
+              p.categoryNameEn ?? '',
+              '${p.stock}',
+              statusLabel(p),
+            ])
+        .toList();
+
+    return A4ReportPdf.build(
+      title: l10n.inventoryHubTitle,
+      businessName: '${company['businessName'] ?? ''}',
+      businessAddress: '${company['address'] ?? ''}',
+      businessPhone: '${company['phone'] ?? ''}',
+      columns: [
+        l10n.inventoryValuationColProduct,
+        l10n.formSku,
+        l10n.formCategory,
+        l10n.inventoryValuationColStock,
+        l10n.commonStatus,
+      ],
+      rows: rows,
+      columnAlignments: const {3: pw.Alignment.centerRight},
+      summary: [
+        MapEntry(l10n.inventoryValuationProductsLabel, '${products.length}'),
+      ],
+      generatedAt: DateTime.now(),
+      generatedLabel: l10n.reportPdfGeneratedLabel,
+      pageLabel: l10n.reportPdfPageLabel,
+    );
+  }
+
+  Future<void> _printReport() async {
+    if (_generatingPdf) return;
+    setState(() => _generatingPdf = true);
+    try {
+      final bytes = await _buildPdfBytes();
+      if (bytes == null) return;
+      await Printing.layoutPdf(onLayout: (_) => bytes, name: 'stock_lookup');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${context.l10n.printerPrintFailed}: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _generatingPdf = false);
+    }
+  }
+
+  Future<void> _savePdf() async {
+    if (_generatingPdf) return;
+    setState(() => _generatingPdf = true);
+    try {
+      final bytes = await _buildPdfBytes();
+      if (bytes == null) return;
+      await Printing.sharePdf(bytes: bytes, filename: 'stock_lookup.pdf');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${context.l10n.printerPrintFailed}: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _generatingPdf = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final products = ref.watch(productsProvider).products;
     final language = ref.watch(appLanguageProvider);
     final totalProducts = products.length;
@@ -21,7 +122,32 @@ class InventoryHubScreen extends ConsumerWidget {
     final outOfStockCount = products.where((p) => p.stock == 0).length;
 
     return Scaffold(
-      appBar: AppBar(title: Text(context.l10n.inventoryHubTitle)),
+      appBar: AppBar(
+        title: Text(context.l10n.inventoryHubTitle),
+        actions: [
+          if (_generatingPdf)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          else ...[
+            IconButton(
+              icon: const Icon(Icons.print_outlined),
+              tooltip: context.l10n.commonPrint,
+              onPressed: _printReport,
+            ),
+            IconButton(
+              icon: const Icon(Icons.picture_as_pdf_outlined),
+              tooltip: context.l10n.commonSavePdf,
+              onPressed: _savePdf,
+            ),
+          ],
+        ],
+      ),
       body: Column(
         children: [
           Padding(

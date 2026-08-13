@@ -1794,6 +1794,7 @@ public class SaleService {
             resp.setBusinessName(settings.getBusinessName());
             resp.setAddress(settings.getAddress());
             resp.setPhone(settings.getPhone());
+            resp.setWebsite(settings.getWebsite());
             resp.setCurrency(settings.getCurrency());
             resp.setFooter(settings.getReceiptFooter());
             resp.setLogoUrl(settings.getLogoUrl());

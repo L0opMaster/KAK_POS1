@@ -24,11 +24,13 @@ import 'features/pos/screens/pos_settings_screen.dart';
 import 'features/pos/screens/customer_management_screen.dart';
 import 'features/pos/screens/open_ticket_page.dart';
 import 'features/pos/screens/receipts_screen.dart';
+import 'features/pos/screens/shift_history_screen.dart';
 import 'features/pos/screens/shift_screen.dart';
 import 'features/pos/screens/table_management_screen.dart';
 import 'features/pos/screens/create_table.dart';
 import 'features/pos/screens/item_management_screen.dart';
 import 'features/pos/screens/category_management_screen.dart';
+import 'features/pos/screens/unit_management_screen.dart';
 import 'features/inventory/screens/inventory_hub_screen.dart';
 import 'features/inventory/screens/purchase_orders_screen.dart';
 import 'features/inventory/screens/transfer_orders_screen.dart';
@@ -127,6 +129,8 @@ class PosApp extends ConsumerWidget {
         '/open-tickets': (final BuildContext context) => const OpenTicketPage(),
         '/receipts': (final BuildContext context) => const ReceiptsScreen(),
         '/shifts': (final BuildContext context) => const ShiftScreen(),
+        '/shift-history': (final BuildContext context) =>
+            const ShiftHistoryScreen(),
         '/tables': (final BuildContext context) =>
             const TableManagementScreen(),
         '/add-table': (final BuildContext context) => const CreateTable(),
@@ -141,6 +145,7 @@ class PosApp extends ConsumerWidget {
             const ModifierManagement(),
         '/create-modifier': (final BuildContext context) =>
             const CreateModifier(),
+        '/units': (final BuildContext context) => const UnitManagementScreen(),
         // ── Inventory Management ──
         '/inventory': (final BuildContext context) =>
             const InventoryHubScreen(),

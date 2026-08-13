@@ -51,6 +51,7 @@ class Product {
   final String nameEn;
   final String nameKm;
   final String? imageUrl;
+  final String? description;
   final double cost;
   final double price;
   final double? resolvedPrice;
@@ -84,6 +85,7 @@ class Product {
     required this.nameEn,
     required this.nameKm,
     this.imageUrl,
+    this.description,
     required this.cost,
     required this.price,
     this.resolvedPrice,
@@ -119,6 +121,7 @@ class Product {
         nameEn: json['nameEn'] as String? ?? '',
         nameKm: json['nameKm'] as String? ?? '',
         imageUrl: json['imageUrl'] as String?,
+        description: json['description'] as String?,
         cost: (json['cost'] as num?)?.toDouble() ?? 0,
         price: (json['price'] as num?)?.toDouble() ?? 0,
         resolvedPrice: (json['resolvedPrice'] as num?)?.toDouble(),
@@ -162,6 +165,7 @@ class Product {
         'nameEn': nameEn,
         'nameKm': nameKm,
         if (imageUrl != null) 'imageUrl': imageUrl,
+        if (description != null) 'description': description,
         'cost': cost,
         'price': price,
         'active': active,
@@ -172,6 +176,16 @@ class Product {
         'lowStockThreshold': lowStockThreshold,
         'categoryId': categoryId,
         if (variantLabel != null) 'variantLabel': variantLabel,
+        // Backend only acts on this for a brand-new product with
+        // trackInventory on (ProductService.create); ignored on update. Was
+        // previously never sent at all, so "Initial Stock" entered on the
+        // create form silently did nothing — every new product started at
+        // zero stock regardless of what was typed here.
+        'initialStock': stock,
+        if (parentProductId != null) 'parentProductId': parentProductId,
+        if (saleUnitId != null) 'saleUnitId': saleUnitId,
+        if (purchaseUnitId != null) 'purchaseUnitId': purchaseUnitId,
+        if (stockUnitId != null) 'stockUnitId': stockUnitId,
       };
 
   static Product sample() => Product(
@@ -195,6 +209,7 @@ class Product {
     String? nameEn,
     String? nameKm,
     String? imageUrl,
+    String? description,
     double? cost,
     double? price,
     double? resolvedPrice,
@@ -229,6 +244,7 @@ class Product {
       nameEn: nameEn ?? this.nameEn,
       nameKm: nameKm ?? this.nameKm,
       imageUrl: imageUrl ?? this.imageUrl,
+      description: description ?? this.description,
       cost: cost ?? this.cost,
       price: price ?? this.price,
       resolvedPrice: resolvedPrice ?? this.resolvedPrice,

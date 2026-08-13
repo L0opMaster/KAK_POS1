@@ -22,6 +22,7 @@ import '../widgets/phone_scanner_receiver_button.dart';
 import '../widgets/customer_display_status_button.dart';
 import '../providers/customer_display_provider.dart';
 import '../../../core/config/currency_utils.dart';
+import '../../../core/providers/company_provider.dart';
 
 /// Main POS screen with Loyverse-inspired design:
 /// - Clean white header with store branding, search, notifications
@@ -253,13 +254,12 @@ class _PosAppBarState extends ConsumerState<_PosAppBar> {
     super.initState();
     _searchCtl.addListener(_onSearchChanged);
 
-    // USB, Bluetooth and 2.4 GHz POS scanners normally behave like keyboards.
-    // Focusing this field makes the scanner ready without a special cart API.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _barcodeFocusNode.requestFocus();
-      }
-    });
+    // Deliberately NOT auto-focused on open: the barcode field used to grab
+    // focus (and show an active cursor) the instant POS opened, before the
+    // cashier had touched anything. A physical USB/Bluetooth/2.4GHz scanner
+    // still works — it just needs the field armed first, either by tapping
+    // the field directly or the scanner icon inside it (_focusScannerInput,
+    // below), which is also what _submitBarcode re-arms after every scan.
   }
 
   @override
@@ -346,6 +346,13 @@ class _PosAppBarState extends ConsumerState<_PosAppBar> {
     // element here is a fixed white/near-white — not the theme-aware
     // `...Of(context)` colors, which would go dark-on-dark against it.
     final l10n = context.l10n;
+    // Live business name from Settings → Company Profile, reactive via
+    // companyProfileProvider — falls back to the generic app name while
+    // loading/offline/unset so the bar is never blank. See
+    // core/providers/company_provider.dart's doc comment for why this
+    // updates immediately after a Company Profile save with no reload.
+    final companyName =
+        watchCompanyName(ref, fallback: '${l10n.appName} ${l10n.navPos}');
     return AppBar(
       elevation: 0,
       toolbarHeight: 64,
@@ -366,71 +373,84 @@ class _PosAppBarState extends ConsumerState<_PosAppBar> {
               ),
             ),
             const SizedBox(width: 12),
-            Text(
-              '${l10n.appName} ${l10n.navPos}',
-              style: const TextStyle(
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-                fontSize: 18,
+            Flexible(
+              flex: 2,
+              child: Text(
+                companyName,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                  fontSize: 18,
+                ),
               ),
             ),
             const SizedBox(width: 20),
-            SizedBox(
-              width: 280,
-              child: TextField(
-                controller: _searchCtl,
-                decoration: InputDecoration(
-                  hintText: l10n.posSearchHint,
-                  prefixIcon: const Icon(Icons.search, size: 20),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(PosTheme.radiusMedium),
-                    borderSide: BorderSide.none,
+            Flexible(
+              flex: 3,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 280),
+                child: TextField(
+                  controller: _searchCtl,
+                  decoration: InputDecoration(
+                    hintText: l10n.posSearchHint,
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius:
+                          BorderRadius.circular(PosTheme.radiusMedium),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                    isDense: true,
                   ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                  isDense: true,
+                  style: const TextStyle(fontSize: 14, color: Colors.black87),
                 ),
-                style: const TextStyle(fontSize: 14, color: Colors.black87),
               ),
             ),
             const SizedBox(width: 12),
-            SizedBox(
-              width: 250,
-              child: TextField(
-                key: const Key('barcode_input'),
-                controller: _barcodeCtl,
-                focusNode: _barcodeFocusNode,
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) => _submitBarcode(),
-                decoration: InputDecoration(
-                  hintText: l10n.posBarcodeHint,
-                  prefixIcon: const Icon(Icons.qr_code_scanner, size: 20),
-                  suffixIcon: _barcodeLookupInProgress
-                      ? const Padding(
-                          padding: EdgeInsets.all(12),
-                          child: SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+            Flexible(
+              flex: 3,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 250),
+                child: TextField(
+                  key: const Key('barcode_input'),
+                  controller: _barcodeCtl,
+                  focusNode: _barcodeFocusNode,
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => _submitBarcode(),
+                  decoration: InputDecoration(
+                    hintText: l10n.posBarcodeHint,
+                    prefixIcon: const Icon(Icons.qr_code_scanner, size: 20),
+                    suffixIcon: _barcodeLookupInProgress
+                        ? const Padding(
+                            padding: EdgeInsets.all(12),
+                            child: SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          )
+                        : IconButton(
+                            key: const Key('scanner_connect'),
+                            tooltip: l10n.posConnectScanner,
+                            icon: const Icon(Icons.usb, size: 20),
+                            onPressed: _focusScannerInput,
                           ),
-                        )
-                      : IconButton(
-                          key: const Key('scanner_connect'),
-                          tooltip: l10n.posConnectScanner,
-                          icon: const Icon(Icons.usb, size: 20),
-                          onPressed: _focusScannerInput,
-                        ),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(PosTheme.radiusMedium),
-                    borderSide: BorderSide.none,
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius:
+                          BorderRadius.circular(PosTheme.radiusMedium),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                    isDense: true,
                   ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                  isDense: true,
+                  style: const TextStyle(fontSize: 14, color: Colors.black87),
                 ),
-                style: const TextStyle(fontSize: 14, color: Colors.black87),
               ),
             ),
           ],
@@ -479,14 +499,18 @@ class _PosAppBarState extends ConsumerState<_PosAppBar> {
           tooltip: l10n.navSettings,
           onPressed: () => Navigator.of(context).pushNamed('/settings'),
         ),
-        const Padding(
-          padding: EdgeInsets.only(right: 12, left: 4),
+        Padding(
+          padding: const EdgeInsets.only(right: 12, left: 4),
           child: CircleAvatar(
             backgroundColor: Colors.white,
             radius: 16,
+            // Initial of the live business name — was a hardcoded 'K',
+            // which never reflected the actual Company Profile name.
             child: Text(
-              'K',
-              style: TextStyle(
+              companyName.trim().isEmpty
+                  ? '?'
+                  : companyName.trim()[0].toUpperCase(),
+              style: const TextStyle(
                 color: PosTheme.primaryGreen,
                 fontWeight: FontWeight.w600,
               ),

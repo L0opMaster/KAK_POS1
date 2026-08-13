@@ -147,7 +147,15 @@ class _CreatePurchaseOrderState extends ConsumerState<CreatePurchaseOrder> {
         ref.watch(suppliersProvider).valueOrNull ?? const <Supplier>[];
     final locations =
         ref.watch(locationsProvider).valueOrNull ?? const <StoreLocation>[];
-    final products = ref.watch(productsProvider).products;
+    // Only products the backend will actually accept on a PO line
+    // (PurchasingWorkflowService requires purchasable AND trackInventory)
+    // — otherwise a product could be selected here and only rejected on
+    // Save, with the user having no idea why.
+    final products = ref
+        .watch(productsProvider)
+        .products
+        .where((p) => p.purchasable && p.trackInventory)
+        .toList();
     final lang = ref.watch(appLanguageProvider);
 
     return Scaffold(

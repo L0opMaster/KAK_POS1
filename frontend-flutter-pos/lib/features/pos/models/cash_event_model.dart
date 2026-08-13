@@ -1,4 +1,7 @@
 /// Model definitions for cash events used in cash management.
+library;
+
+import '../../../core/utils/receipt_date_format.dart';
 
 /// Types of cash events that can occur during a shift.
 enum CashEventType {
@@ -62,7 +65,10 @@ class CashEvent {
       type: type,
       amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
       reason: json['reason'] as String? ?? '',
-      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
+      // Backend `createdAt` is a UTC Instant — convert to local time here,
+      // matching the fix for the same bug class in Shift.fromJson /
+      // receipt timestamps (see receipt_date_format.dart).
+      createdAt: parseBackendTimestamp(json['createdAt'] as String?) ??
           DateTime.now(),
     );
   }

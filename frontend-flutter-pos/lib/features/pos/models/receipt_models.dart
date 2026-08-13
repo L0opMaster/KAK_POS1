@@ -6,6 +6,7 @@ class ReceiptResponse {
   final String? businessName;
   final String? address;
   final String? phone;
+  final String? website;
   final String? currency;
   final String? footer;
   final int saleId;
@@ -44,6 +45,7 @@ class ReceiptResponse {
     this.businessName,
     this.address,
     this.phone,
+    this.website,
     this.currency,
     this.footer,
     required this.saleId,
@@ -80,6 +82,7 @@ class ReceiptResponse {
       businessName: json['businessName'] as String?,
       address: json['address'] as String?,
       phone: json['phone'] as String?,
+      website: json['website'] as String?,
       currency: json['currency'] as String?,
       footer: json['footer'] as String?,
       saleId: (json['saleId'] as num?)?.toInt() ?? 0,

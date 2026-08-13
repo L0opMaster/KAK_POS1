@@ -31,6 +31,7 @@ public class ReceiptDtos {
         private String businessName;
         private String address;
         private String phone;
+        private String website;
         private String currency;
         private String footer;
         private Long saleId;

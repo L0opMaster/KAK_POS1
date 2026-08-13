@@ -2,6 +2,7 @@ import '../../../../core/config/currency_utils.dart';
 import '../../../../core/providers/language_provider.dart';
 import '../../../../core/utils/bilingual.dart';
 import '../../../../core/utils/khmer_text.dart';
+import '../../../../core/utils/receipt_date_format.dart';
 import '../../../../l10n/generated/app_localizations.dart';
 import '../../models/cart_models.dart';
 import '../../models/receipt_models.dart';
@@ -81,6 +82,7 @@ class ReceiptViewModel {
     required this.businessName,
     this.address,
     this.phone,
+    this.website,
     required this.invoiceNumber,
     required this.date,
     required this.time,
@@ -109,6 +111,11 @@ class ReceiptViewModel {
   final String businessName;
   final String? address;
   final String? phone;
+
+  /// Website/link shown at the bottom of the receipt footer (Settings →
+  /// Company Profile) — never rendered at all when null/empty (§ "Empty
+  /// value behavior"), not defaulted to a hardcoded placeholder.
+  final String? website;
   final String invoiceNumber;
   final String date;
   final String time;
@@ -203,15 +210,26 @@ class ReceiptViewModel {
     AppLanguage language,
     AppLocalizations l10n,
   ) {
-    final createdAt = r.createdAt ?? '';
+    // r.createdAt is Sale.createdAt (java.time.Instant) serialized via
+    // Instant.toString() — always UTC with a trailing 'Z'. Slicing that raw
+    // string's characters (the old code here) displays UTC calendar/clock
+    // values mislabeled as local Phnom Penh time; parseBackendTimestamp
+    // converts to local time exactly once, then reuses the same
+    // dd/MM/yyyy formatter the cart-based preview path already uses, so
+    // reprints/PDF/Khmer/ESC-POS all show the identical, correctly
+    // converted, consistently formatted date/time.
+    final createdAtLocal = parseBackendTimestamp(r.createdAt);
     return ReceiptViewModel(
       language: language,
       businessName: r.businessName ?? r.storeName ?? l10n.appName,
       address: r.address,
       phone: r.phone,
+      website: r.website,
       invoiceNumber: r.saleNumber ?? '#${r.saleId}',
-      date: createdAt.length >= 10 ? createdAt.substring(0, 10) : createdAt,
-      time: createdAt.length >= 19 ? createdAt.substring(11, 19) : '',
+      date: createdAtLocal != null
+          ? formatReceiptDate(createdAtLocal)
+          : (r.createdAt ?? ''),
+      time: createdAtLocal != null ? formatReceiptTime(createdAtLocal) : '',
       cashierName: r.cashierName,
       customerName: r.customerName,
       tableNumber: r.tableNumber,
@@ -267,6 +285,7 @@ class ReceiptViewModel {
     String? businessName,
     String? businessAddress,
     String? businessPhone,
+    String? website,
     String? currency,
     String? footer,
     String? saleDate,
@@ -283,6 +302,7 @@ class ReceiptViewModel {
       businessName: businessName ?? l10n.appName,
       address: businessAddress,
       phone: businessPhone,
+      website: website,
       invoiceNumber: invoiceNumber ?? 'N/A',
       date: saleDate ?? '',
       time: saleTime ?? '',

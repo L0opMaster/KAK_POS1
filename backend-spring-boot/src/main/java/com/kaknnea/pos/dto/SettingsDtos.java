@@ -128,6 +128,7 @@ public class SettingsDtos {
         private String logoUrl;
         private String address;
         private String phone;
+        private String website;
         private String receiptFooter;
         private String khqrImageUrl;
     }
@@ -139,6 +140,7 @@ public class SettingsDtos {
         private String logoUrl;
         private String address;
         private String phone;
+        private String website;
         private String receiptFooter;
         private String khqrImageUrl;
     }

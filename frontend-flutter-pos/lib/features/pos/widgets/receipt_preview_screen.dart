@@ -37,6 +37,7 @@ class ReceiptPreviewScreen extends ConsumerWidget {
   final String? businessName;
   final String? businessAddress;
   final String? businessPhone;
+  final String? website;
   final String? currency;
   final String? footer;
   final String? saleDate;
@@ -72,6 +73,7 @@ class ReceiptPreviewScreen extends ConsumerWidget {
     this.businessName,
     this.businessAddress,
     this.businessPhone,
+    this.website,
     this.currency,
     this.footer,
     this.saleDate,
@@ -110,6 +112,7 @@ class ReceiptPreviewScreen extends ConsumerWidget {
       businessName: businessName,
       businessAddress: businessAddress,
       businessPhone: businessPhone,
+      website: website,
       currency: currency,
       footer: footer,
       saleDate: dispDate,

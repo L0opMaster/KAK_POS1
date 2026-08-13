@@ -1,13 +1,21 @@
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 import '../../../core/config/pos_theme.dart';
+import '../../../core/services/printing/a4_report_pdf.dart';
 import '../../../core/utils/l10n_extensions.dart';
+import '../../pos/services/settings_service.dart';
 import '../models/inventory_models.dart';
 import '../providers/inventory_provider.dart';
 import 'create_transfer_order.dart';
+
+String _fmtDate(DateTime d) =>
+    '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
 class TransferOrdersScreen extends ConsumerStatefulWidget {
   const TransferOrdersScreen({super.key});
@@ -20,6 +28,7 @@ class _TransferOrdersScreenState extends ConsumerState<TransferOrdersScreen> {
   static const int _pageSize = 8;
   int _currentPage = 0;
   bool _hasLoadedOnce = false;
+  bool _generatingPdf = false;
 
   @override
   void initState() {
@@ -87,6 +96,87 @@ class _TransferOrdersScreenState extends ConsumerState<TransferOrdersScreen> {
               backgroundColor: PosTheme.errorRed),
         );
       }
+    }
+  }
+
+  /// `order.lines` is already fully populated in the list response — no
+  /// separate detail-fetch endpoint exists, so this builds straight from
+  /// the row's own object. TransferOrderLine has no unitCost/shipped-vs-
+  /// received split in the current model — only a single flat `quantity`
+  /// — so the table only shows what the backend actually returns.
+  Future<Uint8List> _buildOrderPdf(TransferOrder order) async {
+    final l10n = context.l10n;
+    final company = await ref.read(settingsServiceProvider).getCompanyProfile();
+
+    final details = <MapEntry<String, String>>[
+      MapEntry(l10n.transferOrderPdfNumberLabel,
+          order.transferNumber ?? l10n.transferOrdersTransferFallback('${order.id}')),
+      MapEntry(l10n.commonStatus, order.status),
+      MapEntry(l10n.formFromStore, order.fromStoreName ?? '${order.fromStoreId}'),
+      MapEntry(l10n.formToStore, order.toStoreName ?? '${order.toStoreId}'),
+      if (order.createdAt != null)
+        MapEntry(l10n.receiptDate, _fmtDate(order.createdAt!)),
+      if (order.completedAt != null)
+        MapEntry(l10n.transferOrdersMarkComplete, _fmtDate(order.completedAt!)),
+      if (order.notes != null && order.notes!.isNotEmpty)
+        MapEntry(l10n.inventoryNotesLabel, order.notes!),
+    ];
+
+    final rows = order.lines
+        .map((line) => [
+              line.productNameEn ?? l10n.reportsProductFallback('${line.productId}'),
+              line.quantity.toStringAsFixed(
+                  line.quantity.truncateToDouble() == line.quantity ? 0 : 2),
+              line.stockUnitCode ?? '',
+            ])
+        .toList();
+
+    return A4ReportPdf.build(
+      title: l10n.transferOrderPdfTitle,
+      businessName: '${company['businessName'] ?? ''}',
+      businessAddress: '${company['address'] ?? ''}',
+      businessPhone: '${company['phone'] ?? ''}',
+      details: details,
+      columns: [l10n.inventoryProductLabel, l10n.cartQty, l10n.formStore],
+      rows: rows,
+      columnAlignments: const {1: pw.Alignment.centerRight},
+      generatedAt: DateTime.now(),
+      generatedLabel: l10n.reportPdfGeneratedLabel,
+      pageLabel: l10n.reportPdfPageLabel,
+    );
+  }
+
+  Future<void> _printOrder(TransferOrder order) async {
+    if (_generatingPdf) return;
+    setState(() => _generatingPdf = true);
+    try {
+      final bytes = await _buildOrderPdf(order);
+      await Printing.layoutPdf(
+          onLayout: (_) => bytes, name: order.transferNumber ?? 'stock_transfer');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${context.l10n.printerPrintFailed}: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _generatingPdf = false);
+    }
+  }
+
+  Future<void> _saveOrderPdf(TransferOrder order) async {
+    if (_generatingPdf) return;
+    setState(() => _generatingPdf = true);
+    try {
+      final bytes = await _buildOrderPdf(order);
+      await Printing.sharePdf(
+          bytes: bytes, filename: '${order.transferNumber ?? 'stock_transfer'}.pdf');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${context.l10n.printerPrintFailed}: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _generatingPdf = false);
     }
   }
 
@@ -243,6 +333,19 @@ class _TransferOrdersScreenState extends ConsumerState<TransferOrdersScreen> {
                 ),
                 child: Text(status.replaceAll('_', ' '),
                     style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _statusColor(status))),
+              ),
+              const SizedBox(width: 8),
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.picture_as_pdf_outlined),
+                tooltip: context.l10n.inventoryDocumentActionsTooltip,
+                enabled: !_generatingPdf,
+                onSelected: (action) => action == 'print'
+                    ? _printOrder(order)
+                    : _saveOrderPdf(order),
+                itemBuilder: (context) => [
+                  PopupMenuItem(value: 'print', child: Text(context.l10n.commonPrint)),
+                  PopupMenuItem(value: 'save', child: Text(context.l10n.commonSavePdf)),
+                ],
               ),
               if (canAct && order.id != null) ...[
                 const SizedBox(width: 8),

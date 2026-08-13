@@ -6,6 +6,7 @@ import '../models/cash_event_model.dart';
 import '../providers/cash_event_provider.dart';
 import '../providers/shift_provider.dart';
 import '../../../core/utils/l10n_extensions.dart';
+import '../../../core/utils/receipt_date_format.dart';
 
 class ShiftScreen extends ConsumerStatefulWidget {
   const ShiftScreen({super.key});
@@ -27,12 +28,20 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
   Widget build(BuildContext context) {
     final shiftState = ref.watch(shiftProvider);
     final currentShift = shiftState.currentShift;
-    if (currentShift != null && _loadedShiftId != currentShift.id) {
+    // `currentShift` stays populated with the closed shift's data right
+    // after Close Shift (so its closing summary is available) — whether a
+    // shift is actually open for business is `isShiftOpen`, not merely
+    // `currentShift != null`. Branching on presence alone kept showing the
+    // active-shift card (with live Cash In/Out/Close buttons) for a shift
+    // that had already been closed, until the screen was reopened and
+    // re-fetched `/api/shifts/current`, which already filters to OPEN only.
+    final bool shiftIsInactive = currentShift == null || !shiftState.isShiftOpen;
+    if (!shiftIsInactive && _loadedShiftId != currentShift.id) {
       _loadedShiftId = currentShift.id;
       Future.microtask(
         () => ref.read(cashEventProvider.notifier).loadByShift(currentShift.id),
       );
-    } else if (currentShift == null) {
+    } else if (shiftIsInactive) {
       _loadedShiftId = null;
     }
     final cashState = ref.watch(cashEventProvider);
@@ -42,7 +51,7 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          if (currentShift == null)
+          if (shiftIsInactive)
             _ShiftSummaryCard(
               title: context.l10n.shiftScreenNoOpenShiftTitle,
               subtitle: context.l10n.shiftScreenNoOpenShiftSubtitle,
@@ -57,7 +66,15 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
               title: context.l10n.shiftScreenShiftNumber(
                 currentShift.id.toString(),
               ),
-              subtitle: context.l10n.shiftScreenOpened(currentShift.startTime),
+              // shiftScreenOpened interpolates its argument as a raw string
+              // (no ICU date format), so `currentShift.startTime` (already
+              // local, see Shift.fromJson) must be pre-formatted here rather
+              // than passed as a DateTime — otherwise it shows
+              // DateTime.toString() output instead of a readable date/time.
+              subtitle: context.l10n.shiftScreenOpened(
+                '${formatReceiptDate(currentShift.startTime)} '
+                '${formatReceiptTime(currentShift.startTime)}',
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -148,44 +165,60 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
 
   Future<void> _showOpenShiftDialog(BuildContext context) async {
     final controller = TextEditingController(text: '0');
+    bool submitting = false;
     await showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(context.l10n.shiftScreenOpenShift),
-        content: TextField(
-          controller: controller,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: InputDecoration(
-            labelText: context.l10n.shiftScreenOpeningCashLabel,
-            border: const OutlineInputBorder(),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(context.l10n.shiftScreenOpenShift),
+          content: TextField(
+            controller: controller,
+            enabled: !submitting,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(
+              labelText: context.l10n.shiftScreenOpeningCashLabel,
+              border: const OutlineInputBorder(),
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: submitting ? null : () => Navigator.of(context).pop(),
+              child: Text(context.l10n.commonCancel),
+            ),
+            ElevatedButton(
+              // Guards against a double-tap/slow-network firing a second
+              // POST /api/shifts/open before the first one returns.
+              onPressed: submitting
+                  ? null
+                  : () async {
+                      setDialogState(() => submitting = true);
+                      try {
+                        await ref.read(shiftProvider.notifier).openShift(
+                              openingFloat: double.tryParse(controller.text) ?? 0,
+                            );
+                        if (mounted) Navigator.of(context).pop();
+                      } catch (e) {
+                        setDialogState(() => submitting = false);
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              context.l10n.shiftScreenOpenShiftFailed(e.toString()),
+                            ),
+                          ),
+                        );
+                      }
+                    },
+              child: submitting
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(context.l10n.shiftScreenOpen),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(context.l10n.commonCancel),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              try {
-                await ref.read(shiftProvider.notifier).openShift(
-                      openingFloat: double.tryParse(controller.text) ?? 0,
-                    );
-                if (mounted) Navigator.of(context).pop();
-              } catch (e) {
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      context.l10n.shiftScreenOpenShiftFailed(e.toString()),
-                    ),
-                  ),
-                );
-              }
-            },
-            child: Text(context.l10n.shiftScreenOpen),
-          ),
-        ],
       ),
     );
   }
@@ -209,61 +242,78 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
     final controller = TextEditingController(
       text: '${ref.read(shiftProvider).currentShift?.openingFloat ?? 0}',
     );
+    bool submitting = false;
     await showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(context.l10n.shiftScreenCloseShift),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if ((precheck['blockers'] as List<dynamic>? ?? const []).isNotEmpty)
-              Container(
-                width: double.infinity,
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(12),
-                color: Colors.amber.shade50,
-                child: Text(
-                  context.l10n.shiftScreenBlockers(
-                    (precheck['blockers'] as List<dynamic>).join(', '),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(context.l10n.shiftScreenCloseShift),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if ((precheck['blockers'] as List<dynamic>? ?? const [])
+                  .isNotEmpty)
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(12),
+                  color: Colors.amber.shade50,
+                  child: Text(
+                    context.l10n.shiftScreenBlockers(
+                      (precheck['blockers'] as List<dynamic>).join(', '),
+                    ),
                   ),
                 ),
+              TextField(
+                controller: controller,
+                enabled: !submitting,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  labelText: context.l10n.shiftScreenClosingCashLabel,
+                  border: const OutlineInputBorder(),
+                ),
               ),
-            TextField(
-              controller: controller,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(
-                labelText: context.l10n.shiftScreenClosingCashLabel,
-                border: const OutlineInputBorder(),
-              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: submitting ? null : () => Navigator.of(context).pop(),
+              child: Text(context.l10n.commonCancel),
+            ),
+            ElevatedButton(
+              // Guards against a double-tap/slow-network firing a second
+              // POST /api/shifts/{id}/close before the first one returns.
+              onPressed: submitting
+                  ? null
+                  : () async {
+                      setDialogState(() => submitting = true);
+                      try {
+                        await shiftNotifier.closeShift(
+                          closingCash: double.tryParse(controller.text) ?? 0,
+                        );
+                        if (mounted) Navigator.of(context).pop();
+                      } catch (e) {
+                        setDialogState(() => submitting = false);
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              context.l10n.shiftScreenCloseShiftFailed(e.toString()),
+                            ),
+                          ),
+                        );
+                      }
+                    },
+              child: submitting
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(context.l10n.shiftScreenCloseShift),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(context.l10n.commonCancel),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              try {
-                await shiftNotifier.closeShift(
-                  closingCash: double.tryParse(controller.text) ?? 0,
-                );
-                if (mounted) Navigator.of(context).pop();
-              } catch (e) {
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      context.l10n.shiftScreenCloseShiftFailed(e.toString()),
-                    ),
-                  ),
-                );
-              }
-            },
-            child: Text(context.l10n.shiftScreenCloseShift),
-          ),
-        ],
       ),
     );
   }

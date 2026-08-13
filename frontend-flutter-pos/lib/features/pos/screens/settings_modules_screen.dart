@@ -6,6 +6,7 @@ import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 import 'package:printing/printing.dart';
 
 import '../../../core/config/pos_theme.dart';
+import '../../../core/providers/company_provider.dart';
 import '../../../core/providers/currency_provider.dart';
 import '../../../core/providers/language_provider.dart';
 import '../../../core/providers/theme_provider.dart';
@@ -46,6 +47,7 @@ class _SettingsModulesScreenState extends ConsumerState<SettingsModulesScreen> {
   late final TextEditingController _businessNameCtl;
   late final TextEditingController _addressCtl;
   late final TextEditingController _phoneCtl;
+  late final TextEditingController _websiteCtl;
   late final TextEditingController _taxRatePercentCtl;
   late final TextEditingController _printerNameCtl;
   late final TextEditingController _printerTypeCtl;
@@ -76,6 +78,7 @@ class _SettingsModulesScreenState extends ConsumerState<SettingsModulesScreen> {
     _businessNameCtl = TextEditingController();
     _addressCtl = TextEditingController();
     _phoneCtl = TextEditingController();
+    _websiteCtl = TextEditingController();
     _taxRatePercentCtl = TextEditingController();
     _printerNameCtl = TextEditingController();
     _printerTypeCtl = TextEditingController();
@@ -96,6 +99,7 @@ class _SettingsModulesScreenState extends ConsumerState<SettingsModulesScreen> {
     _businessNameCtl.dispose();
     _addressCtl.dispose();
     _phoneCtl.dispose();
+    _websiteCtl.dispose();
     _taxRatePercentCtl.dispose();
     _printerNameCtl.dispose();
     _printerTypeCtl.dispose();
@@ -246,6 +250,7 @@ class _SettingsModulesScreenState extends ConsumerState<SettingsModulesScreen> {
       _businessNameCtl.text = '${company['businessName'] ?? ''}';
       _addressCtl.text = '${company['address'] ?? ''}';
       _phoneCtl.text = '${company['phone'] ?? ''}';
+      _websiteCtl.text = '${company['website'] ?? ''}';
       _taxRatePercentCtl.text =
           _fractionToPercentText(tax['taxRate'] as num? ?? 0);
       _printerNameCtl.text = '${printers['printerName'] ?? ''}';
@@ -304,8 +309,14 @@ class _SettingsModulesScreenState extends ConsumerState<SettingsModulesScreen> {
         'businessName': _businessNameCtl.text.trim(),
         'address': _addressCtl.text.trim(),
         'phone': _phoneCtl.text.trim(),
+        'website': _websiteCtl.text.trim(),
         'receiptFooter': _receiptFooterCtl.text.trim(),
       });
+      // Only reached on a successful save — every screen watching
+      // companyProfileProvider (POS AppBar, POS drawer) picks up the new
+      // name immediately, no reload. A failed save never reaches this
+      // line, so stale/invalid data is never pushed to shared state.
+      ref.invalidate(companyProfileProvider);
       _toast(l10n.settingsCompanyProfile);
     } catch (e) {
       _toast(e is ApiException ? e.message : l10n.errorGeneric, isError: true);
@@ -600,6 +611,11 @@ class _SettingsModulesScreenState extends ConsumerState<SettingsModulesScreen> {
                             _phoneCtl,
                             l10n.formPhone,
                             keyboardType: TextInputType.phone,
+                          ),
+                          _textField(
+                            _websiteCtl,
+                            l10n.formWebsite,
+                            keyboardType: TextInputType.url,
                           ),
                           _saveButton(
                             l10n.settingsSaveCompany,

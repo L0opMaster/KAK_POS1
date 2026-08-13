@@ -49,6 +49,7 @@ public class ProductDtos {
         @NotBlank
         private String nameKm;
         private String imageUrl;
+        private String description;
         @NotNull
         private BigDecimal cost;
         @NotNull
@@ -113,6 +114,7 @@ public class ProductDtos {
         private String nameEn;
         private String nameKm;
         private String imageUrl;
+        private String description;
         private BigDecimal cost;
         private BigDecimal price;
         private BigDecimal resolvedPrice;

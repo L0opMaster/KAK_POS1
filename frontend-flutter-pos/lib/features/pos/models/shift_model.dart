@@ -1,3 +1,5 @@
+import '../../../core/utils/receipt_date_format.dart';
+
 /// Model for a shift in the POS system.
 class Shift {
   final int id;
@@ -9,6 +11,8 @@ class Shift {
   final double? closingCash;
   final double? expectedCash;
   final double? variance;
+  final String? storeName;
+  final double? salesTotal;
 
   Shift({
     required this.id,
@@ -20,23 +24,28 @@ class Shift {
     this.closingCash,
     this.expectedCash,
     this.variance,
+    this.storeName,
+    this.salesTotal,
   });
 
   /// Creates Shift from JSON.
+  ///
+  /// Backend timestamps (`openedAt`/`closedAt`) are `java.time.Instant`,
+  /// serialized as UTC — parsed via [parseBackendTimestamp] and converted to
+  /// local time here, the one place this happens, matching the fix for the
+  /// same class of bug in receipt timestamps (see receipt_date_format.dart).
   factory Shift.fromJson(Map<String, dynamic> json) => Shift(
         id: json['id'] as int,
         status: json['status'] as String,
-        startTime: DateTime.parse(
-          (json['startTime'] ?? json['openedAt']) as String,
-        ),
+        startTime:
+            parseBackendTimestamp((json['startTime'] ?? json['openedAt'])
+                    as String?) ??
+                DateTime.now(),
         openingFloat: ((json['openingFloat'] ?? json['openingCash']) as num)
             .toDouble(),
-        closedAt: json['closedAt'] != null
-            ? DateTime.parse(json['closedAt'] as String)
-            : null,
-        endTime: (json['endTime'] ?? json['closedAt']) != null
-            ? DateTime.parse((json['endTime'] ?? json['closedAt']) as String)
-            : null,
+        closedAt: parseBackendTimestamp(json['closedAt'] as String?),
+        endTime: parseBackendTimestamp(
+            (json['endTime'] ?? json['closedAt']) as String?),
         closingCash: json['closingCash'] != null
             ? (json['closingCash'] as num).toDouble()
             : null,
@@ -45,6 +54,10 @@ class Shift {
             : null,
         variance: json['variance'] != null
             ? (json['variance'] as num).toDouble()
+            : null,
+        storeName: json['storeName'] as String?,
+        salesTotal: json['salesTotal'] != null
+            ? (json['salesTotal'] as num).toDouble()
             : null,
       );
 
@@ -59,6 +72,8 @@ class Shift {
         'closingCash': closingCash,
         'expectedCash': expectedCash,
         'variance': variance,
+        'storeName': storeName,
+        'salesTotal': salesTotal,
       };
 
   /// Creates a copy of the shift optionally overriding fields.
@@ -72,6 +87,8 @@ class Shift {
     double? closingCash,
     double? expectedCash,
     double? variance,
+    String? storeName,
+    double? salesTotal,
   }) {
     return Shift(
       id: id ?? this.id,
@@ -83,6 +100,8 @@ class Shift {
       closingCash: closingCash ?? this.closingCash,
       expectedCash: expectedCash ?? this.expectedCash,
       variance: variance ?? this.variance,
+      storeName: storeName ?? this.storeName,
+      salesTotal: salesTotal ?? this.salesTotal,
     );
   }
 

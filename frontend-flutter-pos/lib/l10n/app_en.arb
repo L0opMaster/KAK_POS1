@@ -20,6 +20,8 @@
   "commonRetry": "Retry",
   "commonRefresh": "Refresh",
   "commonPrint": "Print",
+  "commonSavePdf": "Save PDF",
+  "commonGeneratingPdf": "Generating PDF...",
   "commonSubmit": "Submit",
   "commonApply": "Apply",
   "commonClear": "Clear",
@@ -182,6 +184,7 @@
   "formPhone": "Phone",
   "formEmail": "Email",
   "formAddress": "Address",
+  "formWebsite": "Website",
   "formPleaseEnterValue": "Please enter a value",
   "formInvalidValue": "Invalid value",
   "reportsTitle": "Reports",
@@ -311,6 +314,34 @@
   "categoryManagementUpdatedSuffix": "updated",
   "categoryManagementCreatedSuffix": "created",
   "categoryManagementSaveFailedPrefix": "Failed to save",
+  "unitManagementUpdateFailedPrefix": "Failed to update",
+  "unitManagementSaveFailedPrefix": "Failed to save",
+  "unitManagementEmptyTitle": "No units yet",
+  "unitManagementEmptyHint": "Tap + to add a unit",
+  "unitManagementAddButton": "Add Unit",
+  "unitManagementEditTitle": "Edit Unit",
+  "unitManagementNewTitle": "New Unit",
+  "unitManagementUpdatedSuffix": "updated",
+  "unitManagementCreatedSuffix": "created",
+  "unitManagementCodeLabel": "Code",
+  "unitManagementSymbolLabel": "Symbol",
+  "unitManagementGroupLabel": "Unit group",
+  "unitManagementGroupHelper": "Units that convert to each other share the same group, e.g. \"weight\"",
+  "unitManagementBaseUnitGroupLabel": "Group",
+  "unitManagementBaseUnitLabel": "Base unit",
+  "unitManagementBaseUnitSubtitle": "The reference unit other units in this group convert against",
+  "unitManagementBaseUnitPickerLabel": "Convert to",
+  "unitManagementNoCandidatesHelper": "No other units in this group yet — add the base unit first",
+  "unitManagementConversionFactorLabel": "Conversion factor",
+  "unitManagementConversionFactorHelper": "How many {symbol} equal 1 of the base unit",
+  "@unitManagementConversionFactorHelper": {
+    "placeholders": {
+      "symbol": {
+        "type": "Object"
+      }
+    }
+  },
+  "unitManagementPickBaseUnitError": "Choose which unit this converts to",
   "customerManagementDeleteTitle": "Delete customers",
   "customerManagementDeleteConfirmPrefix": "Are you sure you want to delete",
   "customerManagementDeleteConfirmSuffix": "selected customer(s)?",
@@ -1106,6 +1137,8 @@
   "itemManagementSectionInventory": "Inventory",
   "itemManagementTrackInventoryTitle": "Track inventory",
   "itemManagementManageStockQuantitySubtitle": "Manage stock quantity",
+  "itemManagementPurchasableTitle": "Allow purchasing from supplier",
+  "itemManagementPurchasableSubtitle": "Can be added to a Purchase Order",
   "itemManagementInitialStockLabel": "Initial Stock",
   "itemManagementLowStockAlertLabel": "Low Stock Alert",
   "itemManagementSectionStatus": "Status",
@@ -1684,6 +1717,12 @@
     }
   },
   "receiptsScreenRefund": "Refund",
+  "receiptsScreenStatusVoid": "Void",
+  "receiptsScreenStatusRefunded": "Refunded",
+  "receiptsScreenStatusPartiallyRefunded": "Partially Refunded",
+  "receiptsScreenStatusCredit": "Credit",
+  "receiptsScreenStatusDraft": "Draft",
+  "receiptsScreenStatusHold": "On Hold",
   "receiptsScreenRefundReceiptFallback": "receipt #{id}",
   "@receiptsScreenRefundReceiptFallback": {
     "placeholders": {
@@ -1847,6 +1886,45 @@
       }
     }
   },
+  "posDrawerManageShift": "Manage Shift",
+  "posDrawerShiftHistory": "Shift History",
+  "shiftHistoryScreenTitle": "Shift History",
+  "shiftHistoryEmpty": "No shifts yet",
+  "shiftHistoryLoadFailed": "Failed to load shift history: {error}",
+  "@shiftHistoryLoadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "shiftHistoryClosed": "Closed {time}",
+  "@shiftHistoryClosed": {
+    "placeholders": {
+      "time": {
+        "type": "Object"
+      }
+    }
+  },
+  "shiftHistoryClosingCash": "Closing cash: {amount}",
+  "@shiftHistoryClosingCash": {
+    "placeholders": {
+      "amount": {
+        "type": "Object"
+      }
+    }
+  },
+  "shiftHistorySales": "Sales: {amount}",
+  "@shiftHistorySales": {
+    "placeholders": {
+      "amount": {
+        "type": "Object"
+      }
+    }
+  },
+  "shiftHistoryStatusOpen": "Open",
+  "shiftHistoryStatusClosed": "Closed",
+  "shiftHistoryStatusPendingApproval": "Pending approval",
   "paginationPageOfTotal": "Page {page} of {totalPages}",
   "@paginationPageOfTotal": {
     "placeholders": {
@@ -2398,5 +2476,66 @@
   "stockMovementPdfMovementsLabel": "Movements",
   "inventoryValuationPdfTotalValueLabel": "Total Value",
   "salesByModifierPdfColGroup": "Group",
-  "salesByModifierPdfColOption": "Option"
+  "salesByModifierPdfColOption": "Option",
+  "commonLocation": "Location",
+  "commonUser": "User",
+  "commonStatus": "Status",
+  "formSupplier": "Supplier",
+  "formFromStore": "From Store",
+  "formToStore": "To Store",
+  "formStore": "Store",
+  "formRecipe": "Recipe",
+  "inventoryHubInStockLabel": "In Stock",
+  "inventoryHistoryPdfFilterProduct": "Product: {name}",
+  "@inventoryHistoryPdfFilterProduct": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "stockAdjustmentsPdfFilterQuery": "Search: {query}",
+  "@stockAdjustmentsPdfFilterQuery": {
+    "placeholders": {
+      "query": {
+        "type": "Object"
+      }
+    }
+  },
+  "purchaseOrderPdfTitle": "Purchase Order",
+  "purchaseOrderPdfNumberLabel": "PO Number",
+  "purchaseOrderPdfLineTotalLabel": "Line Total",
+  "transferOrderPdfTitle": "Stock Transfer",
+  "transferOrderPdfNumberLabel": "Transfer Number",
+  "productionOrderPdfTitle": "Production Order",
+  "productionOrderPdfNumberLabel": "Production Order #",
+  "productionOrderPdfStartedLabel": "Started",
+  "productionOrderPdfCompletedLabel": "Completed",
+  "productionOrderPdfYieldLabel": "Yield %",
+  "productionOrderPdfWasteLabel": "Waste Qty",
+  "productionOrderPdfComponentLabel": "Component",
+  "productionOrderPdfRequiredLabel": "Required",
+  "productionOrderPdfConsumedLabel": "Consumed",
+  "inventoryCountPdfSheetTitle": "Count Sheet",
+  "inventoryCountPdfReportTitle": "Count Report",
+  "inventoryCountPdfExpectedLabel": "Expected",
+  "inventoryCountPdfCountedLabel": "Counted",
+  "inventoryCountPdfVarianceLabel": "Variance",
+  "inventoryCountPdfPrintSheet": "Print Count Sheet",
+  "inventoryCountPdfSaveSheet": "Save Count Sheet PDF",
+  "inventoryCountPdfPrintReport": "Print Count Report",
+  "inventoryCountPdfSaveReport": "Save Count Report PDF",
+  "inventoryDocumentActionsTooltip": "Print / Save PDF",
+  "itemManagementProductTypeLabel": "Product Type",
+  "itemManagementProductTypeSubtitle": "What kind of item this is — determines how it can be sold, stocked, and purchased.",
+  "itemManagementProductTypeSaleItem": "Sale Item",
+  "itemManagementProductTypeStockItem": "Stock Item",
+  "itemManagementProductTypeService": "Service",
+  "itemManagementProductTypeIngredient": "Ingredient",
+  "itemManagementProductTypeConversionOnly": "Conversion Only",
+  "itemManagementSectionUnits": "Units",
+  "itemManagementSaleUnitLabel": "Sale Unit",
+  "itemManagementPurchaseUnitLabel": "Purchase Unit",
+  "itemManagementStockUnitLabel": "Stock Unit",
+  "itemManagementUnitDefaultOption": "Default (EACH)"
 }

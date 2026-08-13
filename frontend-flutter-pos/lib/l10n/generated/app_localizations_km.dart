@@ -69,6 +69,12 @@ class AppLocalizationsKm extends AppLocalizations {
   String get commonPrint => 'បោះពុម្ព';
 
   @override
+  String get commonSavePdf => 'រក្សាទុក PDF';
+
+  @override
+  String get commonGeneratingPdf => 'កំពុងបង្កើត PDF...';
+
+  @override
   String get commonSubmit => 'ដាក់ស្នើ';
 
   @override
@@ -539,6 +545,9 @@ class AppLocalizationsKm extends AppLocalizations {
   String get formAddress => 'អាសយដ្ឋាន';
 
   @override
+  String get formWebsite => 'គេហទំព័រ';
+
+  @override
   String get formPleaseEnterValue => 'សូមបញ្ចូលទិន្នន័យ';
 
   @override
@@ -940,6 +949,75 @@ class AppLocalizationsKm extends AppLocalizations {
 
   @override
   String get categoryManagementSaveFailedPrefix => 'រក្សាទុកមិនជោគជ័យ';
+
+  @override
+  String get unitManagementUpdateFailedPrefix => 'ធ្វើបច្ចុប្បន្នភាពមិនជោគជ័យ';
+
+  @override
+  String get unitManagementSaveFailedPrefix => 'រក្សាទុកមិនជោគជ័យ';
+
+  @override
+  String get unitManagementEmptyTitle => 'មិនទាន់មានឯកតាទេ';
+
+  @override
+  String get unitManagementEmptyHint => 'ចុច + ដើម្បីបន្ថែមឯកតា';
+
+  @override
+  String get unitManagementAddButton => 'បន្ថែមឯកតា';
+
+  @override
+  String get unitManagementEditTitle => 'កែសម្រួលឯកតា';
+
+  @override
+  String get unitManagementNewTitle => 'ឯកតាថ្មី';
+
+  @override
+  String get unitManagementUpdatedSuffix => 'ត្រូវបានធ្វើបច្ចុប្បន្នភាព';
+
+  @override
+  String get unitManagementCreatedSuffix => 'ត្រូវបានបង្កើត';
+
+  @override
+  String get unitManagementCodeLabel => 'កូដ';
+
+  @override
+  String get unitManagementSymbolLabel => 'និមិត្តសញ្ញា';
+
+  @override
+  String get unitManagementGroupLabel => 'ក្រុមឯកតា';
+
+  @override
+  String get unitManagementGroupHelper =>
+      'ឯកតាដែលអាចបំលែងគ្នាទៅវិញទៅមកត្រូវមានក្រុមតែមួយ ឧទាហរណ៍ \"ទម្ងន់\"';
+
+  @override
+  String get unitManagementBaseUnitGroupLabel => 'ក្រុម';
+
+  @override
+  String get unitManagementBaseUnitLabel => 'ឯកតាគោល';
+
+  @override
+  String get unitManagementBaseUnitSubtitle =>
+      'ឯកតាយោងសម្រាប់ការបំលែងឯកតាផ្សេងទៀតក្នុងក្រុមនេះ';
+
+  @override
+  String get unitManagementBaseUnitPickerLabel => 'បំលែងទៅជា';
+
+  @override
+  String get unitManagementNoCandidatesHelper =>
+      'មិនទាន់មានឯកតាផ្សេងទៀតក្នុងក្រុមនេះទេ — សូមបន្ថែមឯកតាគោលជាមុនសិន';
+
+  @override
+  String get unitManagementConversionFactorLabel => 'កត្តាបំលែង';
+
+  @override
+  String unitManagementConversionFactorHelper(Object symbol) {
+    return '$symbol ប៉ុន្មានស្មើនឹង ១ ឯកតាគោល';
+  }
+
+  @override
+  String get unitManagementPickBaseUnitError =>
+      'សូមជ្រើសរើសឯកតាដែលត្រូវបំលែងទៅជា';
 
   @override
   String get customerManagementDeleteTitle => 'លុបអតិថិជន';
@@ -2069,6 +2147,13 @@ class AppLocalizationsKm extends AppLocalizations {
       'គ្រប់គ្រងបរិមាណស្តុក';
 
   @override
+  String get itemManagementPurchasableTitle => 'អនុញ្ញាតឱ្យទិញពីអ្នកផ្គត់ផ្គង់';
+
+  @override
+  String get itemManagementPurchasableSubtitle =>
+      'អាចបន្ថែមទៅក្នុងលិខិតបញ្ជាទិញ';
+
+  @override
   String get itemManagementInitialStockLabel => 'ស្តុកដំបូង';
 
   @override
@@ -2810,6 +2895,24 @@ class AppLocalizationsKm extends AppLocalizations {
   String get receiptsScreenRefund => 'សងប្រាក់ត្រឡប់';
 
   @override
+  String get receiptsScreenStatusVoid => 'បានបោះបង់';
+
+  @override
+  String get receiptsScreenStatusRefunded => 'បានសងប្រាក់ត្រឡប់';
+
+  @override
+  String get receiptsScreenStatusPartiallyRefunded => 'បានសងប្រាក់ត្រឡប់ខ្លះ';
+
+  @override
+  String get receiptsScreenStatusCredit => 'ឥណទាន';
+
+  @override
+  String get receiptsScreenStatusDraft => 'សេចក្ដីព្រាង';
+
+  @override
+  String get receiptsScreenStatusHold => 'បានរក្សាទុក';
+
+  @override
   String receiptsScreenRefundReceiptFallback(Object id) {
     return 'បង្កាន់ដៃ #$id';
   }
@@ -2974,6 +3077,47 @@ class AppLocalizationsKm extends AppLocalizations {
   String shiftScreenVariance(Object amount) {
     return 'ភាពខុសគ្នា៖ $amount';
   }
+
+  @override
+  String get posDrawerManageShift => 'គ្រប់គ្រងវេន';
+
+  @override
+  String get posDrawerShiftHistory => 'ប្រវត្តិវេន';
+
+  @override
+  String get shiftHistoryScreenTitle => 'ប្រវត្តិវេន';
+
+  @override
+  String get shiftHistoryEmpty => 'មិនទាន់មានវេនទេ';
+
+  @override
+  String shiftHistoryLoadFailed(Object error) {
+    return 'មិនអាចផ្ទុកប្រវត្តិវេន៖ $error';
+  }
+
+  @override
+  String shiftHistoryClosed(Object time) {
+    return 'បានបិទនៅ $time';
+  }
+
+  @override
+  String shiftHistoryClosingCash(Object amount) {
+    return 'សាច់ប្រាក់ពេលបិទវេន៖ $amount';
+  }
+
+  @override
+  String shiftHistorySales(Object amount) {
+    return 'ការលក់៖ $amount';
+  }
+
+  @override
+  String get shiftHistoryStatusOpen => 'កំពុងបើក';
+
+  @override
+  String get shiftHistoryStatusClosed => 'បានបិទ';
+
+  @override
+  String get shiftHistoryStatusPendingApproval => 'រង់ចាំការអនុម័ត';
 
   @override
   String paginationPageOfTotal(Object page, Object totalPages) {
@@ -3877,4 +4021,151 @@ class AppLocalizationsKm extends AppLocalizations {
 
   @override
   String get salesByModifierPdfColOption => 'ជម្រើស';
+
+  @override
+  String get commonLocation => 'ទីតាំង';
+
+  @override
+  String get commonUser => 'អ្នកប្រើប្រាស់';
+
+  @override
+  String get commonStatus => 'ស្ថានភាព';
+
+  @override
+  String get formSupplier => 'អ្នកផ្គត់ផ្គង់';
+
+  @override
+  String get formFromStore => 'ពីហាង';
+
+  @override
+  String get formToStore => 'ទៅហាង';
+
+  @override
+  String get formStore => 'ហាង';
+
+  @override
+  String get formRecipe => 'រូបមន្ត';
+
+  @override
+  String get inventoryHubInStockLabel => 'មានស្តុក';
+
+  @override
+  String inventoryHistoryPdfFilterProduct(Object name) {
+    return 'ផលិតផល៖ $name';
+  }
+
+  @override
+  String stockAdjustmentsPdfFilterQuery(Object query) {
+    return 'ស្វែងរក៖ $query';
+  }
+
+  @override
+  String get purchaseOrderPdfTitle => 'លិខិតបញ្ជាទិញ';
+
+  @override
+  String get purchaseOrderPdfNumberLabel => 'លេខលិខិតបញ្ជាទិញ';
+
+  @override
+  String get purchaseOrderPdfLineTotalLabel => 'សរុបជួរ';
+
+  @override
+  String get transferOrderPdfTitle => 'ការផ្ទេរស្តុក';
+
+  @override
+  String get transferOrderPdfNumberLabel => 'លេខផ្ទេរ';
+
+  @override
+  String get productionOrderPdfTitle => 'បញ្ជាផលិតកម្ម';
+
+  @override
+  String get productionOrderPdfNumberLabel => 'លេខបញ្ជាផលិតកម្ម';
+
+  @override
+  String get productionOrderPdfStartedLabel => 'ចាប់ផ្តើម';
+
+  @override
+  String get productionOrderPdfCompletedLabel => 'បានបញ្ចប់';
+
+  @override
+  String get productionOrderPdfYieldLabel => 'ភាគរយទិន្នផល';
+
+  @override
+  String get productionOrderPdfWasteLabel => 'បរិមាណខាតបង់';
+
+  @override
+  String get productionOrderPdfComponentLabel => 'សមាសធាតុ';
+
+  @override
+  String get productionOrderPdfRequiredLabel => 'ត្រូវការ';
+
+  @override
+  String get productionOrderPdfConsumedLabel => 'បានប្រើប្រាស់';
+
+  @override
+  String get inventoryCountPdfSheetTitle => 'សន្លឹកគណនាស្តុក';
+
+  @override
+  String get inventoryCountPdfReportTitle => 'របាយការណ៍គណនាស្តុក';
+
+  @override
+  String get inventoryCountPdfExpectedLabel => 'ត្រូវមាន';
+
+  @override
+  String get inventoryCountPdfCountedLabel => 'បានរាប់';
+
+  @override
+  String get inventoryCountPdfVarianceLabel => 'ភាពខុសគ្នា';
+
+  @override
+  String get inventoryCountPdfPrintSheet => 'បោះពុម្ពសន្លឹកគណនាស្តុក';
+
+  @override
+  String get inventoryCountPdfSaveSheet => 'រក្សាទុក PDF សន្លឹកគណនាស្តុក';
+
+  @override
+  String get inventoryCountPdfPrintReport => 'បោះពុម្ពរបាយការណ៍គណនាស្តុក';
+
+  @override
+  String get inventoryCountPdfSaveReport => 'រក្សាទុក PDF របាយការណ៍គណនាស្តុក';
+
+  @override
+  String get inventoryDocumentActionsTooltip => 'បោះពុម្ព / រក្សាទុក PDF';
+
+  @override
+  String get itemManagementProductTypeLabel => 'ប្រភេទទំនិញ';
+
+  @override
+  String get itemManagementProductTypeSubtitle =>
+      'តើវត្ថុនេះជាប្រភេទអ្វី — កំណត់របៀបលក់ ស្តុក និងទិញវា។';
+
+  @override
+  String get itemManagementProductTypeSaleItem => 'ទំនិញលក់';
+
+  @override
+  String get itemManagementProductTypeStockItem => 'ទំនិញស្តុក';
+
+  @override
+  String get itemManagementProductTypeService => 'សេវាកម្ម';
+
+  @override
+  String get itemManagementProductTypeIngredient => 'គ្រឿងផ្សំ';
+
+  @override
+  String get itemManagementProductTypeConversionOnly =>
+      'សម្រាប់បម្លែងតែប៉ុណ្ណោះ';
+
+  @override
+  String get itemManagementSectionUnits => 'ឯកតា';
+
+  @override
+  String get itemManagementSaleUnitLabel => 'ឯកតាលក់';
+
+  @override
+  String get itemManagementPurchaseUnitLabel => 'ឯកតាទិញ';
+
+  @override
+  String get itemManagementStockUnitLabel => 'ឯកតាស្តុក';
+
+  @override
+  String get itemManagementUnitDefaultOption => 'លំនាំដើម (EACH)';
 }

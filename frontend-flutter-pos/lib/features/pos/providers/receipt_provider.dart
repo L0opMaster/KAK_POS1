@@ -3,6 +3,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/receipt_models.dart';
 import '../services/sale_service.dart';
 
+/// The "Refunded" filter/chip represents a family of two real backend
+/// statuses — REFUNDED and PARTIALLY_REFUNDED both mean "some refund has
+/// happened on this sale" (see SaleService.refund(), which accepts either
+/// as a valid starting state) — not a single literal `Sale.status` value.
+bool saleMatchesStatusFilter(String saleStatus, String filterStatus) {
+  if (filterStatus == 'REFUNDED') {
+    return saleStatus == 'REFUNDED' || saleStatus == 'PARTIALLY_REFUNDED';
+  }
+  return saleStatus == filterStatus;
+}
+
+/// The backend's `GET /api/pos/sales?status=` query param only accepts one
+/// literal status, so it can't express the REFUNDED filter's two-status
+/// family — in that case the fetch is left unfiltered (`null`) and
+/// [saleMatchesStatusFilter] does the narrowing client-side instead. PAID
+/// and VOID map to themselves unchanged, keeping their existing
+/// server-side narrowing.
+String? backendStatusQueryFor(String? filterStatus) =>
+    filterStatus == 'REFUNDED' ? null : filterStatus;
+
 class ReceiptState {
   const ReceiptState({
     required this.loading,
@@ -29,7 +49,7 @@ class ReceiptState {
 
     final status = statusFilter?.trim();
     if (status != null && status.isNotEmpty) {
-      result = result.where((sale) => sale.status == status);
+      result = result.where((sale) => saleMatchesStatusFilter(sale.status, status));
     }
 
     final query = searchQuery?.trim().toLowerCase();
@@ -96,6 +116,12 @@ class ReceiptNotifier extends StateNotifier<ReceiptState> {
     }
   }
 
+  /// [status] is the backend query param to request (already resolved via
+  /// [backendStatusQueryFor] by the caller) — it intentionally does NOT
+  /// also set `state.statusFilter`. Those used to be coupled, which broke
+  /// once the REFUNDED chip needed to fetch unfiltered (status: null)
+  /// while still keeping "REFUNDED" as the active chip selection; the chip
+  /// selection is owned exclusively by [setStatusFilter] now.
   Future<void> loadAllSales({String? status}) async {
     state = state.copyWith(loading: true, clearError: true);
     try {
@@ -103,8 +129,6 @@ class ReceiptNotifier extends StateNotifier<ReceiptState> {
       state = state.copyWith(
         loading: false,
         sales: sales,
-        statusFilter: status,
-        clearStatusFilter: status == null,
         clearSelectedReceipt: sales.isEmpty,
       );
     } catch (e) {

@@ -1,8 +1,14 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 import '../../../core/config/pos_theme.dart';
+import '../../../core/services/printing/a4_report_pdf.dart';
 import '../../../core/utils/l10n_extensions.dart';
+import '../../pos/services/settings_service.dart';
 import '../models/production_models.dart';
 import '../providers/production_provider.dart';
 import '../services/inventory_service.dart' show defaultInventoryStoreId;
@@ -90,6 +96,8 @@ class _OrdersTab extends ConsumerStatefulWidget {
 }
 
 class _OrdersTabState extends ConsumerState<_OrdersTab> {
+  bool _generatingPdf = false;
+
   Future<void> _openCreateOrderDialog() async {
     final recipes = ref.read(recipesProvider).valueOrNull?.where((r) => r.active).toList() ?? const <Recipe>[];
     Recipe? selectedRecipe;
@@ -372,6 +380,101 @@ class _OrdersTabState extends ConsumerState<_OrdersTab> {
     );
   }
 
+  /// `order.lines` is already fully populated in the list response — no
+  /// separate order-detail endpoint exists.
+  Future<Uint8List> _buildOrderPdf(ProductionOrder order) async {
+    final l10n = context.l10n;
+    final company = await ref.read(settingsServiceProvider).getCompanyProfile();
+
+    final details = <MapEntry<String, String>>[
+      MapEntry(l10n.productionOrderPdfNumberLabel,
+          order.orderNumber ?? l10n.productionsOrderFallback('${order.id}')),
+      MapEntry(l10n.formRecipe,
+          order.recipeName ?? l10n.productionsRecipeFallback('${order.recipeId}')),
+      if (order.storeName != null) MapEntry(l10n.formStore, order.storeName!),
+      MapEntry(l10n.commonStatus, order.status),
+      MapEntry(l10n.productionsPlannedLabel, '${order.plannedQuantity}'),
+      if (order.producedQuantity != null)
+        MapEntry(l10n.productionsProducedLabel, '${order.producedQuantity}'),
+      if (order.wasteQuantity != null && order.wasteQuantity != 0)
+        MapEntry(l10n.productionOrderPdfWasteLabel, '${order.wasteQuantity}'),
+      if (order.yieldPercent != null)
+        MapEntry(l10n.productionOrderPdfYieldLabel, '${order.yieldPercent}'),
+      if (order.startedAt != null)
+        MapEntry(l10n.productionOrderPdfStartedLabel, order.startedAt!),
+      if (order.completedAt != null)
+        MapEntry(l10n.productionOrderPdfCompletedLabel, order.completedAt!),
+      if (order.createdBy != null) MapEntry(l10n.commonUser, order.createdBy!),
+      if (order.notes != null && order.notes!.isNotEmpty)
+        MapEntry(l10n.inventoryNotesLabel, order.notes!),
+    ];
+
+    final rows = order.lines
+        .map((line) => [
+              line.componentProductNameEn ??
+                  l10n.productionsProductFallback('${line.componentProductId}'),
+              line.plannedQuantity.toStringAsFixed(
+                  line.plannedQuantity.truncateToDouble() == line.plannedQuantity ? 0 : 2),
+              line.consumedQuantity != null
+                  ? line.consumedQuantity!.toStringAsFixed(
+                      line.consumedQuantity!.truncateToDouble() == line.consumedQuantity ? 0 : 2)
+                  : '',
+            ])
+        .toList();
+
+    return A4ReportPdf.build(
+      title: l10n.productionOrderPdfTitle,
+      businessName: '${company['businessName'] ?? ''}',
+      businessAddress: '${company['address'] ?? ''}',
+      businessPhone: '${company['phone'] ?? ''}',
+      details: details,
+      columns: [
+        l10n.productionOrderPdfComponentLabel,
+        l10n.productionOrderPdfRequiredLabel,
+        l10n.productionOrderPdfConsumedLabel,
+      ],
+      rows: rows,
+      columnAlignments: const {1: pw.Alignment.centerRight, 2: pw.Alignment.centerRight},
+      generatedAt: DateTime.now(),
+      generatedLabel: l10n.reportPdfGeneratedLabel,
+      pageLabel: l10n.reportPdfPageLabel,
+    );
+  }
+
+  Future<void> _printOrder(ProductionOrder order) async {
+    if (_generatingPdf) return;
+    setState(() => _generatingPdf = true);
+    try {
+      final bytes = await _buildOrderPdf(order);
+      await Printing.layoutPdf(
+          onLayout: (_) => bytes, name: order.orderNumber ?? 'production_order');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${context.l10n.printerPrintFailed}: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _generatingPdf = false);
+    }
+  }
+
+  Future<void> _saveOrderPdf(ProductionOrder order) async {
+    if (_generatingPdf) return;
+    setState(() => _generatingPdf = true);
+    try {
+      final bytes = await _buildOrderPdf(order);
+      await Printing.sharePdf(
+          bytes: bytes, filename: '${order.orderNumber ?? 'production_order'}.pdf');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${context.l10n.printerPrintFailed}: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _generatingPdf = false);
+    }
+  }
+
   Future<void> _runAction(ProductionOrder order, String action) async {
     if (action == 'start') {
       try {
@@ -532,6 +635,19 @@ class _OrdersTabState extends ConsumerState<_OrdersTab> {
                 ),
                 child: Text(status.replaceAll('_', ' '),
                     style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _statusColor(status))),
+              ),
+              const SizedBox(width: 8),
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.picture_as_pdf_outlined),
+                tooltip: context.l10n.inventoryDocumentActionsTooltip,
+                enabled: !_generatingPdf,
+                onSelected: (action) => action == 'print'
+                    ? _printOrder(order)
+                    : _saveOrderPdf(order),
+                itemBuilder: (context) => [
+                  PopupMenuItem(value: 'print', child: Text(context.l10n.commonPrint)),
+                  PopupMenuItem(value: 'save', child: Text(context.l10n.commonSavePdf)),
+                ],
               ),
               if (actions.isNotEmpty) ...[
                 const SizedBox(width: 8),

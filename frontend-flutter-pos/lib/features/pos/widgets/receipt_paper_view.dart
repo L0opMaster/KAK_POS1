@@ -202,8 +202,13 @@ class ReceiptContent extends StatelessWidget {
         // ═══════════════════════════════════════════
         const _Spacer(12),
         Center(child: _Text(receipt.footer, 12, bold: true)),
-        const _Spacer(4),
-        Center(child: _Text('www.kaknnea.com', 8, color: _grey)),
+        // Settings → Company Profile's "Website" field — never a hardcoded
+        // placeholder, and never rendered at all when unset (see
+        // ReceiptViewModel.website's doc comment).
+        if (receipt.website != null && receipt.website!.isNotEmpty) ...[
+          const _Spacer(4),
+          Center(child: _Text(receipt.website!, 8, color: _grey)),
+        ],
         const _Spacer(2),
         Center(child: _Text(labels.poweredBy, 7, color: _grey)),
         const _Spacer(20),

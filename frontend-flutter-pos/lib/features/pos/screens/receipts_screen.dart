@@ -47,7 +47,7 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
   static const List<String?> _statusFilters = [
     null,
     'PAID',
-    'PENDING',
+    'VOID',
     'REFUNDED'
   ];
   final ScrollController _listScrollCtl = ScrollController();
@@ -123,9 +123,8 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
 
   void _refresh() {
     if (_showAllSales) {
-      ref
-          .read(receiptProvider.notifier)
-          .loadAllSales(status: ref.read(receiptProvider).statusFilter);
+      ref.read(receiptProvider.notifier).loadAllSales(
+          status: backendStatusQueryFor(ref.read(receiptProvider).statusFilter));
     } else {
       ref.read(receiptProvider.notifier).loadActiveShiftSales();
     }
@@ -442,7 +441,7 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
               if (v.first) {
                 ref
                     .read(receiptProvider.notifier)
-                    .loadAllSales(status: state.statusFilter);
+                    .loadAllSales(status: backendStatusQueryFor(state.statusFilter));
               } else {
                 ref.read(receiptProvider.notifier).loadActiveShiftSales();
               }
@@ -473,7 +472,7 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
               padding: const EdgeInsets.only(right: 6),
               child: FilterChip(
                 label: Text(
-                  status ?? context.l10n.commonAll,
+                  _statusFilterLabel(context, status),
                   style: TextStyle(
                       fontSize: 12, color: selected ? Colors.white : null),
                 ),
@@ -489,6 +488,79 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
         ),
       ),
     );
+  }
+
+  /// Label for a filter chip's own key — `null` is "All", 'REFUNDED' here
+  /// means the whole refund family (see saleMatchesStatusFilter), not just
+  /// the literal REFUNDED status.
+  String _statusFilterLabel(BuildContext context, String? filterStatus) {
+    switch (filterStatus) {
+      case 'PAID':
+        return context.l10n.receiptPaid;
+      case 'VOID':
+        return context.l10n.receiptsScreenStatusVoid;
+      case 'REFUNDED':
+        return context.l10n.receiptsScreenStatusRefunded;
+      default:
+        return context.l10n.commonAll;
+    }
+  }
+
+  /// Readable label for an actual sale's status (badges) — every real
+  /// backend status (see SaleService) gets a distinct label; anything
+  /// unmapped falls back to its raw value rather than showing blank.
+  String _statusBadgeLabel(BuildContext context, String status) {
+    switch (status) {
+      case 'PAID':
+        return context.l10n.receiptPaid;
+      case 'VOID':
+        return context.l10n.receiptsScreenStatusVoid;
+      case 'REFUNDED':
+        return context.l10n.receiptsScreenStatusRefunded;
+      case 'PARTIALLY_REFUNDED':
+        return context.l10n.receiptsScreenStatusPartiallyRefunded;
+      case 'CREDIT':
+        return context.l10n.receiptsScreenStatusCredit;
+      case 'DRAFT':
+        return context.l10n.receiptsScreenStatusDraft;
+      case 'HOLD':
+        return context.l10n.receiptsScreenStatusHold;
+      default:
+        return status;
+    }
+  }
+
+  /// Distinct color per status family so VOID/REFUNDED/etc. don't all
+  /// collapse into the same "not paid" orange.
+  Color _statusColor(String status) {
+    switch (status) {
+      case 'PAID':
+        return Colors.green;
+      case 'VOID':
+        return Colors.red;
+      case 'REFUNDED':
+      case 'PARTIALLY_REFUNDED':
+        return Colors.orange;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  /// A clock/"pending" icon for VOID (a cancelled ticket) reads as "still
+  /// waiting", which is wrong — this maps each status to a fitting icon
+  /// instead of the old binary paid/not-paid check.
+  IconData _statusIcon(String status) {
+    switch (status) {
+      case 'PAID':
+        return Icons.check_circle_rounded;
+      case 'VOID':
+        return Icons.block_rounded;
+      case 'REFUNDED':
+      case 'PARTIALLY_REFUNDED':
+        return Icons.replay_rounded;
+      default:
+        return Icons.access_time_rounded;
+    }
   }
 
   // ─────────────────────────────────────────────
@@ -534,9 +606,8 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
         final listPane = RefreshIndicator(
           onRefresh: () async {
             if (_showAllSales) {
-              await ref
-                  .read(receiptProvider.notifier)
-                  .loadAllSales(status: state.statusFilter);
+              await ref.read(receiptProvider.notifier).loadAllSales(
+                  status: backendStatusQueryFor(state.statusFilter));
             } else {
               await ref.read(receiptProvider.notifier).loadActiveShiftSales();
             }
@@ -620,7 +691,7 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
   // ─────────────────────────────────────────────
 
   Widget _buildSaleCard(SaleResponse sale) {
-    final isPaid = sale.status == 'PAID' || sale.status == 'COMPLETED';
+    final statusColor = _statusColor(sale.status);
     final fmt = (double v) => formatAmount(v, sale.currency);
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -644,17 +715,13 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
                       width: 32,
                       height: 32,
                       decoration: BoxDecoration(
-                        color: isPaid
-                            ? Colors.green.withOpacity(0.1)
-                            : Colors.orange.withOpacity(0.1),
+                        color: statusColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
-                        isPaid
-                            ? Icons.check_circle_rounded
-                            : Icons.access_time_rounded,
+                        _statusIcon(sale.status),
                         size: 18,
-                        color: isPaid ? Colors.green : Colors.orange,
+                        color: statusColor,
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -707,17 +774,15 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                     decoration: BoxDecoration(
-                      color: isPaid
-                          ? Colors.green.withOpacity(0.1)
-                          : Colors.orange.withOpacity(0.1),
+                      color: statusColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      sale.status,
+                      _statusBadgeLabel(context, sale.status),
                       style: TextStyle(
                           fontSize: 9,
                           fontWeight: FontWeight.w700,
-                          color: isPaid ? Colors.green : Colors.orange),
+                          color: statusColor),
                     ),
                   ),
                 ],
@@ -749,7 +814,12 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
 
   String _formatDate(String iso) {
     try {
-      final dt = DateTime.parse(iso);
+      // .difference() below is correct either way (it subtracts absolute
+      // instants), but the '${dt.month}/${dt.day}' fallback reads local
+      // calendar fields directly — those must be converted from the raw
+      // UTC (Instant.toString()) value first, or a receipt from just after
+      // local midnight can show the previous UTC day.
+      final dt = DateTime.parse(iso).toLocal();
       final now = DateTime.now();
       final diff = now.difference(dt);
       if (diff.inMinutes < 1) return context.l10n.receiptsScreenJustNow;
@@ -794,15 +864,12 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
               if (receipt.status != null)
                 Center(
                   child: Text(
-                    receipt.status!,
+                    _statusBadgeLabel(context, receipt.status!),
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1.5,
-                      color: (receipt.status == 'PAID' ||
-                              receipt.status == 'COMPLETED')
-                          ? Colors.green
-                          : Colors.orange,
+                      color: _statusColor(receipt.status!),
                     ),
                   ),
                 ),
@@ -812,7 +879,14 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  if (receipt.status == 'PAID' || receipt.status == 'COMPLETED')
+                  // PARTIALLY_REFUNDED can still be refunded further — the
+                  // backend's refund() explicitly allows either PAID or
+                  // PARTIALLY_REFUNDED as a starting state (see
+                  // SaleService.refund's guard) — this used to only show
+                  // for PAID (or the dead 'COMPLETED' status), which hid a
+                  // real, already-supported action.
+                  if (receipt.status == 'PAID' ||
+                      receipt.status == 'PARTIALLY_REFUNDED')
                     TextButton.icon(
                       onPressed: () => _showRefundDialog(context, receipt),
                       icon: const Icon(Icons.replay, size: 16),

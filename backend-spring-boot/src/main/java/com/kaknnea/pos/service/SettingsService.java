@@ -258,6 +258,7 @@ public class SettingsService {
         response.setLogoUrl(settings.getLogoUrl());
         response.setAddress(settings.getAddress());
         response.setPhone(settings.getPhone());
+        response.setWebsite(settings.getWebsite());
         response.setReceiptFooter(settings.getReceiptFooter());
         response.setKhqrImageUrl(settings.getKhqrImageUrl());
         return response;
@@ -270,6 +271,7 @@ public class SettingsService {
         settings.setLogoUrl(request.getLogoUrl());
         settings.setAddress(request.getAddress());
         settings.setPhone(request.getPhone());
+        settings.setWebsite(request.getWebsite());
         settings.setReceiptFooter(request.getReceiptFooter());
         settings.setKhqrImageUrl(request.getKhqrImageUrl());
         repository.save(settings);
