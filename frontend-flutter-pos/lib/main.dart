@@ -14,8 +14,10 @@ import 'core/config/pos_theme.dart';
 import 'core/models/auth_models.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/providers/language_provider.dart';
+import 'core/providers/main_color_provider.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/services/api_service.dart';
+import 'core/utils/khmer_text_scaler.dart';
 import 'l10n/generated/app_localizations.dart';
 import 'features/auth/screens/login_screen.dart';
 import 'features/pos/screens/pos_screen.dart';
@@ -101,6 +103,16 @@ class PosApp extends ConsumerWidget {
     // screen instead of holding a dead token.
     ApiService.onUnauthorized = () => ref.read(authProvider.notifier).logout();
 
+    // Settings > Main Color: PosTheme.primaryGreen/Dark/Light are computed
+    // getters (see pos_theme.dart), not consts — every existing call site
+    // across the app reading them picks up this value with no other wiring
+    // needed. Applying it here, right before theme construction, on every
+    // build (this widget already rebuilds on provider change via the
+    // ref.watch below) keeps PosTheme's mutable field and the provider's
+    // persisted state in sync with a single, one-directional write.
+    PosTheme.applyMainColor(ref.watch(mainColorProvider));
+    final isKhmer = ref.watch(appLanguageProvider).isKhmer;
+
     return MaterialApp(
       title: AppConfig.appName,
       debugShowCheckedModeBanner: false,
@@ -108,6 +120,20 @@ class PosApp extends ConsumerWidget {
       darkTheme: PosTheme.darkTheme,
       themeMode: ref.watch(themeModeProvider).value,
       locale: ref.watch(appLanguageProvider).toLocale(),
+      // Khmer text ~2-3px larger app-wide (see khmer_text_scaler.dart) —
+      // applied on top of the platform's existing text-scale setting, and
+      // scoped to the Flutter widget tree only, so it can never reach
+      // receipt/PDF/thermal print output (a completely separate
+      // package:pdf rendering path with its own literal font sizes).
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(
+          textScaler: khmerAwareTextScaler(
+            MediaQuery.of(context).textScaler,
+            isKhmer: isKhmer,
+          ),
+        ),
+        child: child!,
+      ),
       supportedLocales: const [Locale('en'), Locale('km')],
       localizationsDelegates: const [
         AppLocalizations.delegate,

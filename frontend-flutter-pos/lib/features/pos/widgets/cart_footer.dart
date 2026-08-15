@@ -18,15 +18,15 @@ class CartFooter extends ConsumerWidget {
     final finalTotal = cartState.finalTotal;
 
     return Padding(
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.all(18.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(context.l10n
               .cartFooterTotalAmount('\$${total.toStringAsFixed(2)}')),
           if (discount != 0)
-            Text(context.l10n.cartFooterDiscountAmount(
-                '\$${discount.toStringAsFixed(2)}')),
+            Text(context.l10n
+                .cartFooterDiscountAmount('\$${discount.toStringAsFixed(2)}')),
           if (loyalty != 0)
             Text(context.l10n
                 .cartFooterLoyaltyAmount('\$${loyalty.toStringAsFixed(2)}')),

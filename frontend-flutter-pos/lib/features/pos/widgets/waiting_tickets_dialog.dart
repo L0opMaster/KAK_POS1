@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/config/currency_utils.dart';
 import '../../../core/config/pos_theme.dart';
 import '../../../core/utils/l10n_extensions.dart';
 import '../models/cart_models.dart';
@@ -24,7 +25,7 @@ class WaitingTicketsDialog extends ConsumerWidget {
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.confirmation_number_outlined,
                     color: PosTheme.primaryGreen,
                   ),
@@ -109,6 +110,7 @@ class _WaitingTicketTile extends ConsumerWidget {
       0,
       (int total, CartItem item) => total + item.qty,
     );
+    final cur = watchCurrency(ref);
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -130,7 +132,7 @@ class _WaitingTicketTile extends ConsumerWidget {
             ),
             child: Text(
               '#$number',
-              style: const TextStyle(
+              style: TextStyle(
                 color: PosTheme.primaryGreen,
                 fontSize: 23,
                 fontWeight: FontWeight.bold,
@@ -153,7 +155,7 @@ class _WaitingTicketTile extends ConsumerWidget {
                 const SizedBox(height: 5),
                 Text(
                   '${context.l10n.waitingTicketsItemsCount(quantity)} • '
-                  '\$${ticket.total.toStringAsFixed(2)}',
+                  '${formatAmount(ticket.total, cur)}',
                   style: TextStyle(
                     color: PosTheme.textSecondaryOf(context),
                   ),

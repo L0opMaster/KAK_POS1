@@ -105,7 +105,7 @@ class _HeldTicketsDialogState extends ConsumerState<HeldTicketsDialog> {
               color: PosTheme.primaryGreenLight,
               borderRadius: BorderRadius.circular(PosTheme.radiusMedium),
             ),
-            child: const Icon(Icons.history,
+            child: Icon(Icons.history,
                 color: PosTheme.primaryGreen, size: 20),
           ),
           const SizedBox(width: 12),
@@ -200,7 +200,7 @@ class _HeldTicketsDialogState extends ConsumerState<HeldTicketsDialog> {
                             borderRadius:
                                 BorderRadius.circular(PosTheme.radiusSmall),
                           ),
-                          child: const Icon(Icons.receipt_long,
+                          child: Icon(Icons.receipt_long,
                               color: PosTheme.primaryGreen, size: 20),
                         ),
                         title: FutureBuilder<int?>(

@@ -28,27 +28,31 @@ class CartItemsList extends ConsumerWidget {
     final lang = ref.watch(appLanguageProvider);
     if (items.isEmpty) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.add_shopping_cart_outlined,
-                size: 48, color: PosTheme.textHintOf(context)),
-            const SizedBox(height: 12),
-            Text(context.l10n.posEmptyCart,
-                style: TextStyle(
-                    color: PosTheme.textSecondaryOf(context), fontSize: 15)),
-            const SizedBox(height: 4),
-            Text(context.l10n.cartItemsListTapToAdd,
-                style: TextStyle(
-                    color: PosTheme.textHintOf(context), fontSize: 13)),
-            const SizedBox(height: 16),
-            OutlinedButton.icon(
-              icon: const Icon(Icons.history, size: 18),
-              label: Text(context.l10n.cartItemsListOpenHeldTickets),
-              onPressed: () => showDialog<void>(
-                  context: context, builder: (_) => const HeldTicketsDialog()),
-            ),
-          ],
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.add_shopping_cart_outlined,
+                  size: 48, color: PosTheme.textHintOf(context)),
+              const SizedBox(height: 12),
+              Text(context.l10n.posEmptyCart,
+                  style: TextStyle(
+                      color: PosTheme.textSecondaryOf(context), fontSize: 15)),
+              const SizedBox(height: 4),
+              Text(context.l10n.cartItemsListTapToAdd,
+                  style: TextStyle(
+                      color: PosTheme.textHintOf(context), fontSize: 13)),
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.history, size: 18),
+                label: Text(context.l10n.cartItemsListOpenHeldTickets),
+                onPressed: () => showDialog<void>(
+                    context: context,
+                    builder: (_) => const HeldTicketsDialog()),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -137,9 +141,11 @@ class _CartItemCard extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(PosTheme.radiusLarge)),
+        borderRadius:
+            BorderRadius.vertical(top: Radius.circular(PosTheme.radiusLarge)),
       ),
-      builder: (_) => ProductModifierSheet(product: item.product, initialItem: item),
+      builder: (_) =>
+          ProductModifierSheet(product: item.product, initialItem: item),
     );
     if (result != null) {
       notifier.setItemModifiers(
@@ -161,40 +167,42 @@ class _CartItemCard extends StatelessWidget {
       builder: (ctx) => AlertDialog(
         title: Text(ctx.l10n
             .cartItemsListEditItemTitle(item.product.localizedName(lang))),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: controller,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: ctx.l10n.cartItemsListQuantityLabel,
-                border: const OutlineInputBorder(),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: controller,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: ctx.l10n.cartItemsListQuantityLabel,
+                  border: const OutlineInputBorder(),
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: noteController,
-              decoration: InputDecoration(
-                labelText: ctx.l10n.cartItemsListNoteLabel,
-                hintText: ctx.l10n.cartItemsListNoteHint,
-                border: const OutlineInputBorder(),
+              const SizedBox(height: 12),
+              TextField(
+                controller: noteController,
+                decoration: InputDecoration(
+                  labelText: ctx.l10n.cartItemsListNoteLabel,
+                  hintText: ctx.l10n.cartItemsListNoteHint,
+                  border: const OutlineInputBorder(),
+                ),
+                maxLines: 2,
               ),
-              maxLines: 2,
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: discountCtl,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(
-                labelText: ctx.l10n.cartItemsListDiscountPerUnitLabel,
-                hintText: ctx.l10n.cartItemsListMaxDiscountHint(
-                    formatAmount(item.product.price, currency)),
-                border: const OutlineInputBorder(),
+              const SizedBox(height: 12),
+              TextField(
+                controller: discountCtl,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  labelText: ctx.l10n.cartItemsListDiscountPerUnitLabel,
+                  hintText: ctx.l10n.cartItemsListMaxDiscountHint(
+                      formatAmount(item.product.price, currency)),
+                  border: const OutlineInputBorder(),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -246,8 +254,8 @@ class _CartItemCard extends StatelessWidget {
         notifier.removeItem(item.id);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(context.l10n.cartItemsListRemovedItem(
-                removed.product.localizedName(lang))),
+            content: Text(context.l10n
+                .cartItemsListRemovedItem(removed.product.localizedName(lang))),
             duration: const Duration(seconds: 3),
             action: SnackBarAction(
                 label: context.l10n.cartItemsListUndoAction,
@@ -394,7 +402,8 @@ class _CartItemCard extends StatelessWidget {
                         formatAmount(item.unitPrice, currency),
                         textAlign: TextAlign.right,
                         style: TextStyle(
-                            fontSize: 13, color: PosTheme.textSecondaryOf(context)),
+                            fontSize: 13,
+                            color: PosTheme.textSecondaryOf(context)),
                       ),
                     ),
                     SizedBox(width: 12),
@@ -437,24 +446,32 @@ class _CartItemCard extends StatelessWidget {
                       },
                     ),
                     if (item.product.modifierGroups.isNotEmpty) ...[
-                      GestureDetector(
-                        onTap: () => _editModifiers(context),
-                        child: Text(context.l10n.cartItemsListModifierLink,
-                            style: TextStyle(
-                                fontSize: 12,
-                                color: PosTheme.primaryGreen,
-                                decoration: TextDecoration.underline)),
+                      Tooltip(
+                        message: context.l10n.cartItemsListModifierLink,
+                        child: InkWell(
+                          onTap: () => _editModifiers(context),
+                          borderRadius: BorderRadius.circular(16),
+                          child: Padding(
+                            padding: const EdgeInsets.all(4),
+                            child: Icon(Icons.tune,
+                                size: 18, color: PosTheme.primaryGreen),
+                          ),
+                        ),
                       ),
-                      SizedBox(width: 16),
+                      SizedBox(width: 8),
                     ],
                     Spacer(),
-                    GestureDetector(
-                      onTap: () => notifier.removeItem(item.id),
-                      child: Text(context.l10n.cartRemove,
-                          style: TextStyle(
-                              fontSize: 12,
-                              color: PosTheme.errorRed,
-                              decoration: TextDecoration.underline)),
+                    Tooltip(
+                      message: context.l10n.cartRemove,
+                      child: InkWell(
+                        onTap: () => notifier.removeItem(item.id),
+                        borderRadius: BorderRadius.circular(16),
+                        child: Padding(
+                          padding: const EdgeInsets.all(4),
+                          child: Icon(Icons.delete_outline,
+                              size: 18, color: PosTheme.errorRed),
+                        ),
+                      ),
                     ),
                   ],
                 ),

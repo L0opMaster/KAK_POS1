@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/config/pos_theme.dart';
 import '../models/product_models.dart';
 import '../providers/cart_provider.dart';
+import '../services/settings_service.dart';
 import 'product_card.dart';
 
 /// High-performance product grid with item count badges.
@@ -34,7 +35,7 @@ class ProductGrid extends ConsumerStatefulWidget {
 class _ProductGridState extends ConsumerState<ProductGrid> {
   final ScrollController _scrollController = ScrollController();
 
-  static const int _fixedColumns = 5;
+  static const int _defaultColumns = 4;
 
   @override
   void initState() {
@@ -67,6 +68,17 @@ class _ProductGridState extends ConsumerState<ProductGrid> {
     // Add one extra item for the loading indicator when paginating
     final totalCount = widget.hasMore ? itemCount + 1 : itemCount;
 
+    final posSettings = ref.watch(posSettingsProvider).valueOrNull;
+    final columns =
+        posSettings?['productGridColumns'] as int? ?? _defaultColumns;
+    final layout = posSettings?['saleScreenLayout'] as String? ?? 'GRID';
+    final crossAxisCount = layout == 'LIST' ? 1 : columns;
+    final childAspectRatio = switch (layout) {
+      'LIST' => 3.2,
+      'COMPACT' => 0.75,
+      _ => 0.95,
+    };
+
     return Container(
       color: PosTheme.backgroundPageOf(context),
       child: GridView.builder(
@@ -76,11 +88,11 @@ class _ProductGridState extends ConsumerState<ProductGrid> {
         cacheExtent: 500,
         // Keep grid children alive during scrolling
         addAutomaticKeepAlives: true,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: _fixedColumns,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: crossAxisCount,
           crossAxisSpacing: 10,
           mainAxisSpacing: 10,
-          childAspectRatio: 0.95,
+          childAspectRatio: childAspectRatio,
         ),
         itemCount: totalCount,
         itemBuilder: (context, index) {
@@ -129,9 +141,9 @@ class _LoadMoreIndicator extends StatelessWidget {
         color: PosTheme.backgroundPageOf(context),
         borderRadius: BorderRadius.circular(PosTheme.radiusMedium),
       ),
-      child: const Center(
+      child: Center(
         child: Padding(
-          padding: EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16),
           child: SizedBox(
             width: 24,
             height: 24,

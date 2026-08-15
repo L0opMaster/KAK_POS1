@@ -296,7 +296,7 @@ class _CategoryPerformanceScreenState
                                   color: PosTheme.textPrimary)),
                         ),
                         Text('\$${_fmtNum(c.total)}',
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: PosTheme.primaryGreen,
                                 fontSize: 15)),

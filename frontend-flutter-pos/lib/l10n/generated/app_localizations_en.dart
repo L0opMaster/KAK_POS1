@@ -230,6 +230,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsLanguage => 'App language';
 
   @override
+  String get settingsMainColor => 'Main Color';
+
+  @override
+  String get settingsMainColorGreen => 'Green';
+
+  @override
+  String get settingsMainColorBlue => 'Blue';
+
+  @override
+  String get settingsMainColorPurple => 'Purple';
+
+  @override
+  String get settingsMainColorOrange => 'Orange';
+
+  @override
+  String get settingsMainColorRed => 'Red';
+
+  @override
+  String get settingsMainColorTeal => 'Teal';
+
+  @override
   String get settingsSave => 'Save';
 
   @override

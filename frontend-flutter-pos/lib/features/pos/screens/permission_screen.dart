@@ -250,7 +250,7 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen> {
         ListTile(
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 28, vertical: 6),
-          leading: const Icon(Icons.verified_user_outlined,
+          leading: Icon(Icons.verified_user_outlined,
               color: PosTheme.primaryGreen),
           title: Text(
             permission.name,

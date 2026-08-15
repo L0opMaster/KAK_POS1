@@ -149,3 +149,10 @@ class SettingsService {
 final settingsServiceProvider = Provider<SettingsService>((ref) {
   return SettingsService(ref.read(apiServiceProvider));
 });
+
+/// POS operational settings (sale screen layout, grid columns, etc).
+/// Invalidate after `updatePosLayout`/`updatePosSettings` to refresh consumers.
+final posSettingsProvider =
+    FutureProvider<Map<String, dynamic>>((ref) async {
+  return ref.read(settingsServiceProvider).getPosSettings();
+});

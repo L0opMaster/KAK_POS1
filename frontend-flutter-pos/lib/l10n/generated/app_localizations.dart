@@ -536,6 +536,48 @@ abstract class AppLocalizations {
   /// **'App language'**
   String get settingsLanguage;
 
+  /// No description provided for @settingsMainColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Main Color'**
+  String get settingsMainColor;
+
+  /// No description provided for @settingsMainColorGreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Green'**
+  String get settingsMainColorGreen;
+
+  /// No description provided for @settingsMainColorBlue.
+  ///
+  /// In en, this message translates to:
+  /// **'Blue'**
+  String get settingsMainColorBlue;
+
+  /// No description provided for @settingsMainColorPurple.
+  ///
+  /// In en, this message translates to:
+  /// **'Purple'**
+  String get settingsMainColorPurple;
+
+  /// No description provided for @settingsMainColorOrange.
+  ///
+  /// In en, this message translates to:
+  /// **'Orange'**
+  String get settingsMainColorOrange;
+
+  /// No description provided for @settingsMainColorRed.
+  ///
+  /// In en, this message translates to:
+  /// **'Red'**
+  String get settingsMainColorRed;
+
+  /// No description provided for @settingsMainColorTeal.
+  ///
+  /// In en, this message translates to:
+  /// **'Teal'**
+  String get settingsMainColorTeal;
+
   /// No description provided for @settingsSave.
   ///
   /// In en, this message translates to:

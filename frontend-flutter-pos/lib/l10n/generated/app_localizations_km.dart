@@ -230,6 +230,27 @@ class AppLocalizationsKm extends AppLocalizations {
   String get settingsLanguage => 'ភាសាកម្មវិធី';
 
   @override
+  String get settingsMainColor => 'ពណ៌សំខាន់';
+
+  @override
+  String get settingsMainColorGreen => 'បៃតង';
+
+  @override
+  String get settingsMainColorBlue => 'ខៀវ';
+
+  @override
+  String get settingsMainColorPurple => 'ស្វាយ';
+
+  @override
+  String get settingsMainColorOrange => 'ទឹកក្រូច';
+
+  @override
+  String get settingsMainColorRed => 'ក្រហម';
+
+  @override
+  String get settingsMainColorTeal => 'ខៀវបៃតង';
+
+  @override
   String get settingsSave => 'រក្សាទុក';
 
   @override

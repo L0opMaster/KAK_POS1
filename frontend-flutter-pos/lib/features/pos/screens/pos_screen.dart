@@ -68,7 +68,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const CircularProgressIndicator(color: PosTheme.primaryGreen),
+            CircularProgressIndicator(color: PosTheme.primaryGreen),
             const SizedBox(height: 16),
             Text(
               l10n.commonLoading,
@@ -200,32 +200,43 @@ class _PosScreenState extends ConsumerState<PosScreen> {
       );
     }
 
-    return Scaffold(
-      appBar: _PosAppBar(),
-      drawer: PosDrawer(),
-      body: Row(
-        children: [
-          // ── Product area (left / main) ──
-          Expanded(
-            child: Column(
-              children: [
-                const _CategoryFilterBar(),
-                Expanded(child: productArea),
-              ],
-            ),
-          ),
-          // ── Cart sidebar (fixed 380px, right side — Loyverse standard) ──
-          Container(
-            width: 380,
-            decoration: BoxDecoration(
-              color: PosTheme.backgroundCardOf(context),
-              border: Border(
-                left: BorderSide(color: PosTheme.dividerColorOf(context)),
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      child: Scaffold(
+        // The only text fields on this screen (search/barcode) live in the
+        // app bar, which is always pinned above the keyboard — so there's
+        // nothing here that the keyboard would ever cover. Without this,
+        // Flutter shrinks the whole body (including the fixed-width cart
+        // sidebar) to avoid the keyboard, which squeezes the cart panel
+        // enough to overflow its content.
+        resizeToAvoidBottomInset: false,
+        appBar: _PosAppBar(),
+        drawer: PosDrawer(),
+        body: Row(
+          children: [
+            // ── Product area (left / main) ──
+            Expanded(
+              child: Column(
+                children: [
+                  const _CategoryFilterBar(),
+                  Expanded(child: productArea),
+                ],
               ),
             ),
-            child: const CartPanel(),
-          ),
-        ],
+            // ── Cart sidebar (fixed 380px, right side — Loyverse standard) ──
+            Container(
+              width: 380,
+              decoration: BoxDecoration(
+                color: PosTheme.backgroundCardOf(context),
+                border: Border(
+                  left: BorderSide(color: PosTheme.dividerColorOf(context)),
+                ),
+              ),
+              child: const CartPanel(),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -366,7 +377,7 @@ class _PosAppBarState extends ConsumerState<_PosAppBar> {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(PosTheme.radiusMedium),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.point_of_sale,
                 color: PosTheme.primaryGreen,
                 size: 22,
@@ -510,7 +521,7 @@ class _PosAppBarState extends ConsumerState<_PosAppBar> {
               companyName.trim().isEmpty
                   ? '?'
                   : companyName.trim()[0].toUpperCase(),
-              style: const TextStyle(
+              style: TextStyle(
                 color: PosTheme.primaryGreen,
                 fontWeight: FontWeight.w600,
               ),
@@ -645,8 +656,6 @@ class _PosAppBarState extends ConsumerState<_PosAppBar> {
 //   }
 // }
 
-
-
 // ═══════════════════════════════════════════════════════════════════
 // Category Filter Bar — Horizontal scrollable pills
 // ═══════════════════════════════════════════════════════════════════
@@ -655,12 +664,10 @@ class _CategoryFilterBar extends ConsumerStatefulWidget {
   const _CategoryFilterBar({super.key});
 
   @override
-  ConsumerState<_CategoryFilterBar> createState() =>
-      _CategoryFilterBarState();
+  ConsumerState<_CategoryFilterBar> createState() => _CategoryFilterBarState();
 }
 
-class _CategoryFilterBarState
-    extends ConsumerState<_CategoryFilterBar> {
+class _CategoryFilterBarState extends ConsumerState<_CategoryFilterBar> {
   int? _selectedCategory;
 
   final ScrollController _scrollController = ScrollController();
@@ -674,9 +681,7 @@ class _CategoryFilterBarState
   void _applyCategory(int? id) {
     final int? categoryId = (id == null || id <= 0) ? null : id;
 
-    ref
-        .read(productsProvider.notifier)
-        .filterByCategory(categoryId);
+    ref.read(productsProvider.notifier).filterByCategory(categoryId);
 
     setState(() {
       _selectedCategory = categoryId;
@@ -696,14 +701,11 @@ class _CategoryFilterBarState
 
     // Mouse wheel normally gives vertical delta.
     // We use that value to move the horizontal category list.
-    final double newOffset =
-        currentOffset + event.scrollDelta.dy;
+    final double newOffset = currentOffset + event.scrollDelta.dy;
 
-    final double minOffset =
-        _scrollController.position.minScrollExtent;
+    final double minOffset = _scrollController.position.minScrollExtent;
 
-    final double maxOffset =
-        _scrollController.position.maxScrollExtent;
+    final double maxOffset = _scrollController.position.maxScrollExtent;
 
     _scrollController.animateTo(
       newOffset.clamp(minOffset, maxOffset),
@@ -737,12 +739,9 @@ class _CategoryFilterBarState
           baseCats.add(
             Category(
               id: dynamicCategory.id as int,
-              nameEn:
-                  dynamicCategory.nameEn ??
-                  'Cat ${dynamicCategory.id}',
+              nameEn: dynamicCategory.nameEn ?? 'Cat ${dynamicCategory.id}',
               nameKm:
-                  dynamicCategory.nameKm ??
-                  'កាតេកូរី ${dynamicCategory.id}',
+                  dynamicCategory.nameKm ?? 'កាតេកូរី ${dynamicCategory.id}',
               active: true,
             ),
           );
@@ -818,9 +817,8 @@ class _CategoryFilterBarState
                 final bool isAllCategory = category.id <= 0;
 
                 final bool isSelected =
-                    (isAllCategory &&
-                        _selectedCategory == null) ||
-                    category.id == _selectedCategory;
+                    (isAllCategory && _selectedCategory == null) ||
+                        category.id == _selectedCategory;
 
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
@@ -832,17 +830,13 @@ class _CategoryFilterBarState
                       ),
                       onTap: () {
                         _applyCategory(
-                          isAllCategory
-                              ? null
-                              : category.id,
+                          isAllCategory ? null : category.id,
                         );
                       },
                       child: AnimatedContainer(
-                        duration:
-                            const Duration(milliseconds: 200),
+                        duration: const Duration(milliseconds: 200),
                         curve: Curves.easeInOut,
-                        padding:
-                            const EdgeInsets.symmetric(
+                        padding: const EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 8,
                         ),
@@ -852,8 +846,7 @@ class _CategoryFilterBarState
                               : PosTheme.backgroundPageOf(
                                   context,
                                 ),
-                          borderRadius:
-                              BorderRadius.circular(
+                          borderRadius: BorderRadius.circular(
                             PosTheme.radiusPill,
                           ),
                           border: Border.all(
@@ -873,10 +866,9 @@ class _CategoryFilterBarState
                             style: TextStyle(
                               color: isSelected
                                   ? Colors.white
-                                  : PosTheme
-                                      .textSecondaryOf(
-                                        context,
-                                      ),
+                                  : PosTheme.textSecondaryOf(
+                                      context,
+                                    ),
                               fontWeight: isSelected
                                   ? FontWeight.w600
                                   : FontWeight.w400,

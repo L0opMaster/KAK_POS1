@@ -389,7 +389,7 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
                       color: PosTheme.textPrimary)),
             ),
             Text('\$${_fmtNum(sale.netAmount)}',
-                style: const TextStyle(
+                style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
                     color: PosTheme.primaryGreen)),

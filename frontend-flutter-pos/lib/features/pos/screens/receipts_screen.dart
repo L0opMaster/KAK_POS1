@@ -124,7 +124,8 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
   void _refresh() {
     if (_showAllSales) {
       ref.read(receiptProvider.notifier).loadAllSales(
-          status: backendStatusQueryFor(ref.read(receiptProvider).statusFilter));
+          status:
+              backendStatusQueryFor(ref.read(receiptProvider).statusFilter));
     } else {
       ref.read(receiptProvider.notifier).loadActiveShiftSales();
     }
@@ -439,9 +440,8 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
             onSelectionChanged: (v) {
               setState(() => _showAllSales = v.first);
               if (v.first) {
-                ref
-                    .read(receiptProvider.notifier)
-                    .loadAllSales(status: backendStatusQueryFor(state.statusFilter));
+                ref.read(receiptProvider.notifier).loadAllSales(
+                    status: backendStatusQueryFor(state.statusFilter));
               } else {
                 ref.read(receiptProvider.notifier).loadActiveShiftSales();
               }
@@ -474,7 +474,8 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
                 label: Text(
                   _statusFilterLabel(context, status),
                   style: TextStyle(
-                      fontSize: 12, color: selected ? Colors.white : null),
+                      fontSize: 12,
+                      color: selected ? Colors.white : Colors.black),
                 ),
                 selected: selected,
                 onSelected: (_) =>
@@ -998,6 +999,7 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
 
   void _showRefundDialog(BuildContext context, ReceiptResponse receipt) {
     final remaining = receipt.total - receipt.refundedAmount;
+    final cur = readCurrency(ref);
     final reasonCtl = TextEditingController();
     final managerEmailCtl = TextEditingController();
     final managerPasswordCtl = TextEditingController();
@@ -1054,9 +1056,9 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
                 children: [
                   Text(
                     '${context.l10n.receiptsScreenRefundConfirmPrefix(receipt.saleNumber ?? context.l10n.receiptsScreenRefundReceiptFallback(receipt.saleId.toString()))}\n\n'
-                    '${context.l10n.receiptsScreenRefundTotalLine('\$${receipt.total.toStringAsFixed(2)}')}'
-                    '${receipt.refundedAmount > 0 ? '\n${context.l10n.receiptsScreenRefundAlreadyRefundedLine('\$${receipt.refundedAmount.toStringAsFixed(2)}')}' : ''}'
-                    '\n${context.l10n.receiptsScreenRefundAmountLine('\$${remaining.toStringAsFixed(2)}')}',
+                    '${context.l10n.receiptsScreenRefundTotalLine(formatAmount(receipt.total, cur))}'
+                    '${receipt.refundedAmount > 0 ? '\n${context.l10n.receiptsScreenRefundAlreadyRefundedLine(formatAmount(receipt.refundedAmount, cur))}' : ''}'
+                    '\n${context.l10n.receiptsScreenRefundAmountLine(formatAmount(remaining, cur))}',
                   ),
                   const SizedBox(height: 12),
                   TextField(

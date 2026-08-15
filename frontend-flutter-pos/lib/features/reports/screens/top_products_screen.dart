@@ -164,7 +164,7 @@ class _TopProductsScreenState extends ConsumerState<TopProductsScreen> {
                           ),
                           child: Center(
                             child: Text('${i + 1}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
                                     color: PosTheme.primaryGreen)),
@@ -182,7 +182,7 @@ class _TopProductsScreenState extends ConsumerState<TopProductsScreen> {
                               overflow: TextOverflow.ellipsis),
                         ),
                         Text('\$${_fmtNum(p.total)}',
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: PosTheme.primaryGreen)),
                       ],

@@ -616,7 +616,7 @@ class PosDrawer extends ConsumerWidget {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(16, 48, 16, 20),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -635,7 +635,7 @@ class PosDrawer extends ConsumerWidget {
                     color: Colors.white24,
                     shape: BoxShape.circle,
                   ),
-                  child: const CircleAvatar(
+                  child: CircleAvatar(
                     radius: 22,
                     backgroundColor: Colors.white,
                     child: Icon(

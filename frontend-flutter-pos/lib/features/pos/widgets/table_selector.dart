@@ -52,7 +52,7 @@ class _TableSelectorState extends ConsumerState<TableSelector> {
               color: PosTheme.primaryGreenLight,
               borderRadius: BorderRadius.circular(PosTheme.radiusMedium),
             ),
-            child: const Icon(Icons.table_restaurant,
+            child: Icon(Icons.table_restaurant,
                 color: PosTheme.primaryGreen, size: 20),
           ),
           const SizedBox(width: 12),

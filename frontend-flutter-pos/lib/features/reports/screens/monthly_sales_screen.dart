@@ -134,7 +134,7 @@ class _MonthlySalesScreenState extends ConsumerState<MonthlySalesScreen> {
                           fontWeight: FontWeight.w500)),
                   const SizedBox(height: 4),
                   Text('\$${_fmtNum(grandTotal)}',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
                           color: PosTheme.primaryGreen)),

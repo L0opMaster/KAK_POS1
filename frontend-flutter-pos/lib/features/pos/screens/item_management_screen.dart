@@ -195,39 +195,43 @@ class _ItemManagementScreenState extends ConsumerState<ItemManagementScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(productsProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(context.l10n.navItems),
-        elevation: 0.5,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: context.l10n.commonRefresh,
-            onPressed: _refresh,
-          ),
-        ],
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(context.l10n.navItems),
+          elevation: 0.5,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              tooltip: context.l10n.commonRefresh,
+              onPressed: _refresh,
+            ),
+          ],
+        ),
+        body: SafeArea(child: Builder(builder: (context) {
+          if (!_hasLoadedOnce) {
+            if (state.isLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (state.error != null) {
+              return _buildErrorState(state.error!);
+            }
+          }
+
+          final isSearching = _searchCtl.text.trim().isNotEmpty;
+
+          if (!state.isLoading && !isSearching && state.products.isEmpty) {
+            if (state.error != null) {
+              return _buildErrorState(state.error!);
+            }
+            return _buildEmptyState();
+          }
+
+          return _buildItemList(state.products, loading: state.isLoading);
+        })),
       ),
-      body: SafeArea(child: Builder(builder: (context) {
-        if (!_hasLoadedOnce) {
-          if (state.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (state.error != null) {
-            return _buildErrorState(state.error!);
-          }
-        }
-
-        final isSearching = _searchCtl.text.trim().isNotEmpty;
-
-        if (!state.isLoading && !isSearching && state.products.isEmpty) {
-          if (state.error != null) {
-            return _buildErrorState(state.error!);
-          }
-          return _buildEmptyState();
-        }
-
-        return _buildItemList(state.products, loading: state.isLoading);
-      })),
     );
   }
 
@@ -530,7 +534,7 @@ class _ItemManagementScreenState extends ConsumerState<ItemManagementScreen> {
                 children: [
                   Text(
                     '\$${p.price.toStringAsFixed(2)}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 15,
                       color: PosTheme.primaryGreen,

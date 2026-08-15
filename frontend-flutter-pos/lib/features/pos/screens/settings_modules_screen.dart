@@ -9,6 +9,7 @@ import '../../../core/config/pos_theme.dart';
 import '../../../core/providers/company_provider.dart';
 import '../../../core/providers/currency_provider.dart';
 import '../../../core/providers/language_provider.dart';
+import '../../../core/providers/main_color_provider.dart';
 import '../../../core/providers/theme_provider.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/utils/l10n_extensions.dart';
@@ -21,6 +22,29 @@ import '../services/printing/receipt_bitmap_renderer.dart';
 import '../services/printing/receipt_view_model.dart';
 import '../services/printing/thermal_printer_service.dart';
 import '../services/settings_service.dart';
+
+/// Accessibility label for a main-color swatch — kMainColorOptions is a
+/// fixed, ordered palette (see main_color_provider.dart), so matching by
+/// index here is safe and doesn't need per-color hex-based lookup logic.
+String _mainColorName(AppLocalizations l10n, Color color) {
+  final index = kMainColorOptions.indexOf(color);
+  switch (index) {
+    case 0:
+      return l10n.settingsMainColorGreen;
+    case 1:
+      return l10n.settingsMainColorBlue;
+    case 2:
+      return l10n.settingsMainColorPurple;
+    case 3:
+      return l10n.settingsMainColorOrange;
+    case 4:
+      return l10n.settingsMainColorRed;
+    case 5:
+      return l10n.settingsMainColorTeal;
+    default:
+      return l10n.settingsMainColor;
+  }
+}
 
 class SettingsModulesScreen extends ConsumerStatefulWidget {
   const SettingsModulesScreen({super.key});
@@ -594,6 +618,53 @@ class _SettingsModulesScreenState extends ConsumerState<SettingsModulesScreen> {
                               ref.read(themeModeProvider.notifier).toggle();
                             },
                           ),
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading:
+                                const Icon(Icons.palette_outlined, size: 20),
+                            title: Text(l10n.settingsMainColor),
+                            subtitle: Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Wrap(
+                                spacing: 10,
+                                runSpacing: 8,
+                                children: kMainColorOptions.map((color) {
+                                  final selected =
+                                      ref.watch(mainColorProvider) == color;
+                                  return Semantics(
+                                    button: true,
+                                    selected: selected,
+                                    label: _mainColorName(l10n, color),
+                                    child: GestureDetector(
+                                      onTap: () => ref
+                                          .read(mainColorProvider.notifier)
+                                          .setMainColor(color),
+                                      child: Container(
+                                        width: 32,
+                                        height: 32,
+                                        decoration: BoxDecoration(
+                                          color: color,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: selected
+                                                ? PosTheme.textPrimaryOf(
+                                                    context)
+                                                : Colors.transparent,
+                                            width: 2,
+                                          ),
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: selected
+                                            ? const Icon(Icons.check,
+                                                color: Colors.white, size: 18)
+                                            : null,
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          ),
                           _saveButton(
                             l10n.settingsSaveGeneral,
                             _savingGeneral,
@@ -707,7 +778,7 @@ class _SettingsModulesScreenState extends ConsumerState<SettingsModulesScreen> {
                                 color: PosTheme.primaryGreen.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.grid_view,
                                 color: PosTheme.primaryGreen,
                                 size: 20,

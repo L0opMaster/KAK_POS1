@@ -266,7 +266,7 @@ class _CreateEmployeeState extends ConsumerState<CreateEmployee> {
     final employee = widget.initialEmployee!;
     return Row(
       children: [
-        const Icon(Icons.verified_user, color: PosTheme.primaryGreen, size: 20),
+        Icon(Icons.verified_user, color: PosTheme.primaryGreen, size: 20),
         const SizedBox(width: 10),
         Expanded(
           child: Text(

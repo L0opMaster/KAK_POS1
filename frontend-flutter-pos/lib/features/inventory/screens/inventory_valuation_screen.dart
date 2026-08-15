@@ -466,7 +466,7 @@ class _InventoryValuationScreenState
                 width: 100,
                 child: Text('\$${item.totalValue.toStringAsFixed(2)}',
                     textAlign: TextAlign.right,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                         color: PosTheme.primaryGreen)),

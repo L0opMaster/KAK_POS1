@@ -290,11 +290,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 width: 60,
                                 height: 60,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF0f766e),
+                                  color: Theme.of(context).colorScheme.primary,
                                   borderRadius: BorderRadius.circular(16),
                                   boxShadow: [
                                     BoxShadow(
-                                        color: const Color(0xFF0f766e)
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary
                                             .withOpacity(0.4),
                                         blurRadius: 16,
                                         offset: const Offset(0, 6)),
@@ -376,8 +378,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                           color: Color(0xFFd1d5db))),
                                   focusedBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(14),
-                                      borderSide: const BorderSide(
-                                          color: Color(0xFF0f766e), width: 2)),
+                                      borderSide: BorderSide(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary,
+                                          width: 2)),
                                   errorBorder: const OutlineInputBorder(
                                       borderRadius:
                                           BorderRadius.all(Radius.circular(14)),
@@ -422,7 +427,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                             value: true,
                                             onChanged: (_) {},
                                             fillColor: WidgetStateProperty.all(
-                                                const Color(0xFF0f766e))),
+                                                Theme.of(context)
+                                                    .colorScheme
+                                                    .primary)),
                                       ),
                                       const SizedBox(width: 8),
                                       Text(l10n.loginScreenRememberMe,
@@ -436,14 +443,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     child: GestureDetector(
                                       onTap: () {},
                                       child: Text(l10n.loginScreenForgotPassword,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                               fontSize: 13,
                                               fontWeight: FontWeight.w600,
-                                              color: Color(0xFF0f766e),
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .primary,
                                               decoration:
                                                   TextDecoration.underline,
                                               decorationColor:
-                                                  Color(0xFF0f766e))),
+                                                  Theme.of(context)
+                                                      .colorScheme
+                                                      .primary)),
                                     ),
                                   ),
                                 ],
@@ -459,7 +470,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       authState.isLoading ? null : _login,
                                   style: ButtonStyle(
                                     backgroundColor: WidgetStateProperty.all(
-                                        const Color(0xFF0f766e)),
+                                        Theme.of(context).colorScheme.primary),
                                     foregroundColor:
                                         WidgetStateProperty.all(Colors.white),
                                     shape: WidgetStateProperty.all(
@@ -472,7 +483,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                                 ? 8
                                                 : 0),
                                     shadowColor: WidgetStateProperty.all(
-                                        const Color(0xFF0f766e)
+                                        Theme.of(context)
+                                            .colorScheme
+                                            .primary
                                             .withOpacity(0.3)),
                                   ),
                                   child: authState.isLoading
@@ -572,7 +585,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               borderSide: const BorderSide(color: Color(0xFFd1d5db))),
           focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: Color(0xFF0f766e), width: 2)),
+              borderSide: BorderSide(
+                  color: Theme.of(context).colorScheme.primary, width: 2)),
           errorBorder: errorBorder,
           focusedErrorBorder: focusedErrorBorder,
         ),

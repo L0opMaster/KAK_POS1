@@ -11,9 +11,39 @@ class PosTheme {
   PosTheme._();
 
   // ── Brand Colors (Loyverse-inspired) ────────────────────────────
-  static const Color primaryGreen = Color(0xFF4CAF50);
-  static const Color primaryGreenDark = Color(0xFF388E3C);
-  static const Color primaryGreenLight = Color(0xFFC8E6C9);
+  // `primaryGreen`/`primaryGreenDark`/`primaryGreenLight` are the ONE
+  // configurable "main app color" (Settings > Main Color). They're
+  // getters (not `const`) specifically so every existing call site
+  // across the app — ~150 of them, buttons/tabs/chips/AppBar/etc. —
+  // picks up a newly-selected color automatically with zero per-call-site
+  // changes, the moment applyMainColor() runs. The actual state owner
+  // (persistence + the Riverpod provider UI reads/writes) is
+  // core/providers/main_color_provider.dart; this class only holds the
+  // current *resolved* Color for widgets to read synchronously. Defaults
+  // to the original brand green so nothing shifts for existing users
+  // before their saved preference loads.
+  static Color _mainColor = const Color(0xFF4CAF50);
+
+  static Color get primaryGreen => _mainColor;
+  static Color get primaryGreenDark => _shade(_mainColor, -0.11);
+  static Color get primaryGreenLight => _shade(_mainColor, 0.35);
+
+  /// Called from main.dart on every build with the current
+  /// mainColorProvider value, right before MaterialApp's theme is built —
+  /// see that provider for where the value actually comes from/persists.
+  static void applyMainColor(Color color) {
+    _mainColor = color;
+  }
+
+  /// Lightens ([amount] > 0) or darkens ([amount] < 0) [color] by shifting
+  /// HSL lightness — derives a dark/light variant of whichever main color
+  /// is currently selected, instead of needing a hand-picked shade
+  /// constant per color option.
+  static Color _shade(Color color, double amount) {
+    final hsl = HSLColor.fromColor(color);
+    final lightness = (hsl.lightness + amount).clamp(0.0, 1.0);
+    return hsl.withLightness(lightness).toColor();
+  }
 
   static const Color accentBlue = Color(0xFF2196F3);
   static const Color accentBlueLight = Color(0xFFE3F2FD);
@@ -124,7 +154,7 @@ class PosTheme {
       // AppBar — branded green header, consistent in light and dark mode
       // (see darkTheme below) rather than switching to a neutral surface
       // color, so the app keeps one clear brand identity either way.
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: primaryGreen,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -205,7 +235,7 @@ class PosTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusMedium),
-          borderSide: const BorderSide(color: primaryGreen, width: 1.5),
+          borderSide: BorderSide(color: primaryGreen, width: 1.5),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: spacingLg,
@@ -252,7 +282,7 @@ class PosTheme {
       colorScheme: colorScheme,
       scaffoldBackgroundColor: const Color(0xFF121212),
       fontFamilyFallback: const ['NotoSansKhmer'],
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: primaryGreen,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -323,7 +353,7 @@ class PosTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusMedium),
-          borderSide: const BorderSide(color: primaryGreen, width: 1.5),
+          borderSide: BorderSide(color: primaryGreen, width: 1.5),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: spacingLg,

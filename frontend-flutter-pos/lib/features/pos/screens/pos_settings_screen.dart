@@ -112,7 +112,7 @@ class _PosSettingsScreenState extends ConsumerState<PosSettingsScreen> {
     setState(() => _saving = true);
     try {
       final service = ref.read(settingsServiceProvider);
-      await service.updatePosLayout({
+      await service.updatePosSettings({
         'saleScreenLayout': _saleScreenLayout,
         'productGridColumns': _productGridColumns,
         'enableFavorites': _enableFavorites,
@@ -129,6 +129,7 @@ class _PosSettingsScreenState extends ConsumerState<PosSettingsScreen> {
         'lowStockAlert': _lowStockAlert,
         'lowStockAlertEmail': _lowStockAlertEmailCtl.text.trim(),
       });
+      ref.invalidate(posSettingsProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(context.l10n.posSettingsScreenSaved)),

@@ -374,7 +374,7 @@ class _PurchaseOrdersScreenState extends ConsumerState<PurchaseOrdersScreen> {
               ),
               if (order.totalAmount != null) ...[
                 Text('\$${order.totalAmount!.toStringAsFixed(2)}',
-                    style: const TextStyle(fontWeight: FontWeight.bold, color: PosTheme.primaryGreen)),
+                    style: TextStyle(fontWeight: FontWeight.bold, color: PosTheme.primaryGreen)),
                 const SizedBox(width: 12),
               ],
               Container(

@@ -440,7 +440,7 @@ class _SalesSummaryReportScreenState
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Row(
           children: [
-            const CircleAvatar(
+            CircleAvatar(
               radius: 15,
               backgroundColor: PosTheme.backgroundPage,
               child: Icon(Icons.person_rounded,
@@ -458,7 +458,7 @@ class _SalesSummaryReportScreenState
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text('\$${_fmtNum(c.salesTotal)}',
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
                         color: PosTheme.primaryGreen)),

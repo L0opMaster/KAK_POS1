@@ -210,46 +210,50 @@ class _EmployeeManagementScreenState
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(employeeProvider);
-    return Scaffold(
-        appBar: AppBar(
-          title: Text(context.l10n.employeeManagementTitle),
-          elevation: 0.5,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              tooltip: context.l10n.commonRefresh,
-              onPressed: _refresh,
-            ),
-          ],
-        ),
-        body: SafeArea(child: Builder(builder: (context) {
-          // Only take over the whole screen before the very first load
-          // ever completes. Every later fetch (search, refresh, clearing
-          // the search box) must update the existing card in place instead
-          // of tearing the whole screen down for a bare spinner.
-          if (!_hasLoadedOnce) {
-            if (state.loading) {
-              return const Center(
-                child: CircularProgressIndicator(),
-              );
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      child: Scaffold(
+          appBar: AppBar(
+            title: Text(context.l10n.employeeManagementTitle),
+            elevation: 0.5,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                tooltip: context.l10n.commonRefresh,
+                onPressed: _refresh,
+              ),
+            ],
+          ),
+          body: SafeArea(child: Builder(builder: (context) {
+            // Only take over the whole screen before the very first load
+            // ever completes. Every later fetch (search, refresh, clearing
+            // the search box) must update the existing card in place instead
+            // of tearing the whole screen down for a bare spinner.
+            if (!_hasLoadedOnce) {
+              if (state.loading) {
+                return const Center(
+                  child: CircularProgressIndicator(),
+                );
+              }
+
+              if (state.error != null) {
+                return _buildErrorState(state.error!);
+              }
             }
 
-            if (state.error != null) {
-              return _buildErrorState(state.error!);
+            final isSearching = _searchCtl.text.trim().isNotEmpty;
+
+            if (!state.loading && !isSearching && state.employees.isEmpty) {
+              if (state.error != null) {
+                return _buildErrorState(state.error!);
+              }
+              return _buildEmptyState();
             }
-          }
 
-          final isSearching = _searchCtl.text.trim().isNotEmpty;
-
-          if (!state.loading && !isSearching && state.employees.isEmpty) {
-            if (state.error != null) {
-              return _buildErrorState(state.error!);
-            }
-            return _buildEmptyState();
-          }
-
-          return _buildEmployeeList(state.employees, loading: state.loading);
-        })));
+            return _buildEmployeeList(state.employees, loading: state.loading);
+          }))),
+    );
   }
 
   Widget _buildEmployeeList(
@@ -310,8 +314,8 @@ class _EmployeeManagementScreenState
 
                       // Delete icon near ADD EMPLOYEE.
                       IconButton(
-                        tooltip:
-                            context.l10n.employeeManagementDeleteSelectedTooltip,
+                        tooltip: context
+                            .l10n.employeeManagementDeleteSelectedTooltip,
                         onPressed: _selectedEmployeeIds.isEmpty
                             ? null
                             : _deleteSelectedEmployees,
@@ -385,9 +389,7 @@ class _EmployeeManagementScreenState
                     ],
                   ),
                 ),
-
                 const Divider(height: 1),
-
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 28,
@@ -430,14 +432,11 @@ class _EmployeeManagementScreenState
                     ],
                   ),
                 ),
-
                 const Divider(height: 1),
-
                 if (pageEmployees.isEmpty)
                   _buildNoResultsRow(loading: loading)
                 else
                   ...pageEmployees.map(_buildEmployeeRow),
-
                 if (pageEmployees.isNotEmpty)
                   _buildPaginationControls(
                     currentPage: safeCurrentPage,
@@ -578,9 +577,7 @@ class _EmployeeManagementScreenState
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: isActive
-                        ? PosTheme.successGreen
-                        : PosTheme.errorRed,
+                    color: isActive ? PosTheme.successGreen : PosTheme.errorRed,
                   ),
                 ),
               ),
@@ -763,5 +760,3 @@ class _EmployeeManagementScreenState
     );
   }
 }
-
-

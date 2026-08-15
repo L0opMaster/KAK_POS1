@@ -67,7 +67,7 @@ class AppConfig {
     // ignore: always_put_control_body_on_new_line
     if (kIsWeb) return 'http://localhost:8081';
     if (defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2:8081'; // Android Emulator host access
+      return 'http://192.168.1.13:8081'; // Android Emulator host access
     }
     return 'http://localhost:8081'; // iOS Simulator / Desktop
   }

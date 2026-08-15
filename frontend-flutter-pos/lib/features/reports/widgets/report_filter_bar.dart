@@ -301,7 +301,7 @@ class _ReportFilterBarState extends State<ReportFilterBar> {
               ),
             ),
             if (selected)
-              const Icon(Icons.check, size: 16, color: PosTheme.primaryGreenDark),
+              Icon(Icons.check, size: 16, color: PosTheme.primaryGreenDark),
           ],
         ),
       ),

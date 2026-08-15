@@ -242,7 +242,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   bool _preparingPrint = false;
   List<CartItem> _savedSaleItems = [];
   bool _isSubmitting = false;
-  String _currency = 'USD';
+  String _currency = 'KHR';
 
   // Cash tendered by the customer for a full-amount cash payment, converted
   // into the store's currency (`_currency`). `widget.total` already
@@ -789,9 +789,9 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
           inputFormatters: [
             FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}'))
           ],
-          decoration: const InputDecoration(
-            prefixText: '\$ ',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            prefixText: '${currencySymbol(_currency)} ',
+            border: const OutlineInputBorder(),
           ),
           autofocus: true,
         ),
@@ -974,7 +974,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                 color: PosTheme.primaryGreen.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(6)),
             child: Text('${item.qty}',
-                style: const TextStyle(
+                style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 12,
                     color: PosTheme.primaryGreen)),
@@ -1049,8 +1049,14 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   // ═══════════════════════════════════════════════════════════════
   Widget _rightIdle() => Container(
         color: PosTheme.backgroundPageOf(context),
-        child: Column(children: [
-          const Spacer(flex: 1),
+        // Scrollable so the cash field, quick-cash chips and action buttons
+        // remain reachable instead of overflowing when the keyboard opens
+        // and shrinks the available height (Spacers below can only shrink
+        // to zero — they can't reclaim space from the fixed-height content).
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Column(children: [
+          const SizedBox(height: 8),
           // ── Large total ──
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 28),
@@ -1066,7 +1072,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                       fontSize: 14, color: PosTheme.textSecondaryOf(context))),
             ]),
           ),
-          const Spacer(flex: 1),
+          const SizedBox(height: 24),
           // ── Cash received + change calculator ──
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -1298,8 +1304,9 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
               ),
             ),
           ),
-          const Spacer(flex: 2),
+          const SizedBox(height: 24),
         ]),
+        ),
       );
 
   // ═══════════════════════════════════════════════════════════════
@@ -1466,16 +1473,16 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                             size: 14, color: PosTheme.primaryGreen),
                         const SizedBox(width: 4),
                         Text(sp.method.label(context.l10n),
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
                                 color: PosTheme.primaryGreen)),
                         const Spacer(),
-                        const Icon(Icons.check_circle,
+                        Icon(Icons.check_circle,
                             size: 13, color: PosTheme.primaryGreen),
                         const SizedBox(width: 3),
                         Text(context.l10n.receiptPaid,
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
                                 color: PosTheme.primaryGreen)),
@@ -1595,7 +1602,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
             child: Text(
               context.l10n.paymentScreenWaitingNumber(
                   widget.waitingNumber.toString().padLeft(3, '0')),
-              style: const TextStyle(
+              style: TextStyle(
                 color: PosTheme.primaryGreen,
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
@@ -1844,8 +1851,8 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
               ),
             ),
           ] else
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 32),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 32),
               child: CircularProgressIndicator(color: PosTheme.primaryGreen),
             ),
         ],

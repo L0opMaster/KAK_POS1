@@ -201,7 +201,7 @@ class _UnitManagementScreenState extends ConsumerState<UnitManagementScreen> {
                 alignment: Alignment.center,
                 child: Text(
                   unit.symbol.isEmpty ? '?' : unit.symbol,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w700,
                     color: PosTheme.primaryGreen,
                   ),

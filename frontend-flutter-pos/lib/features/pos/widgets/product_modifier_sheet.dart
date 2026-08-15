@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/config/currency_utils.dart';
 import '../../../core/config/pos_theme.dart';
 import '../../../core/providers/language_provider.dart';
 import '../../../core/utils/bilingual.dart';
@@ -120,6 +121,7 @@ class _ProductModifierSheetState extends ConsumerState<ProductModifierSheet> {
     final product = widget.product;
     final lineTotal = (product.price + _selectedDelta) * _qty;
     final lang = ref.watch(appLanguageProvider);
+    final cur = watchCurrency(ref);
 
     return Container(
       padding: EdgeInsets.only(
@@ -151,13 +153,13 @@ class _ProductModifierSheetState extends ConsumerState<ProductModifierSheet> {
                             child: Image.network(
                               product.imageUrl!,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => const Icon(
+                              errorBuilder: (_, __, ___) => Icon(
                                   Icons.inventory_2,
                                   color: PosTheme.primaryGreen,
                                   size: 28),
                             ),
                           )
-                        : const Icon(Icons.inventory_2,
+                        : Icon(Icons.inventory_2,
                             color: PosTheme.primaryGreen, size: 28),
                   ),
                   const SizedBox(width: 16),
@@ -175,8 +177,8 @@ class _ProductModifierSheetState extends ConsumerState<ProductModifierSheet> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '\$${product.price.toStringAsFixed(2)}',
-                          style: const TextStyle(
+                          formatAmount(product.price, cur),
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
                             color: PosTheme.primaryGreen,
@@ -195,7 +197,8 @@ class _ProductModifierSheetState extends ConsumerState<ProductModifierSheet> {
 
               // ── Modifier groups ──
               if (product.modifierGroups.isNotEmpty) ...[
-                ...product.modifierGroups.map(_buildGroupSection),
+                ...product.modifierGroups
+                    .map((g) => _buildGroupSection(g, cur)),
               ],
 
               // ── Quantity stepper ──
@@ -278,7 +281,7 @@ class _ProductModifierSheetState extends ConsumerState<ProductModifierSheet> {
                             style: TextStyle(
                                 fontSize: 12,
                                 color: PosTheme.textSecondaryOf(context))),
-                        Text('\$${lineTotal.toStringAsFixed(2)}',
+                        Text(formatAmount(lineTotal, cur),
                             style: TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.w800,
@@ -336,7 +339,7 @@ class _ProductModifierSheetState extends ConsumerState<ProductModifierSheet> {
     );
   }
 
-  Widget _buildGroupSection(ModifierGroupResponse group) {
+  Widget _buildGroupSection(ModifierGroupResponse group, String cur) {
     final selectedIds = _selections[group.id] ?? const <int>{};
     final lang = ref.watch(appLanguageProvider);
     return Padding(
@@ -393,8 +396,8 @@ class _ProductModifierSheetState extends ConsumerState<ProductModifierSheet> {
                 final priceLabel = option.priceDelta == 0
                     ? ''
                     : (option.priceDelta > 0
-                        ? '+\$${option.priceDelta.toStringAsFixed(2)}'
-                        : '-\$${option.priceDelta.abs().toStringAsFixed(2)}');
+                        ? '+${formatAmount(option.priceDelta, cur)}'
+                        : '-${formatAmount(option.priceDelta.abs(), cur)}');
                 if (group.multiSelect) {
                   return CheckboxListTile(
                     dense: true,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/config/currency_utils.dart';
 import '../../../core/config/pos_theme.dart';
 import '../../../core/utils/l10n_extensions.dart';
 import '../models/cart_models.dart';
@@ -37,7 +38,7 @@ class _OpenTicketPageState extends ConsumerState<OpenTicketPage> {
                 color: PosTheme.primaryGreenLight,
                 borderRadius: BorderRadius.circular(PosTheme.radiusMedium),
               ),
-              child: const Icon(Icons.history,
+              child: Icon(Icons.history,
                   color: PosTheme.primaryGreen, size: 18),
             ),
             const SizedBox(width: 12),
@@ -52,7 +53,7 @@ class _OpenTicketPageState extends ConsumerState<OpenTicketPage> {
                 ),
                 child: Text(
                   '${state.tickets.length}',
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: PosTheme.primaryGreen),
@@ -136,6 +137,7 @@ class _TicketCard extends ConsumerWidget {
         ) ??
         0;
     final timeAgo = _timeAgo(context, ticket.createdAt);
+    final cur = watchCurrency(ref);
 
     return Card(
       elevation: 0,
@@ -153,7 +155,7 @@ class _TicketCard extends ConsumerWidget {
             color: PosTheme.primaryGreenLight,
             borderRadius: BorderRadius.circular(PosTheme.radiusMedium),
           ),
-          child: const Icon(Icons.receipt_long,
+          child: Icon(Icons.receipt_long,
               color: PosTheme.primaryGreen, size: 22),
         ),
         title: Row(
@@ -211,7 +213,7 @@ class _TicketCard extends ConsumerWidget {
                     decoration: const BoxDecoration(
                         shape: BoxShape.circle, color: PosTheme.textHint)),
               ],
-              Text('\$${total.toStringAsFixed(2)}',
+              Text(formatAmount(total, cur),
                   style: const TextStyle(
                       fontSize: 12, fontWeight: FontWeight.w600)),
               if (timeAgo != null) ...[
@@ -237,7 +239,7 @@ class _TicketCard extends ConsumerWidget {
               ),
               child: IconButton(
                 onPressed: onRestore,
-                icon: const Icon(Icons.restore,
+                icon: Icon(Icons.restore,
                     size: 20, color: PosTheme.primaryGreen),
                 tooltip: context.l10n.openTicketPageRestore,
               ),

@@ -62,7 +62,7 @@ class QtyStepper extends StatelessWidget {
               width: 32,
               height: 32,
               alignment: Alignment.center,
-              child: const Icon(
+              child: Icon(
                 Icons.add,
                 size: 16,
                 color: PosTheme.primaryGreen,

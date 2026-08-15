@@ -259,7 +259,7 @@ class _CashierPerformanceScreenState
                   children: [
                     Row(
                       children: [
-                        const CircleAvatar(
+                        CircleAvatar(
                           radius: 18,
                           backgroundColor: PosTheme.backgroundPage,
                           child: Icon(Icons.person_rounded,
@@ -276,7 +276,7 @@ class _CashierPerformanceScreenState
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text('\$${_fmtNum(c.salesTotal)}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: PosTheme.primaryGreen,
                                     fontSize: 15)),

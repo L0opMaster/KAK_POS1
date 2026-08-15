@@ -24,6 +24,11 @@ import 'waiting_tickets_dialog.dart';
 class CartPanel extends ConsumerWidget {
   const CartPanel({super.key});
 
+  // Header content is a fixed 34px icon/chip row in 10px vertical padding
+  // (~54px natural), with generous headroom for larger accessibility text
+  // scales.
+  static const double _headerHeightReserve = 72;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final CartState cart = ref.watch(cartProvider);
@@ -33,25 +38,44 @@ class CartPanel extends ConsumerWidget {
       children: [
         ColoredBox(
           color: PosTheme.backgroundPageOf(context),
-          child: Column(
-            children: [
-              _buildHeader(
-                context: context,
-                ref: ref,
-                cart: cart,
-                notifier: notifier,
-              ),
-              Expanded(
-                child: CartItemsList(
-                  items: cart.items,
-                  notifier: notifier,
-                ),
-              ),
-              CartTotals(
-                cart: cart,
-                notifier: notifier,
-              ),
-            ],
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return Column(
+                children: [
+                  _buildHeader(
+                    context: context,
+                    ref: ref,
+                    cart: cart,
+                    notifier: notifier,
+                  ),
+                  Expanded(
+                    child: CartItemsList(
+                      items: cart.items,
+                      notifier: notifier,
+                    ),
+                  ),
+                  // CartTotals is not wrapped in Expanded/Flexible, so as a
+                  // plain Column child it would otherwise get an unbounded
+                  // height constraint and simply render at its full natural
+                  // content height — overflowing (rather than scrolling)
+                  // whenever the panel is shorter than that, e.g. with the
+                  // on-screen keyboard open. Capping it here (reserving
+                  // _headerHeightReserve for the header above) gives its
+                  // internal SingleChildScrollView a real bound to shrink
+                  // and scroll within instead.
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: (constraints.maxHeight - _headerHeightReserve)
+                          .clamp(0, double.infinity),
+                    ),
+                    child: CartTotals(
+                      cart: cart,
+                      notifier: notifier,
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
 
@@ -60,7 +84,7 @@ class CartPanel extends ConsumerWidget {
           Positioned.fill(
             child: ColoredBox(
               color: Colors.black.withOpacity(0.15),
-              child: const Center(
+              child: Center(
                 child: CircularProgressIndicator(
                   strokeWidth: 3,
                   color: PosTheme.primaryGreen,
@@ -145,7 +169,7 @@ class CartPanel extends ConsumerWidget {
       ),
       decoration: BoxDecoration(
         color: PosTheme.primaryGreen,
-        border: const Border(
+        border: Border(
           bottom: BorderSide(
             color: PosTheme.primaryGreenDark,
             width: 1,

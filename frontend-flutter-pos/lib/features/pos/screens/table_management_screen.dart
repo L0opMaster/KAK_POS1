@@ -20,8 +20,7 @@ class TableManagementScreen extends ConsumerStatefulWidget {
       _TableManagementScreenState();
 }
 
-class _TableManagementScreenState
-    extends ConsumerState<TableManagementScreen> {
+class _TableManagementScreenState extends ConsumerState<TableManagementScreen> {
   static const int _pageSize = 6;
 
   final TextEditingController _searchCtl = TextEditingController();
@@ -111,8 +110,7 @@ class _TableManagementScreenState
         return AlertDialog(
           title: Text(context.l10n.tableManagementDeleteTablesTitle),
           content: Text(
-            context.l10n
-                .tableManagementDeleteTablesMessage('$numberSelected'),
+            context.l10n.tableManagementDeleteTablesMessage('$numberSelected'),
           ),
           actions: [
             TextButton(
@@ -154,9 +152,7 @@ class _TableManagementScreenState
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content:
-                Text(context.l10n.tableManagementDeleteFailed('$e'))),
+        SnackBar(content: Text(context.l10n.tableManagementDeleteFailed('$e'))),
       );
     }
   }
@@ -165,37 +161,41 @@ class _TableManagementScreenState
   Widget build(BuildContext context) {
     final state = ref.watch(tableProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(context.l10n.navTables),
-        elevation: 0.5,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: context.l10n.commonRefresh,
-            onPressed: _refresh,
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(context.l10n.navTables),
+          elevation: 0.5,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              tooltip: context.l10n.commonRefresh,
+              onPressed: _refresh,
+            ),
+          ],
+        ),
+        body: SafeArea(
+          child: state.when(
+            data: (page) {
+              final tables = page.content;
+
+              final isSearching = _searchCtl.text.trim().isNotEmpty;
+              if (!isSearching && tables.isEmpty && _hasLoadedOnce) {
+                return _buildEmptyState();
+              }
+
+              return _buildTableList(tables, loading: false);
+            },
+            loading: () {
+              if (!_hasLoadedOnce) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              return _buildTableList(const [], loading: true);
+            },
+            error: (error, _) => _buildErrorState('$error'),
           ),
-        ],
-      ),
-      body: SafeArea(
-        child: state.when(
-          data: (page) {
-            final tables = page.content;
-
-            final isSearching = _searchCtl.text.trim().isNotEmpty;
-            if (!isSearching && tables.isEmpty && _hasLoadedOnce) {
-              return _buildEmptyState();
-            }
-
-            return _buildTableList(tables, loading: false);
-          },
-          loading: () {
-            if (!_hasLoadedOnce) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            return _buildTableList(const [], loading: true);
-          },
-          error: (error, _) => _buildErrorState('$error'),
         ),
       ),
     );
@@ -251,7 +251,8 @@ class _TableManagementScreenState
                       ),
                       const SizedBox(width: 12),
                       IconButton(
-                        tooltip: context.l10n.tableManagementDeleteSelectedTooltip,
+                        tooltip:
+                            context.l10n.tableManagementDeleteSelectedTooltip,
                         onPressed: _selectedTableIds.isEmpty
                             ? null
                             : _deleteSelectedTables,
@@ -639,7 +640,8 @@ class _TableManagementScreenState
                     Text(
                       context.l10n.tableManagementEmptyStateDescription,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 18, color: Colors.black54),
+                      style:
+                          const TextStyle(fontSize: 18, color: Colors.black54),
                     ),
                     const SizedBox(height: 28),
                     ElevatedButton.icon(

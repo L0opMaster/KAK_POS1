@@ -173,39 +173,43 @@ class _CustomerManagementScreenState
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(customerProvider);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(context.l10n.navCustomers),
-        elevation: 0.5,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: context.l10n.commonRefresh,
-            onPressed: _refresh,
-          ),
-        ],
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(context.l10n.navCustomers),
+          elevation: 0.5,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              tooltip: context.l10n.commonRefresh,
+              onPressed: _refresh,
+            ),
+          ],
+        ),
+        body: SafeArea(child: Builder(builder: (context) {
+          if (!_hasLoadedOnce) {
+            if (state.loading) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (state.error != null) {
+              return _buildErrorState(state.error!);
+            }
+          }
+
+          final isSearching = _searchCtl.text.trim().isNotEmpty;
+
+          if (!state.loading && !isSearching && state.customers.isEmpty) {
+            if (state.error != null) {
+              return _buildErrorState(state.error!);
+            }
+            return _buildEmptyState();
+          }
+
+          return _buildCustomerList(state.customers, loading: state.loading);
+        })),
       ),
-      body: SafeArea(child: Builder(builder: (context) {
-        if (!_hasLoadedOnce) {
-          if (state.loading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (state.error != null) {
-            return _buildErrorState(state.error!);
-          }
-        }
-
-        final isSearching = _searchCtl.text.trim().isNotEmpty;
-
-        if (!state.loading && !isSearching && state.customers.isEmpty) {
-          if (state.error != null) {
-            return _buildErrorState(state.error!);
-          }
-          return _buildEmptyState();
-        }
-
-        return _buildCustomerList(state.customers, loading: state.loading);
-      })),
     );
   }
 
@@ -259,8 +263,8 @@ class _CustomerManagementScreenState
                       ),
                       const SizedBox(width: 12),
                       IconButton(
-                        tooltip:
-                            context.l10n.customerManagementDeleteSelectedTooltip,
+                        tooltip: context
+                            .l10n.customerManagementDeleteSelectedTooltip,
                         onPressed: _selectedCustomerIds.isEmpty
                             ? null
                             : _deleteSelectedCustomers,
@@ -516,9 +520,8 @@ class _CustomerManagementScreenState
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: isOverdue
-                          ? PosTheme.errorRed
-                          : PosTheme.warningAmber,
+                      color:
+                          isOverdue ? PosTheme.errorRed : PosTheme.warningAmber,
                     ),
                   ),
                 ),
@@ -530,16 +533,15 @@ class _CustomerManagementScreenState
                     Navigator.of(context).pop();
                   },
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     backgroundColor: PosTheme.primaryGreen,
                     foregroundColor: Colors.white,
                     textStyle: const TextStyle(
                         fontSize: 12, fontWeight: FontWeight.w600),
                     minimumSize: Size.zero,
                     shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(PosTheme.radiusSmall),
+                      borderRadius: BorderRadius.circular(PosTheme.radiusSmall),
                     ),
                   ),
                   child: Text(context.l10n.commonSelect),
@@ -730,8 +732,7 @@ class CustomerFormScreen extends ConsumerStatefulWidget {
   const CustomerFormScreen({super.key, this.customer});
 
   @override
-  ConsumerState<CustomerFormScreen> createState() =>
-      _CustomerFormScreenState();
+  ConsumerState<CustomerFormScreen> createState() => _CustomerFormScreenState();
 }
 
 class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
@@ -1056,7 +1057,7 @@ class _CustomerDetailScreenState extends ConsumerState<_CustomerDetailScreen> {
                     color: PosTheme.primaryGreen.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.person,
+                  child: Icon(Icons.person,
                       color: PosTheme.primaryGreen, size: 26),
                 ),
                 const SizedBox(width: 12),
@@ -1198,8 +1199,8 @@ class _CustomerDetailScreenState extends ConsumerState<_CustomerDetailScreen> {
         Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: Text(context.l10n.customerManagementPurchaseHistoryTitle,
-              style: const TextStyle(
-                  fontWeight: FontWeight.w700, fontSize: 16)),
+              style:
+                  const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
         ),
         ..._history.map((sale) {
           final id = sale['saleId'] ?? sale['id'];
@@ -1220,7 +1221,7 @@ class _CustomerDetailScreenState extends ConsumerState<_CustomerDetailScreen> {
               subtitle: Text(
                   '${date.length >= 10 ? date.substring(0, 10) : date} · $status'),
               trailing: Text('\$${total.toStringAsFixed(2)}',
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontWeight: FontWeight.w700,
                       color: PosTheme.primaryGreen)),
             ),
