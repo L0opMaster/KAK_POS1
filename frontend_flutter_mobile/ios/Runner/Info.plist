@@ -30,6 +30,16 @@
 	     same usage string frontend_flutter_barcode_scanner already uses. -->
 	<key>NSCameraUsageDescription</key>
 	<string>Camera access is needed to scan barcodes.</string>
+	<!-- Added Day 15 for NetworkPrinterTransport (raw TCP socket to a
+	     network thermal printer on the local Wi-Fi) — confirmed absent
+	     from frontend-flutter-pos too, genuinely new for both projects. -->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Used to connect to your receipt printer on the local network.</string>
+	<!-- Added Day 16 for BluetoothPrinterTransport (classic Bluetooth
+	     connection to a paired thermal printer) — confirmed absent from
+	     frontend-flutter-pos too, genuinely new for both projects. -->
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Used to connect to your receipt printer over Bluetooth.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

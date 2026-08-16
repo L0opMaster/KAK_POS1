@@ -87,7 +87,7 @@ class _CashierPerformanceScreenState
     try {
       final company =
           await ref.read(settingsServiceProvider).getCompanyProfile();
-      final cur = currencySymbol(readCurrency(ref));
+      final cur = readCurrency(ref);
 
       final svc = ref.read(reportServiceProvider);
       final allRows = await fetchAllPages<CashierPerformance>(
@@ -113,7 +113,7 @@ class _CashierPerformanceScreenState
           .map((c) => [
                 c.cashierName,
                 '${c.salesCount}',
-                '$cur${_fmtNum(c.salesTotal)}',
+                formatAmount(c.salesTotal, cur),
               ])
           .toList();
 
@@ -138,7 +138,7 @@ class _CashierPerformanceScreenState
         },
         summary: [
           MapEntry(l10n.reportsTransactions, '$totalCount'),
-          MapEntry(l10n.receiptTotal, '$cur${_fmtNum(totalSales)}'),
+          MapEntry(l10n.receiptTotal, formatAmount(totalSales, cur)),
         ],
         generatedAt: DateTime.now(),
         generatedLabel: l10n.reportPdfGeneratedLabel,
@@ -218,6 +218,7 @@ class _CashierPerformanceScreenState
       );
 
   Widget _buildContent() {
+    final cur = watchCurrency(ref);
     final maxSales =
         _rows.fold<double>(0, (m, c) => m > c.salesTotal ? m : c.salesTotal);
     final chartData =
@@ -241,7 +242,8 @@ class _CashierPerformanceScreenState
                   color: PosTheme.textPrimary,
                   fontSize: 15)),
           const SizedBox(height: 8),
-          ReportBarChart(data: chartData, valuePrefix: '\$'),
+          ReportBarChart(
+              data: chartData, valueFormatter: (v) => formatAmount(v, cur)),
           const SizedBox(height: 16),
           ..._rows.map((c) {
             final bar = maxSales > 0 ? c.salesTotal / maxSales : 0.0;
@@ -275,7 +277,7 @@ class _CashierPerformanceScreenState
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            Text('\$${_fmtNum(c.salesTotal)}',
+                            Text(formatAmount(c.salesTotal, cur),
                                 style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: PosTheme.primaryGreen,
@@ -309,6 +311,4 @@ class _CashierPerformanceScreenState
       ],
     );
   }
-
-  String _fmtNum(double v) => v.toStringAsFixed(2);
 }

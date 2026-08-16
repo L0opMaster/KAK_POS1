@@ -47,6 +47,9 @@ class ReceiptLabels {
     required this.emptyCart,
     required this.telFormat,
     required this.exchangeRateValueFormat,
+    required this.dueDate,
+    required this.remaining,
+    required this.creditStatus,
   });
 
   factory ReceiptLabels.fromL10n(AppLocalizations l10n) => ReceiptLabels(
@@ -75,6 +78,9 @@ class ReceiptLabels {
         emptyCart: l10n.posEmptyCart,
         telFormat: l10n.receiptsScreenTelLabel,
         exchangeRateValueFormat: l10n.receiptsScreenExchangeRateValue,
+        dueDate: l10n.paymentScreenCreditDueLabel,
+        remaining: l10n.creditRepaymentRemainingLabel,
+        creditStatus: l10n.paymentScreenCreditStatusLabel,
       );
 
   final String invoiceNumber;
@@ -108,6 +114,12 @@ class ReceiptLabels {
   /// e.g. "1 USD = {rate} KHR" — needs the actual formatted rate.
   final String Function(Object rate) exchangeRateValueFormat;
 
+  /// Credit sale section — only rendered when [ReceiptViewModel.creditStatus]
+  /// is non-null (see `print_service.dart`/`escpos_receipt_builder.dart`).
+  final String dueDate;
+  final String remaining;
+  final String creditStatus;
+
   /// English fallback — used only where no [AppLocalizations] is available
   /// at all (there is currently no such call site in production code; this
   /// exists so a future test fixture or offline code path never crashes
@@ -139,6 +151,9 @@ class ReceiptLabels {
     emptyCart: 'Cart is empty',
     telFormat: _fallbackTel,
     exchangeRateValueFormat: _fallbackRate,
+    dueDate: 'Due',
+    remaining: 'Remaining Balance',
+    creditStatus: 'Status',
   );
 
   static String _fallbackTel(Object phone) => 'Tel: $phone';

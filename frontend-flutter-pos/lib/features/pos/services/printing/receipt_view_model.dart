@@ -6,6 +6,7 @@ import '../../../../core/utils/receipt_date_format.dart';
 import '../../../../l10n/generated/app_localizations.dart';
 import '../../models/cart_models.dart';
 import '../../models/receipt_models.dart';
+import '../../utils/credit_status.dart';
 import 'receipt_labels.dart';
 
 /// One printable line item, already localized and formatted — the on-screen
@@ -105,6 +106,10 @@ class ReceiptViewModel {
     required this.footer,
     this.paymentMethodLabel,
     this.labels = ReceiptLabels.fallback,
+    this.creditDueAt,
+    this.creditStatus,
+    this.creditStatusDisplay,
+    this.remainingBalance,
   });
 
   final AppLanguage language;
@@ -141,6 +146,26 @@ class ReceiptViewModel {
   /// Field labels for this receipt's UI language — see `receipt_labels.dart`
   /// for why every renderer reads from here instead of hardcoding English.
   final ReceiptLabels labels;
+
+  /// Already-formatted (see [date]/[time]) due date for a credit sale —
+  /// null for a sale that was never a credit sale.
+  final String? creditDueAt;
+
+  /// OPEN|PARTIALLY_PAID|PAID|OVERDUE|EXPIRED|CANCELLED, computed
+  /// server-side — null for a sale that was never a credit sale. Printers
+  /// render a "Credit" section only when this is non-null (see
+  /// `print_service.dart`/`escpos_receipt_builder.dart`).
+  final String? creditStatus;
+
+  /// [creditStatus], already localized for display — see
+  /// `utils/credit_status.dart`'s `creditStatusLabel`, resolved once here
+  /// (this class's factories are the only place with an `AppLocalizations`)
+  /// same reasoning as [labels] above.
+  final String? creditStatusDisplay;
+
+  /// total - paidAmount for this sale — only meaningful (and only rendered)
+  /// alongside [creditStatus].
+  final double? remainingBalance;
 
   /// Whether this receipt has any Khmer text in it (Khmer UI language, or a
   /// Khmer-only line/customer/business name) — the printing pipeline uses
@@ -262,6 +287,14 @@ class ReceiptViewModel {
       paymentMethodLabel:
           r.payments.isNotEmpty ? r.payments.first.method : null,
       labels: ReceiptLabels.fromL10n(l10n),
+      creditDueAt: () {
+        final dt = parseBackendTimestamp(r.creditDueAt);
+        return dt != null ? formatReceiptDate(dt) : null;
+      }(),
+      creditStatus: r.creditStatus,
+      creditStatusDisplay:
+          r.creditStatus != null ? creditStatusLabel(l10n, r.creditStatus) : null,
+      remainingBalance: r.remainingBalance,
     );
   }
 

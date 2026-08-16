@@ -5,12 +5,16 @@ import '../../core/config/pos_theme.dart';
 import '../../core/dev/theme_demo_screen.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/utils/l10n_extensions.dart';
+import '../inventory/screens/mobile_inventory_hub_screen.dart';
 import '../pos/screens/customer_picker_screen.dart';
 import '../pos/screens/held_tickets_screen.dart';
 import '../pos/screens/pos_register_screen.dart';
 import '../pos/screens/receipts_screen.dart';
 import '../pos/screens/shift_screen.dart';
 import '../pos/screens/table_picker_screen.dart';
+import '../pos/widgets/cart_fab.dart';
+import '../reports/screens/mobile_reports_hub_screen.dart';
+import '../settings/screens/mobile_settings_screen.dart';
 
 /// Which bottom-nav tab is currently showing (index into this file's
 /// `destinations` list, Register = 0). This is the ONLY correct way for a
@@ -42,10 +46,11 @@ final shellTabIndexProvider = StateProvider<int>((ref) => 0);
 /// DAY_05.md section 10), not an invented pattern: bottom navigation for
 /// the handful of destinations a cashier actually uses many times a shift
 /// (Register, Tables, Tickets), and a "More" tab standing in for the
-/// drawer's overflow items (Customers, Shifts, Settings, ...), which this
-/// task and Days 6-10 will fill in incrementally. Destinations not yet
-/// built by a completed day render `_ComingSoon`, clearly labelled with
-/// which day owns them — never silently faked as finished.
+/// drawer's overflow items (Customers, Shifts, Inventory, Reports,
+/// Settings, ...), filled in incrementally across Days 6-19. The last
+/// placeholder (Settings) was replaced Day 19 — every More-tab
+/// destination is now real; the `_ComingSoon` fallback this comment used
+/// to describe has been removed as dead code along with it.
 class MobileShellScreen extends ConsumerWidget {
   const MobileShellScreen({super.key});
 
@@ -92,6 +97,10 @@ class MobileShellScreen extends ConsumerWidget {
         index: index,
         children: [for (final d in destinations) d.body],
       ),
+      // Cart is a FAB, shown only on the Register tab (index 0) — see
+      // `CartFab`'s own doc comment for why it can't live on
+      // `PosRegisterScreen` itself (that screen has no Scaffold).
+      floatingActionButton: index == 0 ? const CartFab() : null,
       bottomNavigationBar: NavigationBar(
         selectedIndex: index,
         onDestinationSelected: (i) =>
@@ -152,6 +161,31 @@ class _MoreTab extends ConsumerWidget {
           ),
         ),
         ListTile(
+          leading: const Icon(Icons.inventory_2_outlined),
+          title: Text(l10n.posDrawerInventoryManagement),
+          // MODIFIED Day 17: opens the real inventory hub (Stock Lookup,
+          // Purchase/Transfer Orders, Stock Adjustments, Inventory Counts,
+          // Productions, Suppliers, Inventory History, Inventory
+          // Valuation) — same 9 destinations as source's drawer section.
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const MobileInventoryHubScreen(),
+            ),
+          ),
+        ),
+        ListTile(
+          leading: const Icon(Icons.bar_chart_outlined),
+          title: Text(l10n.navReports),
+          // MODIFIED Day 18: opens the real reports hub (12 destinations
+          // across 4 sections — Sales Reports, Other Reports, Performance,
+          // Inventory — matching source's `reports_hub_screen.dart`).
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const MobileReportsHubScreen(),
+            ),
+          ),
+        ),
+        ListTile(
           leading: const Icon(Icons.schedule_outlined),
           title: Text(l10n.navShifts),
           // MODIFIED Day 10: opens the real shift management screen (Manage
@@ -164,11 +198,14 @@ class _MoreTab extends ConsumerWidget {
         ListTile(
           leading: const Icon(Icons.settings_outlined),
           title: Text(l10n.navSettings),
-          subtitle: const Text('Not in this task\'s Day 4-10 scope'),
-          onTap: () => _openComingSoon(
-            context,
-            'a later day (Settings is Day 19 scope)',
-            l10n.navSettings,
+          // MODIFIED Day 19: opens the real settings menu (Company
+          // Profile, General incl. Main Color/Dark Mode/Language, Tax,
+          // Printers incl. the thermal transport config, Payment
+          // Methods, Currencies, POS Settings).
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const MobileSettingsScreen(),
+            ),
           ),
         ),
         const Divider(),
@@ -190,57 +227,6 @@ class _MoreTab extends ConsumerWidget {
           onTap: () => ref.read(authProvider.notifier).logout(),
         ),
       ],
-    );
-  }
-
-  void _openComingSoon(BuildContext context, String day, String feature) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => _ComingSoon(day: day, feature: feature),
-      ),
-    );
-  }
-}
-
-/// Explicit placeholder for a destination not yet built by an earlier day
-/// in this task — never silently rendered as if it were the real screen.
-class _ComingSoon extends StatelessWidget {
-  const _ComingSoon({required this.day, required this.feature});
-
-  final String day;
-  final String feature;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(feature)),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(PosTheme.spacingXl),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.construction_outlined,
-                size: 48,
-                color: PosTheme.textHintOf(context),
-              ),
-              const SizedBox(height: PosTheme.spacingMd),
-              Text(
-                '$feature is not implemented yet.',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: PosTheme.spacingSm),
-              Text(
-                'Planned for $day.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: PosTheme.textSecondaryOf(context)),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

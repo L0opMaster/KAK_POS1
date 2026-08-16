@@ -843,7 +843,7 @@ class PosDrawer extends ConsumerWidget {
       final svc = ref.read(reportServiceProvider);
       final company =
           await ref.read(settingsServiceProvider).getCompanyProfile();
-      final cur = currencySymbol(readCurrency(ref));
+      final cur = readCurrency(ref);
 
       SalesReportSummary? summary;
       final allSales = await fetchAllPages<SalesDetail>(
@@ -865,7 +865,7 @@ class PosDrawer extends ConsumerWidget {
                 sale.saleDate ?? '',
                 sale.cashierName ?? '',
                 sale.paymentMethod ?? '',
-                '$cur${sale.netAmount.toStringAsFixed(2)}',
+                formatAmount(sale.netAmount, cur),
               ])
           .toList();
 

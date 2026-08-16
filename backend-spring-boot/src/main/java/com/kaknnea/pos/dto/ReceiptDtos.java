@@ -65,6 +65,14 @@ public class ReceiptDtos {
         private BigDecimal oldBalance;
         private BigDecimal totalBalance;
         private String status;
+        /** ISO-8601 instant this credit sale is due — null for a non-credit sale. */
+        private String creditDueAt;
+        /** ISO-8601 instant the credit agreement expires — null if unset/non-credit. */
+        private String creditExpiresAt;
+        /** OPEN|PARTIALLY_PAID|PAID|OVERDUE|EXPIRED|CANCELLED — null for a non-credit sale. */
+        private String creditStatus;
+        /** total - paidAmount for THIS sale (not the customer's whole account balance). */
+        private BigDecimal remainingBalance;
         private String qrImageData;
         private String logoUrl;
 

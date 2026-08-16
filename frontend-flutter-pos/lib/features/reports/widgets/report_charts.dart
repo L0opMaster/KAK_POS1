@@ -44,12 +44,14 @@ class ReportBarChart extends StatelessWidget {
     super.key,
     required this.data,
     this.height = 220,
-    this.valuePrefix = '',
+    this.valueFormatter,
   });
 
   final List<ChartRow> data;
   final double height;
-  final String valuePrefix;
+  final String Function(double)? valueFormatter;
+
+  String _fmt(double v) => valueFormatter?.call(v) ?? v.toStringAsFixed(2);
 
   @override
   Widget build(BuildContext context) {
@@ -70,7 +72,7 @@ class ReportBarChart extends StatelessWidget {
               getTooltipItem: (group, groupIndex, rod, rodIndex) =>
                   BarTooltipItem(
                 '${data[group.x.toInt()].label}\n'
-                '$valuePrefix${rod.toY.toStringAsFixed(2)}',
+                '${_fmt(rod.toY)}',
                 const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -137,12 +139,14 @@ class ReportLineChart extends StatelessWidget {
     super.key,
     required this.data,
     this.height = 220,
-    this.valuePrefix = '',
+    this.valueFormatter,
   });
 
   final List<ChartRow> data;
   final double height;
-  final String valuePrefix;
+  final String Function(double)? valueFormatter;
+
+  String _fmt(double v) => valueFormatter?.call(v) ?? v.toStringAsFixed(2);
 
   @override
   Widget build(BuildContext context) {
@@ -204,7 +208,7 @@ class ReportLineChart extends StatelessWidget {
                 final i = s.x.toInt();
                 final label = (i >= 0 && i < data.length) ? data[i].label : '';
                 return LineTooltipItem(
-                  '$label\n$valuePrefix${s.y.toStringAsFixed(2)}',
+                  '$label\n${_fmt(s.y)}',
                   const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
@@ -242,12 +246,10 @@ class ReportPieChart extends StatelessWidget {
     super.key,
     required this.data,
     this.height = 220,
-    this.valuePrefix = '',
   });
 
   final List<ChartRow> data;
   final double height;
-  final String valuePrefix;
 
   @override
   Widget build(BuildContext context) {

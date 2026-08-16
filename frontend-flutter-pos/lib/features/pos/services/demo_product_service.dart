@@ -19,7 +19,7 @@ class DemoProductService extends ProductService {
     Product(
       id: 1, sku: 'BEV001', barcode: '880123456001',
       nameEn: 'Coffee Latte', nameKm: 'កាហ្វេឡាតេ',
-      price: 4.50, cost: 2.00, stock: 23,
+      price: 4.50, cost: 2.00, taxRate: 0, stock: 23,
       active: true, trackInventory: true, categoryId: 1,
       categoryNameEn: 'Beverages', categoryNameKm: 'ភេសជ្ជៈ',
       imageUrl: 'https://picsum.photos/seed/coffee-latte/400/400',
@@ -27,7 +27,7 @@ class DemoProductService extends ProductService {
     Product(
       id: 2, sku: 'BEV002', barcode: '880123456002',
       nameEn: 'Espresso', nameKm: 'អេស្ព្រេសសូ',
-      price: 3.00, cost: 1.20, stock: 45,
+      price: 3.00, cost: 1.20, taxRate: 0, stock: 45,
       active: true, trackInventory: true, categoryId: 1,
       categoryNameEn: 'Beverages', categoryNameKm: 'ភេសជ្ជៈ',
       imageUrl: 'https://picsum.photos/seed/espresso/400/400',
@@ -35,7 +35,7 @@ class DemoProductService extends ProductService {
     Product(
       id: 3, sku: 'BEV003', barcode: '880123456003',
       nameEn: 'Iced Matcha Latte', nameKm: 'ម៉ាចាឡាតេទឹកកក',
-      price: 5.50, cost: 2.50, stock: 18,
+      price: 5.50, cost: 2.50, taxRate: 0, stock: 18,
       active: true, trackInventory: true, categoryId: 1,
       categoryNameEn: 'Beverages', categoryNameKm: 'ភេសជ្ជៈ',
       imageUrl: 'https://picsum.photos/seed/matcha-latte/400/400',
@@ -43,7 +43,7 @@ class DemoProductService extends ProductService {
     Product(
       id: 4, sku: 'BEV004', barcode: '880123456004',
       nameEn: 'Fresh Juice', nameKm: 'ទឹកផ្លែឈើស្រស់',
-      price: 3.50, cost: 1.80, stock: 30,
+      price: 3.50, cost: 1.80, taxRate: 0, stock: 30,
       active: true, trackInventory: true, categoryId: 1,
       categoryNameEn: 'Beverages', categoryNameKm: 'ភេសជ្ជៈ',
       imageUrl: 'https://picsum.photos/seed/fresh-juice/400/400',
@@ -51,7 +51,7 @@ class DemoProductService extends ProductService {
     Product(
       id: 5, sku: 'BEV005', barcode: '880123456005',
       nameEn: 'Water Bottle', nameKm: 'ដបទឹក',
-      price: 1.00, cost: 0.40, stock: 100,
+      price: 1.00, cost: 0.40, taxRate: 0, stock: 100,
       active: true, trackInventory: true, categoryId: 1,
       categoryNameEn: 'Beverages', categoryNameKm: 'ភេសជ្ជៈ',
       imageUrl: 'https://picsum.photos/seed/water-bottle/400/400',
@@ -59,7 +59,7 @@ class DemoProductService extends ProductService {
     Product(
       id: 6, sku: 'FOOD001', barcode: '880123456006',
       nameEn: 'Ham & Cheese Sandwich', nameKm: 'សាំងវិច',
-      price: 6.50, cost: 3.00, stock: 12,
+      price: 6.50, cost: 3.00, taxRate: 0, stock: 12,
       active: true, trackInventory: true, categoryId: 2,
       categoryNameEn: 'Food', categoryNameKm: 'អាហារ',
       imageUrl: 'https://picsum.photos/seed/sandwich/400/400',
@@ -67,7 +67,7 @@ class DemoProductService extends ProductService {
     Product(
       id: 7, sku: 'FOOD002', barcode: '880123456007',
       nameEn: 'Caesar Salad', nameKm: 'សាឡាត់សេសារ',
-      price: 7.00, cost: 3.50, stock: 8,
+      price: 7.00, cost: 3.50, taxRate: 0, stock: 8,
       active: true, trackInventory: true, categoryId: 2,
       categoryNameEn: 'Food', categoryNameKm: 'អាហារ',
       imageUrl: 'https://picsum.photos/seed/caesar-salad/400/400',
@@ -75,7 +75,7 @@ class DemoProductService extends ProductService {
     Product(
       id: 8, sku: 'FOOD003', barcode: '880123456008',
       nameEn: 'Chicken Wrap', nameKm: 'វ្រាប់សាច់មាន់',
-      price: 5.75, cost: 2.80, stock: 15,
+      price: 5.75, cost: 2.80, taxRate: 0, stock: 15,
       active: true, trackInventory: true, categoryId: 2,
       categoryNameEn: 'Food', categoryNameKm: 'អាហារ',
       imageUrl: 'https://picsum.photos/seed/chicken-wrap/400/400',
@@ -83,7 +83,7 @@ class DemoProductService extends ProductService {
     Product(
       id: 9, sku: 'FOOD004', barcode: '880123456009',
       nameEn: 'Bagel with Cream Cheese', nameKm: 'បេហ្គែល',
-      price: 2.75, cost: 1.20, stock: 5,
+      price: 2.75, cost: 1.20, taxRate: 0, stock: 5,
       active: true, trackInventory: true, categoryId: 2,
       categoryNameEn: 'Food', categoryNameKm: 'អាហារ',
       imageUrl: 'https://picsum.photos/seed/bagel/400/400',
@@ -91,7 +91,7 @@ class DemoProductService extends ProductService {
     Product(
       id: 10, sku: 'SNK001', barcode: '880123456010',
       nameEn: 'Potato Chips', nameKm: 'បន្ទះសៀគ្វី',
-      price: 1.50, cost: 0.60, stock: 35,
+      price: 1.50, cost: 0.60, taxRate: 0, stock: 35,
       active: true, trackInventory: true, categoryId: 3,
       categoryNameEn: 'Snacks', categoryNameKm: 'អាហារសម្រន់',
       imageUrl: 'https://picsum.photos/seed/potato-chips/400/400',
@@ -99,7 +99,7 @@ class DemoProductService extends ProductService {
     Product(
       id: 11, sku: 'SNK002', barcode: '880123456011',
       nameEn: 'Chocolate Cookie', nameKm: 'ខូឃីសូកូឡា',
-      price: 2.00, cost: 0.80, stock: 20,
+      price: 2.00, cost: 0.80, taxRate: 0, stock: 20,
       active: true, trackInventory: true, categoryId: 3,
       categoryNameEn: 'Snacks', categoryNameKm: 'អាហារសម្រន់',
       imageUrl: 'https://picsum.photos/seed/cookie/400/400',
@@ -107,7 +107,7 @@ class DemoProductService extends ProductService {
     Product(
       id: 12, sku: 'SNK003', barcode: '880123456012',
       nameEn: 'Mixed Nuts', nameKm: 'គ្រាប់ធញ្ញជាតិ',
-      price: 3.25, cost: 1.50, stock: 18,
+      price: 3.25, cost: 1.50, taxRate: 0, stock: 18,
       active: true, trackInventory: true, categoryId: 3,
       categoryNameEn: 'Snacks', categoryNameKm: 'អាហារសម្រន់',
       imageUrl: 'https://picsum.photos/seed/mixed-nuts/400/400',
@@ -115,7 +115,7 @@ class DemoProductService extends ProductService {
     Product(
       id: 13, sku: 'SNK004', barcode: '880123456013',
       nameEn: 'Muffin', nameKm: 'ម៉ាហ្វាំង',
-      price: 2.50, cost: 1.00, stock: 4,
+      price: 2.50, cost: 1.00, taxRate: 0, stock: 4,
       active: true, trackInventory: true, categoryId: 3,
       categoryNameEn: 'Snacks', categoryNameKm: 'អាហារសម្រន់',
       imageUrl: 'https://picsum.photos/seed/muffin/400/400',
@@ -123,7 +123,7 @@ class DemoProductService extends ProductService {
     Product(
       id: 14, sku: 'MER001', barcode: '880123456014',
       nameEn: 'T-Shirt', nameKm: 'អាវយឺត',
-      price: 15.00, cost: 6.00, stock: 20,
+      price: 15.00, cost: 6.00, taxRate: 0, stock: 20,
       active: true, trackInventory: true, categoryId: 4,
       categoryNameEn: 'Merchandise', categoryNameKm: 'ទំនិញ',
       imageUrl: 'https://picsum.photos/seed/tshirt/400/400',
@@ -131,7 +131,7 @@ class DemoProductService extends ProductService {
     Product(
       id: 15, sku: 'MER002', barcode: '880123456015',
       nameEn: 'Reusable Tote Bag', nameKm: 'កាបូបក្រណាត់',
-      price: 8.00, cost: 3.50, stock: 25,
+      price: 8.00, cost: 3.50, taxRate: 0, stock: 25,
       active: true, trackInventory: true, categoryId: 4,
       categoryNameEn: 'Merchandise', categoryNameKm: 'ទំនិញ',
       imageUrl: 'https://picsum.photos/seed/tote-bag/400/400',
@@ -204,6 +204,7 @@ class DemoProductService extends ProductService {
       nameKm: product.nameKm,
       price: product.price,
       cost: product.cost,
+      taxRate: product.taxRate,
       stock: product.stock,
       active: product.active,
       trackInventory: product.trackInventory,

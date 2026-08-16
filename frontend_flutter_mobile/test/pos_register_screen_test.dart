@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:frontend_flutter_mobile/features/pos/providers/cart_provider.dart';
 import 'package:frontend_flutter_mobile/features/pos/screens/pos_register_screen.dart';
-import 'package:frontend_flutter_mobile/features/pos/widgets/cart_summary_bar.dart';
 import 'package:frontend_flutter_mobile/features/pos/widgets/product_grid.dart';
 
 import 'test_l10n_helper.dart';
@@ -75,8 +74,11 @@ void main() {
   });
 
   testWidgets(
-      'tapping a product adds it to the real cart and shows the summary bar',
+      'tapping a product adds it to the real cart',
       (tester) async {
+    // Cart access itself (CartFab) is hosted on MobileShellScreen's
+    // Scaffold, not PosRegisterScreen — see cart_fab_test.dart for that
+    // widget's own coverage (hidden when empty, shows count/total).
     final container = ProviderContainer();
     addTearDown(container.dispose);
 
@@ -89,8 +91,7 @@ void main() {
       ),
     ));
     await tester.pumpAndSettle();
-    expect(find.byType(CartSummaryBar), findsOneWidget);
-    expect(find.text('View Cart'), findsNothing); // empty cart -> hidden
+    expect(container.read(cartProvider).items, isEmpty);
 
     await tester.tap(find.text('Coffee Latte'));
     // Product card has its own 120ms press-animation delay before the tap
@@ -101,7 +102,6 @@ void main() {
     expect(container.read(cartProvider).items.length, 1);
     expect(container.read(cartProvider).items.single.product.nameEn,
         'Coffee Latte');
-    expect(find.text('View Cart'), findsOneWidget);
   });
 
   testWidgets('tapping the same product twice increments its quantity',

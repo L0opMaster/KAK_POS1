@@ -147,7 +147,14 @@ public class SettingsDtos {
 
     @Data
     public static class TaxSettingsRequest {
-        private double taxRate;
+        /**
+         * Nullable/boxed, not primitive — tax is per-product now (see
+         * Product.taxRate), so a client that only wants to change
+         * {@code showTax} sends no taxRate at all. A primitive here would
+         * deserialize a missing field as 0.0 and silently zero out the
+         * stored rate on every such save.
+         */
+        private Double taxRate;
         private Boolean showTax;
     }
 

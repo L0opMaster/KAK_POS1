@@ -87,8 +87,9 @@ public class SaleController {
 
     @PostMapping("/{id}/credit")
     @PreAuthorize("hasAuthority('PERM_POS_SALE')")
-    public SaleDtos.SaleResponse credit(@PathVariable Long id) {
-        return saleService.credit(id);
+    public SaleDtos.SaleResponse credit(@PathVariable Long id,
+            @RequestBody(required = false) SaleDtos.CreditRequest request) {
+        return saleService.credit(id, request);
     }
 
     @PostMapping("/{id}/confirm")

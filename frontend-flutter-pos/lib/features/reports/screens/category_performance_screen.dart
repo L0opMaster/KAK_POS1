@@ -94,7 +94,7 @@ class _CategoryPerformanceScreenState
     try {
       final company =
           await ref.read(settingsServiceProvider).getCompanyProfile();
-      final cur = currencySymbol(readCurrency(ref));
+      final cur = readCurrency(ref);
 
       final svc = ref.read(reportServiceProvider);
       final allRows = await fetchAllPages<CategoryPerformance>(
@@ -130,7 +130,7 @@ class _CategoryPerformanceScreenState
           .map((c) => [
                 label(c),
                 _fmtNum(c.quantity),
-                '$cur${_fmtNum(c.total)}',
+                formatAmount(c.total, cur),
               ])
           .toList();
 
@@ -151,7 +151,7 @@ class _CategoryPerformanceScreenState
         },
         summary: [
           MapEntry(l10n.cartQty, _fmtNum(totalQty)),
-          MapEntry(l10n.receiptTotal, '$cur${_fmtNum(grandTotal)}'),
+          MapEntry(l10n.receiptTotal, formatAmount(grandTotal, cur)),
         ],
         generatedAt: DateTime.now(),
         generatedLabel: l10n.reportPdfGeneratedLabel,
@@ -243,6 +243,7 @@ class _CategoryPerformanceScreenState
   }
 
   Widget _buildContent() {
+    final cur = watchCurrency(ref);
     final totalRev = _rows.fold(0.0, (sum, c) => sum + c.total);
     final chartData = _rows
         .map((c) => (
@@ -261,7 +262,8 @@ class _CategoryPerformanceScreenState
                   color: PosTheme.textPrimary,
                   fontSize: 15)),
           const SizedBox(height: 8),
-          ReportBarChart(data: chartData, valuePrefix: '\$'),
+          ReportBarChart(
+              data: chartData, valueFormatter: (v) => formatAmount(v, cur)),
           const SizedBox(height: 16),
         ],
         if (_rows.isEmpty)
@@ -295,7 +297,7 @@ class _CategoryPerformanceScreenState
                                   fontWeight: FontWeight.w600,
                                   color: PosTheme.textPrimary)),
                         ),
-                        Text('\$${_fmtNum(c.total)}',
+                        Text(formatAmount(c.total, cur),
                             style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: PosTheme.primaryGreen,

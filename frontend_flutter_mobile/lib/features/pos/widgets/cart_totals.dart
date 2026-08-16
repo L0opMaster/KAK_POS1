@@ -97,6 +97,8 @@ class CartTotals extends ConsumerWidget {
             children: [
               Text(
                 l10n.cartTotal,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 16,
@@ -104,12 +106,17 @@ class CartTotals extends ConsumerWidget {
                 ),
               ),
               const Spacer(),
-              Text(
-                formatAmount(finalTotal, cur),
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 24,
-                  color: PosTheme.textPrimaryOf(context),
+              Flexible(
+                child: Text(
+                  formatAmount(finalTotal, cur),
+                  textAlign: TextAlign.end,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 24,
+                    color: PosTheme.textPrimaryOf(context),
+                  ),
                 ),
               ),
             ],
@@ -127,6 +134,8 @@ class CartTotals extends ConsumerWidget {
                     discount > 0
                         ? '${l10n.cartDiscount} ${cart.discountType == DiscountType.fixed ? formatAmount(discount, cur) : '${discount.toStringAsFixed(0)}%'}'
                         : l10n.cartTotalsAddDiscount,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   onPressed: () => _showDiscountDialog(context, notifier, cart),
                 ),
@@ -181,11 +190,15 @@ class CartTotals extends ConsumerWidget {
                 children: [
                   const Icon(Icons.payment, size: 22),
                   const SizedBox(width: 8),
-                  Text(
-                    'Charge  ${formatAmount(finalTotal, cur)}',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
+                  Flexible(
+                    child: Text(
+                      'Charge  ${formatAmount(finalTotal, cur)}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
                 ],
@@ -284,13 +297,18 @@ class CartTotals extends ConsumerWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            color: color ?? PosTheme.textSecondary,
+        Flexible(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 13,
+              color: color ?? PosTheme.textSecondary,
+            ),
           ),
         ),
+        const SizedBox(width: PosTheme.spacingSm),
         Text(
           value,
           style: TextStyle(

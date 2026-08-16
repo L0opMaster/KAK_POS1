@@ -12,6 +12,7 @@ abstract class CustomerService {
   Future<Customer> createCustomer(CreateCustomerRequest request);
   Future<Customer> updateCustomer(int id, CreateCustomerRequest request);
   Future<void> deleteCustomer(int id);
+  Future<CreditLedgerResponse> getCreditLedger(int customerId);
 }
 
 /// Concrete implementation of CustomerService using API calls.
@@ -64,6 +65,13 @@ class ApiCustomerService extends CustomerService {
   @override
   Future<void> deleteCustomer(int id) async {
     await _api.delete<void>('/api/customers/$id');
+  }
+
+  @override
+  Future<CreditLedgerResponse> getCreditLedger(int customerId) async {
+    final response = await _api
+        .get<Map<String, dynamic>>('/api/customers/$customerId/credit-ledger');
+    return CreditLedgerResponse.fromJson(response);
   }
 }
 

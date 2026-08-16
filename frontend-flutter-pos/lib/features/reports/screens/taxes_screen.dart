@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/config/currency_utils.dart';
 import '../../../core/config/pos_theme.dart';
 import '../../../core/utils/l10n_extensions.dart';
 import '../services/report_service.dart';
@@ -133,6 +134,7 @@ class _TaxesScreenState extends ConsumerState<TaxesScreen> {
     if (data == null) return const SizedBox();
     final chartData =
         data.rows.map((r) => (label: r.date, value: r.taxCollected)).toList();
+    final cur = watchCurrency(ref);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -153,7 +155,7 @@ class _TaxesScreenState extends ConsumerState<TaxesScreen> {
                         fontSize: 16, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 16),
                 _sRow(context.l10n.reportsTotalTaxCollected,
-                    '\$${_fmtNum(data.totalTaxCollected)}',
+                    formatAmount(data.totalTaxCollected, cur),
                     bold: true, color: PosTheme.primaryGreen),
               ],
             ),
@@ -176,7 +178,8 @@ class _TaxesScreenState extends ConsumerState<TaxesScreen> {
                   color: PosTheme.textPrimary,
                   fontSize: 15)),
           const SizedBox(height: 8),
-          ReportLineChart(data: chartData, valuePrefix: '\$'),
+          ReportLineChart(
+              data: chartData, valueFormatter: (v) => formatAmount(v, cur)),
           const SizedBox(height: 16),
           Text(context.l10n.reportsDailyBreakdown,
               style: const TextStyle(
@@ -184,14 +187,14 @@ class _TaxesScreenState extends ConsumerState<TaxesScreen> {
                   color: PosTheme.textPrimary,
                   fontSize: 15)),
           const SizedBox(height: 8),
-          ...data.rows.map(_rowCard),
+          ...data.rows.map((r) => _rowCard(r, cur)),
           ReportPaginationBar(meta: data.meta, onPageChange: _changePage),
         ],
       ],
     );
   }
 
-  Widget _rowCard(TaxReportRow r) {
+  Widget _rowCard(TaxReportRow r, String cur) {
     return Card(
       margin: const EdgeInsets.only(bottom: 6),
       elevation: 0,
@@ -211,10 +214,10 @@ class _TaxesScreenState extends ConsumerState<TaxesScreen> {
             Row(
               children: [
                 _chip(context.l10n.reportsTaxableSales,
-                    '\$${_fmtNum(r.taxableSales)}'),
+                    formatAmount(r.taxableSales, cur)),
                 const SizedBox(width: 8),
                 _chip(context.l10n.reportsTaxCollected,
-                    '\$${_fmtNum(r.taxCollected)}',
+                    formatAmount(r.taxCollected, cur),
                     bold: true),
                 const SizedBox(width: 8),
                 _chip(context.l10n.reportsSalesLabel, '${r.salesCount}'),
@@ -267,6 +270,4 @@ class _TaxesScreenState extends ConsumerState<TaxesScreen> {
       ),
     );
   }
-
-  String _fmtNum(double v) => v.toStringAsFixed(2);
 }

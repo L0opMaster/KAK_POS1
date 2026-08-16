@@ -146,67 +146,66 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.point_of_sale,
-                                  size: 16,
-                                  color: Colors.white.withOpacity(0.9)),
-                              const SizedBox(width: 8),
-                              Text(l10n.loginScreenBadge,
-                                  style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white.withOpacity(0.9))),
+                              // Icon(Icons.point_of_sale,
+                              //     size: 16,
+                              //     color: Colors.white.withOpacity(0.9)),
+                              // const SizedBox(width: 8),
+                              // Text(l10n.loginScreenBadge,
+                              //     style: TextStyle(
+                              //         fontSize: 14,
+                              //         fontWeight: FontWeight.w600,
+                              //         color: Colors.white.withOpacity(0.9))),
                             ],
                           ),
                         ),
                         const SizedBox(height: 30),
                         // Title
-                        Text(l10n.loginScreenHeadline,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                                fontSize: 56,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                                letterSpacing: -0.5,
-                                height: 1.1)),
+                        // Text(l10n.loginScreenHeadline,
+                        //     textAlign: TextAlign.center,
+                        //     style: TextStyle(
+                        //         fontSize: 56,
+                        //         fontWeight: FontWeight.w800,
+                        //         color: Colors.white,
+                        //         letterSpacing: -0.5,
+                        //         height: 1.1)),
                         const SizedBox(height: 20),
-                        Text(
-                            l10n.loginScreenDescription,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                                fontSize: 15,
-                                color: Colors.white.withOpacity(0.85),
-                                height: 1.8)),
-                        const SizedBox(height: 40),
+                        // Text(l10n.loginScreenDescription,
+                        //     textAlign: TextAlign.center,
+                        //     style: TextStyle(
+                        //         fontSize: 15,
+                        //         color: Colors.white.withOpacity(0.85),
+                        //         height: 1.8)),
+                        // const SizedBox(height: 40),
                         // Feature pills
-                        Wrap(
-                          spacing: 12,
-                          runSpacing: 12,
-                          alignment: WrapAlignment.center,
-                          children: [
-                            _featurePill(Icons.restaurant,
-                                l10n.loginScreenFeatureRestaurant),
-                            _featurePill(Icons.inventory_2, l10n.navInventory),
-                            _featurePill(Icons.trending_up, l10n.navReports),
-                            _featurePill(Icons.store,
-                                l10n.loginScreenFeatureMultiBranch),
-                          ],
-                        ),
+                        // Wrap(
+                        //   spacing: 12,
+                        //   runSpacing: 12,
+                        //   alignment: WrapAlignment.center,
+                        //   children: [
+                        //     // _featurePill(Icons.restaurant,
+                        //     //     l10n.loginScreenFeatureRestaurant),
+                        //     _featurePill(Icons.inventory_2, l10n.navInventory),
+                        //     _featurePill(Icons.trending_up, l10n.navReports),
+                        //     _featurePill(Icons.store,
+                        //         l10n.loginScreenFeatureMultiBranch),
+                        //   ],
+                        // ),
                       ],
                     ),
                   ),
                 ),
                 // Footer
-                Positioned(
-                  bottom: 20,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: Text(l10n.loginScreenCopyright,
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.white.withOpacity(0.8))),
-                  ),
-                ),
+                // Positioned(
+                //   bottom: 20,
+                //   left: 0,
+                //   right: 0,
+                //   child: Center(
+                //     child: Text(l10n.loginScreenCopyright,
+                //         style: TextStyle(
+                //             fontSize: 12,
+                //             color: Colors.white.withOpacity(0.8))),
+                //   ),
+                // ),
               ],
             ),
           ),
@@ -315,15 +314,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       fontSize: 36,
                                       fontWeight: FontWeight.w800,
                                       color: Color(0xFF111827))),
-                              const SizedBox(height: 20),
-                              Text(l10n.loginScreenWelcomeBack,
-                                  style: const TextStyle(
-                                      fontSize: 36,
-                                      fontWeight: FontWeight.w800,
-                                      color: Color(0xFF111827))),
                               const SizedBox(height: 8),
-                              Text(
-                                  l10n.loginScreenSubtitle,
+                              Text(l10n.loginScreenSubtitle,
                                   style: TextStyle(
                                       fontSize: 14,
                                       color: Colors.grey[600],
@@ -442,7 +434,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     cursor: SystemMouseCursors.click,
                                     child: GestureDetector(
                                       onTap: () {},
-                                      child: Text(l10n.loginScreenForgotPassword,
+                                      child: Text(
+                                          l10n.loginScreenForgotPassword,
                                           style: TextStyle(
                                               fontSize: 13,
                                               fontWeight: FontWeight.w600,
@@ -451,10 +444,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                                   .primary,
                                               decoration:
                                                   TextDecoration.underline,
-                                              decorationColor:
-                                                  Theme.of(context)
-                                                      .colorScheme
-                                                      .primary)),
+                                              decorationColor: Theme.of(context)
+                                                  .colorScheme
+                                                  .primary)),
                                     ),
                                   ),
                                 ],
@@ -507,7 +499,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                                     fontWeight: FontWeight.w700,
                                                     letterSpacing: 0.5)),
                                             const SizedBox(width: 10),
-                                            const Icon(Icons.arrow_forward, size: 18),
+                                            const Icon(Icons.arrow_forward,
+                                                size: 18),
                                           ],
                                         ),
                                 ),
@@ -528,7 +521,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       const SizedBox(width: 4),
                                       GestureDetector(
                                         onTap: () {},
-                                        child: Text(l10n.loginScreenRegisterLink,
+                                        child: Text(
+                                            l10n.loginScreenRegisterLink,
                                             style: const TextStyle(
                                                 fontSize: 13,
                                                 fontWeight: FontWeight.w700,

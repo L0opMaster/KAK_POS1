@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The `main` source set's copy of this file — what a RELEASE build
+  actually gets (see `src/debug/res/xml/network_security_config.xml`'s
+  doc comment for the full explanation and the crash this split fixed).
+  Deliberately minimal: no domain-config, no cleartext exception — a
+  release build must use HTTPS for every host, which is Android's own
+  default behavior on API 28+ with no config file at all. This file
+  exists only so `android:networkSecurityConfig="@xml/
+  network_security_config"` in AndroidManifest.xml always resolves to
+  SOMETHING for every build variant; it intentionally grants nothing
+  beyond the platform default.
+-->
+<network-security-config />

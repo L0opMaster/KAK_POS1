@@ -3,14 +3,19 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/config/currency_utils.dart';
 import '../../../core/config/pos_theme.dart';
 import '../../../core/providers/language_provider.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/utils/bilingual.dart';
 import '../../../core/utils/l10n_extensions.dart';
+import '../../../core/utils/receipt_date_format.dart';
 import '../models/customer_models.dart';
 import '../providers/customer_provider.dart';
 import '../services/customer_service.dart';
+import '../services/sale_service.dart';
+import '../utils/credit_status.dart';
+import '../widgets/credit_repayment_dialog.dart';
 
 /// Full customer management screen — follows the same list UI as
 /// Employees: inline ADD button, checkbox multi-select + bulk delete,
@@ -432,6 +437,7 @@ class _CustomerManagementScreenState
     final hasCredit = c.creditBalance > 0;
     final isOverdue = c.overdue;
     final lang = ref.watch(appLanguageProvider);
+    final cur = watchCurrency(ref);
 
     final subtitleParts = [
       if (c.phone != null && c.phone!.isNotEmpty) c.phone!,
@@ -516,7 +522,7 @@ class _CustomerManagementScreenState
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    '\$${c.creditBalance.toStringAsFixed(0)}',
+                    formatAmount(c.creditBalance, cur),
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -950,7 +956,7 @@ class _CustomerDetailScreen extends ConsumerStatefulWidget {
 class _CustomerDetailScreenState extends ConsumerState<_CustomerDetailScreen> {
   Customer? _customer;
   List<Map<String, dynamic>> _history = [];
-  Map<String, dynamic>? _ledger;
+  CreditLedgerResponse? _ledger;
   bool _loading = true;
   String? _error;
 
@@ -971,10 +977,11 @@ class _CustomerDetailScreenState extends ConsumerState<_CustomerDetailScreen> {
           .get<Map<String, dynamic>>('/api/customers/${widget.customerId}');
       final h = await api
           .get<List<dynamic>>('/api/customers/${widget.customerId}/history');
-      Map<String, dynamic>? l;
+      CreditLedgerResponse? l;
       try {
-        l = await api.get<Map<String, dynamic>>(
-            '/api/customers/${widget.customerId}/credit-ledger');
+        l = await ref
+            .read(customerServiceProvider)
+            .getCreditLedger(widget.customerId);
       } catch (_) {}
 
       setState(() {
@@ -1025,7 +1032,11 @@ class _CustomerDetailScreenState extends ConsumerState<_CustomerDetailScreen> {
                     children: [
                       _buildInfoCard(),
                       const SizedBox(height: 16),
-                      if (_ledger != null) _buildCreditCard(),
+                      if (_ledger != null) ...[
+                        _buildCreditCard(),
+                        const SizedBox(height: 16),
+                        _buildCreditSalesSection(),
+                      ],
                       const SizedBox(height: 16),
                       _buildHistorySection(),
                     ],
@@ -1100,10 +1111,10 @@ class _CustomerDetailScreenState extends ConsumerState<_CustomerDetailScreen> {
   }
 
   Widget _buildCreditCard() {
-    final balance = (_ledger!['creditBalance'] as num?)?.toDouble() ??
-        _customer!.creditBalance;
+    final balance = _ledger?.creditBalance ?? _customer!.creditBalance;
     final limit = _customer!.creditLimit;
     final usagePercent = limit > 0 ? (balance / limit * 100) : 0;
+    final cur = watchCurrency(ref);
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -1132,7 +1143,7 @@ class _CustomerDetailScreenState extends ConsumerState<_CustomerDetailScreen> {
                 Text(context.l10n.customerManagementBalanceLabel,
                     style: const TextStyle(
                         fontSize: 13, color: PosTheme.textSecondary)),
-                Text('\$${balance.toStringAsFixed(2)}',
+                Text(formatAmount(balance, cur),
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 18,
@@ -1149,7 +1160,7 @@ class _CustomerDetailScreenState extends ConsumerState<_CustomerDetailScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                    '${context.l10n.customerManagementLimitPrefix} \$${limit.toStringAsFixed(2)}',
+                    '${context.l10n.customerManagementLimitPrefix} ${formatAmount(limit, cur)}',
                     style: const TextStyle(
                         fontSize: 12, color: PosTheme.textHint)),
                 Text(
@@ -1180,7 +1191,224 @@ class _CustomerDetailScreenState extends ConsumerState<_CustomerDetailScreen> {
     );
   }
 
+  /// Credit sales list — sourced from the same ledger fetch as
+  /// [_buildCreditCard] (`entryType == 'CREDIT_SALE'` rows), so opening this
+  /// screen costs exactly one extra request beyond the base customer/history
+  /// fetch, not one per credit sale.
+  Widget _buildCreditSalesSection() {
+    final entries =
+        _ledger?.entries.where((e) => e.entryType == 'CREDIT_SALE').toList() ??
+            const <CreditLedgerEntry>[];
+    final cur = watchCurrency(ref);
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(PosTheme.radiusMedium),
+        side: BorderSide(color: PosTheme.borderColor),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(context.l10n.customerManagementCreditSalesTitle,
+                style: const TextStyle(
+                    fontWeight: FontWeight.w700, fontSize: 16)),
+            const SizedBox(height: 12),
+            if (entries.isEmpty)
+              Text(context.l10n.customerManagementNoCreditSales,
+                  style: const TextStyle(
+                      fontSize: 13, color: PosTheme.textHint))
+            else
+              ...entries.map((e) => _creditSaleRow(e, cur)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _creditSaleRow(CreditLedgerEntry entry, String cur) {
+    final remaining = entry.remainingAmount ?? 0;
+    final paidSoFar = entry.amount - remaining;
+    // Quick client-side approximation for the list badge only — the
+    // authoritative status (which also accounts for an expiration date) is
+    // fetched fresh when the cashier actually opens this sale below.
+    final overdue = remaining > 0 && (entry.agingDays ?? 0) > 0;
+    final status = remaining <= 0
+        ? 'PAID'
+        : overdue
+            ? 'OVERDUE'
+            : (paidSoFar > 0 ? 'PARTIALLY_PAID' : 'OPEN');
+    return InkWell(
+      onTap: entry.saleId == null
+          ? null
+          : () => _openCreditSaleDetail(entry.saleId!),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(entry.invoiceNumber ?? '#${entry.saleId}',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w600, fontSize: 14)),
+                  const SizedBox(height: 2),
+                  Text(
+                    remaining > 0
+                        ? '${context.l10n.creditRepaymentRemainingLabel}: ${formatAmount(remaining, cur)}'
+                        : formatAmount(entry.amount, cur),
+                    style: const TextStyle(
+                        fontSize: 12, color: PosTheme.textHint),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: creditStatusColor(status).withOpacity(0.12),
+                borderRadius: BorderRadius.circular(PosTheme.radiusPill),
+              ),
+              child: Text(
+                creditStatusLabel(context.l10n, status),
+                style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: creditStatusColor(status)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openCreditSaleDetail(int saleId) async {
+    SaleResponse sale;
+    try {
+      sale = await ref.read(saleServiceProvider).getSale(saleId);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('$e')));
+      return;
+    }
+    if (!mounted) return;
+
+    final history = (_ledger?.entries ?? const <CreditLedgerEntry>[])
+        .where((e) => e.entryType == 'COLLECTION' && e.saleId == saleId)
+        .toList(); // already newest-first, per the backend's ledger ordering
+
+    final cur = watchCurrency(ref);
+    await showDialog<void>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: Text(sale.invoiceNumber ?? '#${sale.id}'),
+        content: SizedBox(
+          width: 360,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(formatAmount(sale.grandTotal, cur),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w800, fontSize: 18)),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: creditStatusColor(sale.creditStatus)
+                          .withOpacity(0.12),
+                      borderRadius:
+                          BorderRadius.circular(PosTheme.radiusPill),
+                    ),
+                    child: Text(
+                      creditStatusLabel(dialogCtx.l10n, sale.creditStatus),
+                      style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: creditStatusColor(sale.creditStatus)),
+                    ),
+                  ),
+                ],
+              ),
+              if (sale.creditDueAt != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  '${dialogCtx.l10n.paymentScreenCreditDueLabel}: '
+                  '${formatReceiptDate(parseBackendTimestamp(sale.creditDueAt) ?? DateTime.now())}',
+                  style: const TextStyle(
+                      fontSize: 12, color: PosTheme.textHint),
+                ),
+              ],
+              const SizedBox(height: 16),
+              Text(dialogCtx.l10n.customerManagementPaymentHistoryTitle,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w700, fontSize: 14)),
+              const SizedBox(height: 8),
+              if (history.isEmpty)
+                Text(dialogCtx.l10n.customerManagementNoPaymentHistory,
+                    style: const TextStyle(
+                        fontSize: 13, color: PosTheme.textHint))
+              else
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 200),
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: history.length,
+                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    itemBuilder: (_, i) {
+                      final h = history[i];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                                formatReceiptDate(
+                                    parseBackendTimestamp(h.createdAt) ??
+                                        DateTime.now()),
+                                style: const TextStyle(fontSize: 12)),
+                            Text(formatAmount(h.amount.abs(), cur),
+                                style: const TextStyle(
+                                    fontSize: 13, fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(),
+            child: Text(dialogCtx.l10n.commonClose),
+          ),
+          if (sale.remainingBalance > 0)
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.of(dialogCtx).pop();
+                final updated =
+                    await showCreditRepaymentDialog(context, ref, sale: sale);
+                if (updated != null) _load();
+              },
+              child: Text(dialogCtx.l10n.customerManagementRecordPaymentButton),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildHistorySection() {
+    final cur = watchCurrency(ref);
     if (_history.isEmpty) {
       return Card(
         elevation: 0,
@@ -1220,7 +1448,7 @@ class _CustomerDetailScreenState extends ConsumerState<_CustomerDetailScreen> {
                   style: const TextStyle(fontWeight: FontWeight.w600)),
               subtitle: Text(
                   '${date.length >= 10 ? date.substring(0, 10) : date} · $status'),
-              trailing: Text('\$${total.toStringAsFixed(2)}',
+              trailing: Text(formatAmount(total, cur),
                   style: TextStyle(
                       fontWeight: FontWeight.w700,
                       color: PosTheme.primaryGreen)),

@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/config/currency_utils.dart';
 import '../../../core/config/pos_theme.dart';
 import '../../../core/utils/l10n_extensions.dart';
 import '../models/inventory_models.dart';
@@ -352,6 +353,7 @@ class _SuppliersScreenState extends ConsumerState<SuppliersScreen> {
   }
 
   Widget _buildRow(Supplier supplier) {
+    final currencyCode = watchCurrency(ref);
     final selected = supplier.id != null && _selectedIds.contains(supplier.id);
 
     final subtitleParts = [
@@ -434,7 +436,7 @@ class _SuppliersScreenState extends ConsumerState<SuppliersScreen> {
                   ),
                   child: Text(
                     context.l10n.suppliersOwedAmount(
-                        '\$${supplier.openPayable!.toStringAsFixed(2)}'),
+                        formatAmount(supplier.openPayable!, currencyCode)),
                     style: const TextStyle(
                         fontSize: 12, fontWeight: FontWeight.w600, color: PosTheme.warningAmber),
                   ),

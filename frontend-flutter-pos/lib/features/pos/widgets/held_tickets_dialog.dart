@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/config/currency_utils.dart';
 import '../../../core/config/pos_theme.dart';
+import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/company_provider.dart';
+import '../../../core/providers/language_provider.dart';
 import '../../../core/utils/l10n_extensions.dart';
+import '../../../core/utils/receipt_date_format.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../models/cart_models.dart';
 import '../providers/cart_provider.dart';
 import '../providers/held_ticket_provider.dart';
+import '../services/print_service.dart';
+import '../services/printing/receipt_view_model.dart';
 
 /// Loyverse-inspired dialog for viewing and restoring held/saved tickets.
 class HeldTicketsDialog extends ConsumerStatefulWidget {
@@ -77,6 +85,97 @@ class _HeldTicketsDialogState extends ConsumerState<HeldTicketsDialog> {
         backgroundColor: error != null ? PosTheme.errorRed : null,
       ),
     );
+  }
+
+  /// Prints this held ticket's bill so the customer can carry it to the
+  /// cashier — no sale exists for a held ticket yet (see
+  /// `held_ticket_provider.dart`'s `holdCurrentCart`), so this builds the
+  /// receipt straight from the ticket's saved cart items/company profile
+  /// instead of a backend `ReceiptResponse`. `paidAmount: 0` since nothing
+  /// has been charged. Tax is per-product now (see `Product.taxRate`),
+  /// summed per item exactly like `CartState.taxAmount` — a held ticket has
+  /// no cart-level discount to prorate (see [HeldOrder], which carries no
+  /// discount field), so this is that same formula with the discount term
+  /// dropped rather than a separate calculation drifting out of sync with it.
+  Future<void> _printTicket(
+    BuildContext context,
+    WidgetRef ref,
+    HeldOrder ticket,
+  ) async {
+    final items = ticket.cartItems ?? const <CartItem>[];
+    try {
+      final subtotal = items.fold(0.0, (sum, i) => sum + i.lineTotal);
+      final taxAmount = items.fold(
+          0.0,
+          (sum, i) =>
+              sum +
+              (i.lineTotal - (i.discountAmount ?? 0) * i.qty) *
+                  i.product.taxRate);
+
+      Map<String, dynamic>? company;
+      try {
+        company = await ref.read(companyProfileProvider.future);
+      } catch (_) {
+        // No company profile yet — fromCart falls back to the app name and
+        // omits address/phone/website.
+      }
+
+      final waitingNumber = await ref
+          .read(waitingNumberServiceProvider)
+          .getNumberForOrder(ticket.id);
+
+      if (!context.mounted) return;
+      final language = ref.read(appLanguageProvider);
+      final l10n = AppLocalizations.of(context);
+      final cashierName = ref.read(currentUserProvider)?.fullName ?? '';
+      final now = DateTime.now();
+
+      final receipt = ReceiptViewModel.fromCart(
+        language: language,
+        l10n: l10n,
+        total: subtotal + taxAmount,
+        subtotal: subtotal,
+        taxAmount: taxAmount,
+        items: items,
+        paidAmount: 0,
+        invoiceNumber:
+            '#${(waitingNumber ?? ticket.id).toString().padLeft(3, '0')}',
+        cashierName: cashierName,
+        businessName: company?['businessName'] as String?,
+        businessAddress: company?['address'] as String?,
+        businessPhone: company?['phone'] as String?,
+        website: company?['website'] as String?,
+        currency: readCurrency(ref),
+        saleDate: formatReceiptDate(now),
+        saleTime: formatReceiptTime(now),
+        tableNumber: ticket.table?.displayText,
+      );
+
+      if (!context.mounted) return;
+      final ok = await ref.read(printServiceProvider).printReceiptViewModel(
+            context,
+            receipt,
+            jobName: 'bill_${ticket.id}',
+          );
+      if (!context.mounted) return;
+      if (!ok) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.l10n.printerPrintFailed),
+            backgroundColor: PosTheme.errorRed,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Held ticket bill print failed: $e');
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.printerPrintFailed),
+          backgroundColor: PosTheme.errorRed,
+        ),
+      );
+    }
   }
 
   @override
@@ -233,6 +332,12 @@ class _HeldTicketsDialogState extends ConsumerState<HeldTicketsDialog> {
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
+                            IconButton(
+                              tooltip: ctx.l10n.receiptPrint,
+                              icon: const Icon(Icons.print_outlined,
+                                  size: 20, color: PosTheme.accentBlue),
+                              onPressed: () => _printTicket(context, ref, ticket),
+                            ),
                             IconButton(
                               tooltip: ctx.l10n.heldTicketsCancelTitle,
                               icon: const Icon(Icons.delete_outline,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/config/currency_utils.dart';
 import '../../../core/config/pos_theme.dart';
 import '../../../core/providers/language_provider.dart';
 import '../../../core/utils/bilingual.dart';
@@ -137,6 +138,7 @@ class _ProductModifierSheetState extends ConsumerState<ProductModifierSheet> {
   Widget build(BuildContext context) {
     final product = widget.product;
     final lang = ref.watch(appLanguageProvider);
+    final cur = watchCurrency(ref);
     final l10n = context.l10n;
     final lineTotal = (product.price + _selectedDelta) * _qty;
 
@@ -174,8 +176,7 @@ class _ProductModifierSheetState extends ConsumerState<ProductModifierSheet> {
                               group.id, option.id, v ?? false),
                           title: Text(option.localizedName(lang)),
                           secondary: option.priceDelta != 0
-                              ? Text(
-                                  '+${option.priceDelta.toStringAsFixed(2)}')
+                              ? Text('+${formatAmount(option.priceDelta, cur)}')
                               : null,
                         )
                       : RadioListTile<int>(
@@ -190,8 +191,7 @@ class _ProductModifierSheetState extends ConsumerState<ProductModifierSheet> {
                               _toggleSingleSelect(group.id, option.id),
                           title: Text(option.localizedName(lang)),
                           secondary: option.priceDelta != 0
-                              ? Text(
-                                  '+${option.priceDelta.toStringAsFixed(2)}')
+                              ? Text('+${formatAmount(option.priceDelta, cur)}')
                               : null,
                         ),
                 const SizedBox(height: PosTheme.spacingSm),
@@ -231,11 +231,22 @@ class _ProductModifierSheetState extends ConsumerState<ProductModifierSheet> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(l10n.modifierSheetLineTotal,
-                      style: TextStyle(color: PosTheme.textSecondaryOf(context))),
-                  Text('\$${lineTotal.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                          fontSize: 20, fontWeight: FontWeight.w800)),
+                  Flexible(
+                    child: Text(l10n.modifierSheetLineTotal,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style:
+                            TextStyle(color: PosTheme.textSecondaryOf(context))),
+                  ),
+                  const SizedBox(width: PosTheme.spacingSm),
+                  Flexible(
+                    child: Text(formatAmount(lineTotal, cur),
+                        textAlign: TextAlign.end,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.w800)),
+                  ),
                 ],
               ),
               const SizedBox(height: PosTheme.spacingMd),
@@ -276,8 +287,13 @@ class _GroupHeader extends StatelessWidget {
       padding: const EdgeInsets.only(top: PosTheme.spacingSm),
       child: Row(
         children: [
-          Text(title,
-              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+          Flexible(
+            child: Text(title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    fontWeight: FontWeight.w700, fontSize: 15)),
+          ),
           if (isRequired) ...[
             const SizedBox(width: 6),
             Text('*',

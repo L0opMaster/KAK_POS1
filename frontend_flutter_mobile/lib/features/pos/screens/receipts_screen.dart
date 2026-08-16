@@ -449,36 +449,40 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
                 ),
               ),
               const SizedBox(width: 4),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    fmt(sale.grandTotal),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 1,
-                    ),
-                    decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      statusBadgeLabel(context, sale.status),
-                      style: TextStyle(
-                        fontSize: 9,
+              Flexible(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      fmt(sale.grandTotal),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
                         fontWeight: FontWeight.w700,
-                        color: statusColor,
+                        fontSize: 15,
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 2),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 1,
+                      ),
+                      decoration: BoxDecoration(
+                        color: statusColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        statusBadgeLabel(context, sale.status),
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          color: statusColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
               _printingIds.contains(sale.id)
                   ? const Padding(
@@ -711,51 +715,63 @@ class _ReceiptDetailScreenState extends ConsumerState<_ReceiptDetailScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 380),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                ReceiptPaperView(receipt: vm, width: 380),
-                const SizedBox(height: 14),
-                if (receipt.status != null)
-                  Center(
-                    child: Text(
-                      statusBadgeLabel(context, receipt.status!),
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.5,
-                        color: statusColorFor(receipt.status!),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          // Cap at kReceiptContentWidth (the paper-size default) on wide
+          // screens, but shrink to fit narrow phones instead of overflowing
+          // past the edge — a fixed 380px never fit a 320-360px phone with
+          // this padding, and SingleChildScrollView only scrolls vertically.
+          const horizontalPadding = 20.0 * 2;
+          final receiptWidth = (constraints.maxWidth - horizontalPadding)
+              .clamp(0.0, kReceiptContentWidth);
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: receiptWidth),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ReceiptPaperView(receipt: vm, width: receiptWidth),
+                    const SizedBox(height: 14),
+                    if (receipt.status != null)
+                      Center(
+                        child: Text(
+                          statusBadgeLabel(context, receipt.status!),
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.5,
+                            color: statusColorFor(receipt.status!),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                if (canRefund) ...[
-                  const SizedBox(height: 14),
-                  Center(
-                    child: TextButton.icon(
-                      onPressed: () => _showRefundDialog(context, ref),
-                      icon: const Icon(Icons.replay, size: 16),
-                      label: Text(context.l10n.receiptsScreenRefund),
-                      style: TextButton.styleFrom(
-                        foregroundColor: PosTheme.errorRed,
+                    if (canRefund) ...[
+                      const SizedBox(height: 14),
+                      Center(
+                        child: TextButton.icon(
+                          onPressed: () => _showRefundDialog(context, ref),
+                          icon: const Icon(Icons.replay, size: 16),
+                          label: Text(context.l10n.receiptsScreenRefund),
+                          style: TextButton.styleFrom(
+                            foregroundColor: PosTheme.errorRed,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                ],
-              ],
+                    ],
+                  ],
+                ),
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
 
   void _showRefundDialog(BuildContext context, WidgetRef ref) {
     final remaining = receipt.total - receipt.refundedAmount;
+    final cur = readCurrency(ref);
     final reasonCtl = TextEditingController();
     final managerEmailCtl = TextEditingController();
     final managerPasswordCtl = TextEditingController();
@@ -812,9 +828,9 @@ class _ReceiptDetailScreenState extends ConsumerState<_ReceiptDetailScreen> {
                 children: [
                   Text(
                     '${context.l10n.receiptsScreenRefundConfirmPrefix(receipt.saleNumber ?? context.l10n.receiptsScreenRefundReceiptFallback(receipt.saleId.toString()))}\n\n'
-                    '${context.l10n.receiptsScreenRefundTotalLine('\$${receipt.total.toStringAsFixed(2)}')}'
-                    '${receipt.refundedAmount > 0 ? '\n${context.l10n.receiptsScreenRefundAlreadyRefundedLine('\$${receipt.refundedAmount.toStringAsFixed(2)}')}' : ''}'
-                    '\n${context.l10n.receiptsScreenRefundAmountLine('\$${remaining.toStringAsFixed(2)}')}',
+                    '${context.l10n.receiptsScreenRefundTotalLine(formatAmount(receipt.total, cur))}'
+                    '${receipt.refundedAmount > 0 ? '\n${context.l10n.receiptsScreenRefundAlreadyRefundedLine(formatAmount(receipt.refundedAmount, cur))}' : ''}'
+                    '\n${context.l10n.receiptsScreenRefundAmountLine(formatAmount(remaining, cur))}',
                   ),
                   const SizedBox(height: 12),
                   TextField(

@@ -62,7 +62,7 @@ class CartTotals extends ConsumerWidget {
             const SizedBox(height: 4),
             // ── Tax ──
             _buildRow(
-                '${context.l10n.cartTax} (${(cart.taxRate * 100).toStringAsFixed(0)}%)',
+                '${context.l10n.cartTax} (${(cart.blendedTaxRate * 100).toStringAsFixed(0)}%)',
                 formatAmount(tax, cur)),
             // ── Item-level discounts (if any) ──
             if (hasItemDiscounts) ...[
@@ -352,27 +352,27 @@ class CartTotals extends ConsumerWidget {
                   children: [
                     _presetChip(
                         '10%',
-                        () => notifier.applyDiscount(10,
+                        () => notifier.applyDiscount(10.0,
                             type: DiscountType.percent)),
                     const SizedBox(width: 6),
                     _presetChip(
                         '15%',
-                        () => notifier.applyDiscount(15,
+                        () => notifier.applyDiscount(15.0,
                             type: DiscountType.percent)),
                     const SizedBox(width: 6),
                     _presetChip(
                         '20%',
-                        () => notifier.applyDiscount(20,
+                        () => notifier.applyDiscount(20.0,
                             type: DiscountType.percent)),
                     const SizedBox(width: 6),
                     _presetChip(
                         formatAmount(1, cur),
-                        () => notifier.applyDiscount(1,
+                        () => notifier.applyDiscount(1.0,
                             type: DiscountType.fixed)),
                     const SizedBox(width: 6),
                     _presetChip(
                         formatAmount(5, cur),
-                        () => notifier.applyDiscount(5,
+                        () => notifier.applyDiscount(5.0,
                             type: DiscountType.fixed)),
                   ],
                 ),
@@ -431,7 +431,7 @@ class CartTotals extends ConsumerWidget {
                     Text(
                       'Charge  ${formatAmount(finalTotal, cur)}',
                       style: const TextStyle(
-                          fontSize: 20, fontWeight: FontWeight.w800),
+                          fontSize: 15, fontWeight: FontWeight.w800),
                     ),
                   ],
                 ),
@@ -468,6 +468,38 @@ class CartTotals extends ConsumerWidget {
 }
 
 /// Shows a Loyverse-style discount dialog (amount or percent) with presets from settings.
+/// Fallback quick-select discount presets, used both as the dialog's
+/// initial content (before the backend fetch below resolves) and if that
+/// fetch fails outright.
+List<Map<String, dynamic>> _fallbackDiscountPresets(String currency) => [
+      {'label': '10% Off', 'percent': 10, 'amount': 0},
+      {'label': '15% Off', 'percent': 15, 'amount': 0},
+      {'label': '20% Off', 'percent': 20, 'amount': 0},
+      {
+        'label': '${formatAmount(1.0, currency)} Off',
+        'percent': 0,
+        'amount': 1.0
+      },
+      {
+        'label': '${formatAmount(5.0, currency)} Off',
+        'percent': 0,
+        'amount': 5.0
+      },
+    ];
+
+/// A preset's display label — falls back to building one from its
+/// percent/amount when the backend row didn't provide one, so a preset
+/// never renders as a blank chip.
+String _presetLabel(Map<String, dynamic> preset, String currency) {
+  final label = preset['label'] as String?;
+  if (label != null && label.isNotEmpty) return label;
+  final pct = (preset['percent'] as num?)?.toDouble() ?? 0;
+  final amt = (preset['amount'] as num?)?.toDouble() ?? 0;
+  if (pct > 0) return '${pct.toStringAsFixed(0)}% Off';
+  if (amt > 0) return '${formatAmount(amt, currency)} Off';
+  return '';
+}
+
 void _showDiscountDialog(
   BuildContext context,
   WidgetRef ref,
@@ -479,35 +511,35 @@ void _showDiscountDialog(
   );
   DiscountType type = cart.discountType;
   bool hasDiscount = cart.discount > 0;
-  List<Map<String, dynamic>> presets = [];
-
-  // Load presets from backend
-  try {
-    final service = ref.read(settingsServiceProvider);
-    service.getDiscountPresets().then((resp) {
-      if (resp['presets'] is List) {
-        presets = List<Map<String, dynamic>>.from(resp['presets'] as List);
-      }
-    });
-  } catch (_) {}
-
-  // Fallback presets if backend fails
-  if (presets.isEmpty) {
-    final cur = readCurrency(ref);
-    presets = [
-      {'label': '10% Off', 'percent': 10, 'amount': 0},
-      {'label': '15% Off', 'percent': 15, 'amount': 0},
-      {'label': '20% Off', 'percent': 20, 'amount': 0},
-      {'label': '${formatAmount(1.0, cur)} Off', 'percent': 0, 'amount': 1.0},
-      {'label': '${formatAmount(5.0, cur)} Off', 'percent': 0, 'amount': 5.0},
-    ];
-  }
+  final cur = readCurrency(ref);
+  List<Map<String, dynamic>> presets = _fallbackDiscountPresets(cur);
+  bool presetsFetchStarted = false;
 
   showDialog<void>(
     context: context,
     builder: (ctx) {
       return StatefulBuilder(
         builder: (ctx, setDialogState) {
+          // Kicked off on the first build (guarded by the flag so it
+          // doesn't re-fire on every setDialogState from typing/tapping),
+          // and applied via setDialogState once it resolves — the previous
+          // version fired this same fetch but only ever wrote into a plain
+          // closure variable, which the already-built Wrap below never
+          // re-read, so a slow/successful fetch never actually reached the
+          // screen.
+          if (!presetsFetchStarted) {
+            presetsFetchStarted = true;
+            ref.read(settingsServiceProvider).getDiscountPresets().then((resp) {
+              final fetched = resp['presets'];
+              if (fetched is List && fetched.isNotEmpty && ctx.mounted) {
+                setDialogState(
+                    () => presets = List<Map<String, dynamic>>.from(fetched));
+              }
+            }).catchError((_) {
+              // Keep the fallback presets already showing.
+            });
+          }
+
           return AlertDialog(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(PosTheme.radiusLarge),
@@ -531,96 +563,121 @@ void _showDiscountDialog(
             ),
             content: SizedBox(
               width: 300,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Type toggle
-                  Row(
-                    children: [
-                      _typeChip(
-                          ctx.l10n.cartTotalsFixedAmount,
-                          DiscountType.fixed,
-                          type,
-                          (t) => setDialogState(() => type = t)),
-                      const SizedBox(width: 8),
-                      _typeChip(
-                          ctx.l10n.cartTotalsPercentAmount,
-                          DiscountType.percent,
-                          type,
-                          (t) => setDialogState(() => type = t)),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: amountCtl,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
-                    decoration: InputDecoration(
-                      labelText: type == DiscountType.fixed
-                          ? ctx.l10n.cartTotalsAmountLabel
-                          : ctx.l10n.cartTotalsPercentLabel,
-                      prefixIcon: Icon(
-                        type == DiscountType.fixed
-                            ? Icons.attach_money
-                            : Icons.percent,
-                        size: 20,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius:
-                            BorderRadius.circular(PosTheme.radiusMedium),
-                      ),
-                      filled: true,
-                      fillColor: PosTheme.backgroundPageOf(ctx),
+              // Scrollable so a full preset row (or the keyboard) never
+              // overflows the dialog instead of clipping under a "BOTTOM
+              // OVERFLOWED" banner.
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Type toggle
+                    Row(
+                      children: [
+                        _typeChip(
+                            ctx.l10n.cartTotalsFixedAmount,
+                            DiscountType.fixed,
+                            type,
+                            (t) => setDialogState(() => type = t)),
+                        const SizedBox(width: 8),
+                        _typeChip(
+                            ctx.l10n.cartTotalsPercentAmount,
+                            DiscountType.percent,
+                            type,
+                            (t) => setDialogState(() => type = t)),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  // Quick presets row
-                  Text(ctx.l10n.cartTotalsQuickSelect,
-                      style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: PosTheme.textSecondaryOf(ctx))),
-                  const SizedBox(height: 6),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: presets.map((preset) {
-                      final pct = (preset['percent'] as num?)?.toDouble() ?? 0;
-                      final amt = (preset['amount'] as num?)?.toDouble() ?? 0;
-                      final label = preset['label'] as String? ?? '';
-                      return ActionChip(
-                        label:
-                            Text(label, style: const TextStyle(fontSize: 12)),
-                        onPressed: () {
-                          if (pct > 0) {
-                            type = DiscountType.percent;
-                            amountCtl.text = pct.toStringAsFixed(0);
-                          } else if (amt > 0) {
-                            type = DiscountType.fixed;
-                            amountCtl.text = amt.toStringAsFixed(2);
-                          }
-                          setDialogState(() {});
-                        },
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 8),
-                  // Percent quick picks
-                  if (type == DiscountType.percent)
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: amountCtl,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      decoration: InputDecoration(
+                        labelText: type == DiscountType.fixed
+                            ? ctx.l10n.cartTotalsAmountLabel
+                            : ctx.l10n.cartTotalsPercentLabel,
+                        prefixIcon: Icon(
+                          type == DiscountType.fixed
+                              ? Icons.attach_money
+                              : Icons.percent,
+                          size: 20,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius:
+                              BorderRadius.circular(PosTheme.radiusMedium),
+                        ),
+                        filled: true,
+                        fillColor: PosTheme.backgroundPageOf(ctx),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Quick presets row
+                    Text(ctx.l10n.cartTotalsQuickSelect,
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: PosTheme.textSecondaryOf(ctx))),
+                    const SizedBox(height: 6),
                     Wrap(
                       spacing: 6,
-                      children: [5, 10, 15, 20, 25, 50]
-                          .map((pct) => ChoiceChip(
-                                label: Text('$pct%',
-                                    style: const TextStyle(fontSize: 12)),
-                                selected: amountCtl.text == pct.toString(),
-                                onSelected: (_) => setDialogState(
-                                    () => amountCtl.text = pct.toString()),
-                              ))
-                          .toList(),
+                      runSpacing: 6,
+                      children: presets.map((preset) {
+                        final pct =
+                            (preset['percent'] as num?)?.toDouble() ?? 0;
+                        final amt = (preset['amount'] as num?)?.toDouble() ?? 0;
+                        final label = _presetLabel(preset, cur);
+                        return ActionChip(
+                          label: Text(label,
+                              style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: PosTheme.accentBlue)),
+                          // Explicit background/border — this dialog's chips
+                          // previously relied entirely on the ambient chip
+                          // theme, which rendered the label text unreadably
+                          // low-contrast against its own background.
+                          backgroundColor:
+                              PosTheme.accentBlue.withOpacity(0.08),
+                          side: BorderSide(
+                              color: PosTheme.accentBlue.withOpacity(0.35)),
+                          onPressed: () {
+                            if (pct > 0) {
+                              type = DiscountType.percent;
+                              amountCtl.text = pct.toStringAsFixed(0);
+                            } else if (amt > 0) {
+                              type = DiscountType.fixed;
+                              amountCtl.text = amt.toStringAsFixed(2);
+                            }
+                            setDialogState(() {});
+                          },
+                        );
+                      }).toList(),
                     ),
-                ],
+                    const SizedBox(height: 8),
+                    // Percent quick picks
+                    if (type == DiscountType.percent)
+                      Wrap(
+                        spacing: 6,
+                        children: [5, 10, 15, 20, 25, 50].map((pct) {
+                          final selected = amountCtl.text == pct.toString();
+                          return ChoiceChip(
+                            label: Text('$pct%',
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: selected
+                                        ? Colors.white
+                                        : PosTheme.textPrimaryOf(ctx))),
+                            selected: selected,
+                            backgroundColor: PosTheme.backgroundPageOf(ctx),
+                            selectedColor: PosTheme.accentBlue,
+                            onSelected: (_) => setDialogState(
+                                () => amountCtl.text = pct.toString()),
+                          );
+                        }).toList(),
+                      ),
+                  ],
+                ),
               ),
             ),
             actions: [

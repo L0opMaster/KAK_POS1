@@ -54,6 +54,10 @@ class Product {
   final String? description;
   final double cost;
   final double price;
+
+  /// This product's own tax rate, as a fraction (0.08 = 8%). Every product
+  /// carries its own rate now — there is no more store-wide fallback.
+  final double taxRate;
   final double? resolvedPrice;
   final bool active;
   final bool sellable;
@@ -88,6 +92,7 @@ class Product {
     this.description,
     required this.cost,
     required this.price,
+    required this.taxRate,
     this.resolvedPrice,
     required this.active,
     this.sellable = true,
@@ -124,6 +129,7 @@ class Product {
         description: json['description'] as String?,
         cost: (json['cost'] as num?)?.toDouble() ?? 0,
         price: (json['price'] as num?)?.toDouble() ?? 0,
+        taxRate: (json['taxRate'] as num?)?.toDouble() ?? 0,
         resolvedPrice: (json['resolvedPrice'] as num?)?.toDouble(),
         active: json['active'] as bool? ?? true,
         sellable: json['sellable'] as bool? ?? true,
@@ -168,6 +174,7 @@ class Product {
         if (description != null) 'description': description,
         'cost': cost,
         'price': price,
+        'taxRate': taxRate,
         'active': active,
         'sellable': sellable,
         'purchasable': purchasable,
@@ -196,6 +203,7 @@ class Product {
         nameKm: 'ទំនិញប្រើប្រាស់',
         price: 10.0,
         cost: 5.0,
+        taxRate: 0,
         active: true,
         trackInventory: true,
         categoryId: 1,
@@ -212,6 +220,7 @@ class Product {
     String? description,
     double? cost,
     double? price,
+    double? taxRate,
     double? resolvedPrice,
     bool? active,
     bool? sellable,
@@ -247,6 +256,7 @@ class Product {
       description: description ?? this.description,
       cost: cost ?? this.cost,
       price: price ?? this.price,
+      taxRate: taxRate ?? this.taxRate,
       resolvedPrice: resolvedPrice ?? this.resolvedPrice,
       active: active ?? this.active,
       sellable: sellable ?? this.sellable,

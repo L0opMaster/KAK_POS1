@@ -12,7 +12,6 @@ import '../providers/category_provider.dart';
 import '../providers/product_provider.dart';
 import 'barcode_scanner_screen.dart';
 import '../widgets/category_tabs.dart';
-import '../widgets/cart_summary_bar.dart';
 import '../widgets/product_grid.dart';
 import '../widgets/product_modifier_sheet.dart';
 
@@ -21,7 +20,10 @@ import '../widgets/product_modifier_sheet.dart';
 /// bar + category filter + product grid. Does NOT include source's cart
 /// sidebar (`CartPanel`, fixed 380px) — there's no room for a permanent
 /// side panel on a phone; see DAY_06.md section 10 for the layout
-/// adaptation. `CartSummaryBar` (Day 7) is the mobile answer instead.
+/// adaptation. `CartFab` (hosted on `MobileShellScreen`'s Scaffold, since
+/// this screen has none of its own) is the mobile answer instead — a
+/// floating action button showing live item count/total, replacing the
+/// original `CartSummaryBar` bottom bar.
 ///
 /// MODIFIED Day 7: `onProductTap`/`onProductQuickAdd` now call the real
 /// `cartProvider.notifier.addItemFromProduct()` — matching `[OLD/SOURCE]`
@@ -148,7 +150,6 @@ class _PosRegisterScreenState extends ConsumerState<PosRegisterScreen> {
         Expanded(
           child: _buildBody(productState),
         ),
-        const CartSummaryBar(),
       ],
     );
   }

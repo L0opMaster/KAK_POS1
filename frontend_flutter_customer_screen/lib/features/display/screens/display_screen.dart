@@ -33,9 +33,32 @@ class DisplayScreen extends ConsumerWidget {
     }
 
     return Scaffold(
+      appBar: AppBar(),
       body: Stack(
         children: [
-          Positioned.fill(child: _buildView(displayState)),
+          Positioned.fill(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 350),
+              switchInCurve: Curves.easeOut,
+              switchOutCurve: Curves.easeIn,
+              transitionBuilder: (child, animation) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, 0.03),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: child,
+                  ),
+                );
+              },
+              child: KeyedSubtree(
+                key: ValueKey<DisplayView>(_effectiveView(displayState)),
+                child: _buildView(displayState),
+              ),
+            ),
+          ),
           if (!displayState.posConnected)
             Positioned(
               top: 0,
@@ -47,13 +70,37 @@ class DisplayScreen extends ConsumerWidget {
                 child: const Text(
                   'Waiting for the register to connect...',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
         ],
       ),
     );
+  }
+
+  /// The view actually rendered by [_buildView], folding in its
+  /// null-data fallback to [DisplayView.idle] — used as the
+  /// [AnimatedSwitcher] key so it only transitions on a real view change,
+  /// not on every cart/message update within the same view.
+  DisplayView _effectiveView(DisplayState state) {
+    switch (state.view) {
+      case DisplayView.cart:
+        return state.cart != null ? DisplayView.cart : DisplayView.idle;
+      case DisplayView.paymentPending:
+        return state.paymentPending != null
+            ? DisplayView.paymentPending
+            : DisplayView.idle;
+      case DisplayView.paymentCompleted:
+        return state.paymentCompleted != null
+            ? DisplayView.paymentCompleted
+            : DisplayView.idle;
+      case DisplayView.idle:
+        return DisplayView.idle;
+    }
   }
 
   Widget _buildView(DisplayState state) {

@@ -7,7 +7,6 @@ import '../../../core/utils/money.dart';
 import '../models/cart_models.dart';
 import '../models/product_models.dart';
 import '../services/cart_service.dart';
-import '../services/settings_service.dart';
 import 'product_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -38,7 +37,6 @@ class CartState {
         'loyalty': loyalty,
         // 'loading': loading,
         'orderMode': orderMode.index,
-        'taxRate': taxRate,
         'customerId': customerId,
         'tableId': tableId,
         'waitingNumber': waitingNumber,
@@ -58,7 +56,6 @@ class CartState {
       // loading: json['loading'] as bool? ?? false,
       loading: false,
       orderMode: OrderMode.values[json['orderMode'] ?? 0],
-      taxRate: (json['taxRate'] as num?)?.toDouble() ?? 0.08,
       customerId: json['customerId'] as int?,
       tableId: json['tableId'] as int?,
       waitingNumber: (json['waitingNumber'] as num?)?.toInt(),
@@ -73,7 +70,6 @@ class CartState {
     this.loyalty = 0,
     this.loading = false,
     this.orderMode = OrderMode.dineIn,
-    this.taxRate = 0.08,
     this.customerId,
     this.tableId,
     this.waitingNumber,
@@ -89,7 +85,6 @@ class CartState {
   final double loyalty;
   final bool loading;
   final OrderMode orderMode;
-  final double taxRate;
   final int? customerId;
   final int? tableId;
 
@@ -108,7 +103,6 @@ class CartState {
     double? loyalty,
     bool? loading,
     OrderMode? orderMode,
-    double? taxRate,
     int? customerId,
     int? tableId,
     int? waitingNumber,
@@ -125,7 +119,6 @@ class CartState {
       loyalty: loyalty ?? this.loyalty,
       loading: loading ?? this.loading,
       orderMode: orderMode ?? this.orderMode,
-      taxRate: taxRate ?? this.taxRate,
       customerId: clearCustomer ? null : customerId ?? this.customerId,
       tableId: clearTable ? null : tableId ?? this.tableId,
       waitingNumber:
@@ -162,8 +155,33 @@ class CartState {
 
   double get discountAmount => Money.toMajor(_discountMinor);
 
-  /// Tax amount calculated on the discounted subtotal.
-  double get taxAmount => total * taxRate;
+  /// Tax is per-product now (see `Product.taxRate`) — summed per item at
+  /// each item's own rate, not one flat rate applied to the whole cart. The
+  /// cart-level discount is prorated across items by each item's share of
+  /// [total] before taxing, mirroring the backend's `computeLineTaxes`
+  /// exactly (see `SaleService.java`) so the on-screen total during
+  /// checkout matches what actually gets charged, not a flat blended guess.
+  double get taxAmount {
+    if (total <= 0) return 0;
+    double sum = 0;
+    for (final item in items) {
+      final netItemTotal =
+          item.lineTotal - (item.discountAmount ?? 0) * item.qty;
+      final share = netItemTotal / total;
+      final itemCartDiscount = discountAmount * share;
+      final taxable = netItemTotal - itemCartDiscount;
+      sum += taxable * item.product.taxRate;
+    }
+    return sum;
+  }
+
+  /// Blended effective rate across all items, for display only (e.g. the
+  /// "Tax (X%)" label) — mirrors the backend's `blendedTaxRate` derivation.
+  double get blendedTaxRate {
+    final taxable = total - discountAmount;
+    if (taxable <= 0) return 0;
+    return taxAmount / taxable;
+  }
 
   /// Grand total: subtotal - cart discount + tax - loyalty
   double get finalTotal {
@@ -174,9 +192,6 @@ class CartState {
     final double netMajor = Money.toMajor(net);
     return netMajor + taxAmount;
   }
-
-  /// Set a new tax rate (e.g. 0.10 for 10%).
-  CartState withTaxRate(double rate) => copyWith(taxRate: rate.clamp(0, 1.0));
 }
 
 /// User-facing result of attempting to add a barcode to the active cart.
@@ -197,8 +212,8 @@ class BarcodeAddResult {
 /// This class mixes two different persistence layers, so read each method's
 /// comment carefully:
 ///   - `restoreCart` / `persistCart` (OFFLINE): a full snapshot of `state`
-///     (items, discount, order mode, tax rate, table, waiting number, ...)
-///     is JSON-encoded into SharedPreferences under `_cartPrefsKey`
+///     (items, discount, order mode, table, waiting number, ...) is
+///     JSON-encoded into SharedPreferences under `_cartPrefsKey`
 ///     ('cart_state_v2'). This is a UI-level cache purely so the on-screen
 ///     cart survives an app restart/hot restart — it is independent of
 ///     whichever CartService is active.
@@ -207,8 +222,9 @@ class BarcodeAddResult {
 ///     `cartServiceProvider` resolved to — ApiCartService (ONLINE) or
 ///     LocalCartService (OFFLINE), based on `AppConfig.useApiCartService`.
 ///     This is the source of truth for cart *items* specifically.
-///   - `syncTaxRate` (ONLINE): calls SettingsService, which always talks to
-///     the backend (settings has no offline/local variant).
+///
+/// Tax is per-product (`Product.taxRate`), not synced/stored on the cart at
+/// all — see `CartState.taxAmount`.
 class CartNotifier extends StateNotifier<CartState> {
   static const _cartPrefsKey = 'cart_state_v2';
 
@@ -719,12 +735,6 @@ class CartNotifier extends StateNotifier<CartState> {
   /// Remove any loyalty deduction.
   void clearLoyalty() => state = state.copyWith(loyalty: 0);
 
-  /// Set tax rate (decimal, e.g. 0.10 for 10%).
-  void setTaxRate(double rate) {
-    state = state.withTaxRate(rate);
-    persistCart();
-  }
-
   /// Set per-item discount amount (applied per unit).
   Future<void> setItemDiscount(String id, double amount) async {
     state = state.copyWith(loading: true);
@@ -773,23 +783,6 @@ class CartNotifier extends StateNotifier<CartState> {
     persistCart();
   }
 
-  // ── ONLINE ────────────────────────────────────────────────────────────
-  /// Sync the tax rate from backend settings into the cart state.
-  /// Called on POS screen initialization. Always goes over the network via
-  /// SettingsService (features/pos/services/settings_service.dart) — there
-  /// is no offline/local tax settings source, so if this fails it's caught
-  /// and simply skipped (cart keeps whatever tax rate it already had).
-  Future<void> syncTaxRate() async {
-    try {
-      final settingsService = _ref.read(settingsServiceProvider);
-      final tax = await settingsService.getTax();
-      final rate = (tax['taxRate'] as num?)?.toDouble() ?? 0.08;
-      state = state.withTaxRate(rate);
-      await persistCart();
-    } catch (e) {
-      debugPrint('Tax rate sync skipped: $e');
-    }
-  }
 }
 
 // ══ SWITCH POINT (assembly) ═══════════════════════════════════════════

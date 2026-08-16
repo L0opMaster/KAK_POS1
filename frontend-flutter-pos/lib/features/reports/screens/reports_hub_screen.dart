@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/config/currency_utils.dart';
 import '../../../core/config/pos_theme.dart';
 import '../../../core/providers/language_provider.dart';
 import '../../../core/utils/bilingual.dart';
@@ -377,6 +378,7 @@ class _DailyReportScreenState extends ConsumerState<DailyReportScreen> {
 
   Widget _buildContent() {
     final s = _data?.summary;
+    final cur = watchCurrency(ref);
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(
@@ -401,8 +403,10 @@ class _DailyReportScreenState extends ConsumerState<DailyReportScreen> {
                     ),
                     const SizedBox(height: 20),
                     _metricRow(context.l10n.reportsHubGrossSales,
-                        s.grossSales),
+                        s.grossSales,
+                        currencyCode: cur),
                     _metricRow(context.l10n.reportsHubNetSales, s.netSales,
+                        currencyCode: cur,
                         color: PosTheme.primaryGreen, bold: true),
                     _metricRow(context.l10n.reportsHubTransactions,
                         s.salesCount.toDouble(),
@@ -411,7 +415,7 @@ class _DailyReportScreenState extends ConsumerState<DailyReportScreen> {
                       _metricRow(
                         context.l10n.reportsHubAvgPerSale,
                         s.netSales / s.salesCount,
-                        prefix: '\$',
+                        currencyCode: cur,
                       ),
                   ],
                 ),
@@ -424,7 +428,7 @@ class _DailyReportScreenState extends ConsumerState<DailyReportScreen> {
             _sectionTitle(context.l10n.reportsHubPaymentBreakdown),
             const SizedBox(height: 8),
             ..._data!.payments.map(
-              (p) => _listRow(p.method, '\$${_fmtNum(p.total)}',
+              (p) => _listRow(p.method, formatAmount(p.total, cur),
                   context.l10n.reportsTxCount(p.count.toString())),
             ),
             const SizedBox(height: 16),
@@ -437,7 +441,7 @@ class _DailyReportScreenState extends ConsumerState<DailyReportScreen> {
             ..._data!.topProducts.take(5).map(
                   (p) => _listRow(
                     _topProductLabel(p),
-                    '\$${_fmtNum(p.total)}',
+                    formatAmount(p.total, cur),
                     context.l10n.reportsHubQuantitySold(_fmtNum(p.quantity)),
                   ),
                 ),
@@ -451,7 +455,7 @@ class _DailyReportScreenState extends ConsumerState<DailyReportScreen> {
             ..._data!.cashiers.map(
               (c) => _listRow(
                 c.cashierName,
-                '\$${_fmtNum(c.salesTotal)}',
+                formatAmount(c.salesTotal, cur),
                 context.l10n.reportsTxCount(c.salesCount.toString()),
               ),
             ),
@@ -465,7 +469,7 @@ class _DailyReportScreenState extends ConsumerState<DailyReportScreen> {
             ..._data!.shifts.map(
               (s) => _listRow(
                 s.openedBy ?? context.l10n.reportsHubNotAvailable,
-                '\$${_fmtNum(s.salesTotal)}',
+                formatAmount(s.salesTotal, cur),
                 s.status ?? '',
               ),
             ),
@@ -487,7 +491,7 @@ class _DailyReportScreenState extends ConsumerState<DailyReportScreen> {
   Widget _metricRow(String label, double value,
       {bool bold = false,
       bool isInt = false,
-      String prefix = '',
+      String? currencyCode,
       Color? color}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -498,7 +502,9 @@ class _DailyReportScreenState extends ConsumerState<DailyReportScreen> {
               style: TextStyle(
                   fontSize: 14, color: bold ? null : PosTheme.textSecondary)),
           Text(
-            '$prefix${isInt ? value.toInt().toString() : '\$${_fmtNum(value)}'}',
+            isInt
+                ? value.toInt().toString()
+                : formatAmount(value, currencyCode),
             style: TextStyle(
                 fontSize: 15,
                 fontWeight: bold ? FontWeight.bold : FontWeight.w500,

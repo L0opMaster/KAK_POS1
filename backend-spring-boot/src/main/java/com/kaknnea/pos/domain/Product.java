@@ -97,6 +97,16 @@ public class Product extends BaseEntity {
     @Column(nullable = false, precision = 18, scale = 2)
     private BigDecimal price;
 
+    /**
+     * This product's own tax rate, as a fraction (0.08 = 8%) — matches
+     * {@code BusinessSettings.taxRate}/{@code Sale.taxRate}'s existing
+     * convention. Every product carries its own rate; there is no more
+     * store-wide fallback (see V116 migration for how existing rows are
+     * backfilled from the old global rate).
+     */
+    @Column(name = "tax_rate", nullable = false)
+    private double taxRate;
+
     @Column(nullable = false)
     private boolean active = true;
 

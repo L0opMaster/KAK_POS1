@@ -120,6 +120,20 @@ class ThermalPrinterService {
       await timePrintStage('transportDisconnect', () => transport.disconnect());
     }
   }
+
+  /// Connects, writes pre-built raw ESC/POS [bytes] and disconnects — for
+  /// jobs with no [ReceiptViewModel] behind them (e.g. a bare queue-number
+  /// ticket; see `PrintService.printWaitingNumberTicket`), which don't go
+  /// through [EscPosReceiptBuilder]'s receipt-specific layout.
+  Future<void> printRaw(List<int> bytes, PrinterConfig config) async {
+    final transport = _transportFor(config);
+    await timePrintStage('transportConnect', () => transport.connect());
+    try {
+      await timePrintStage('transportWrite', () => transport.write(bytes));
+    } finally {
+      await timePrintStage('transportDisconnect', () => transport.disconnect());
+    }
+  }
 }
 
 final thermalPrinterServiceProvider = Provider<ThermalPrinterService>((ref) {

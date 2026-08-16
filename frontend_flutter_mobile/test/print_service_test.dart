@@ -73,9 +73,10 @@ void main() {
       expect(String.fromCharCodes(bytes.take(5)), '%PDF-');
     });
 
-    test('a Khmer receipt still renders — via the font-fallback pw.Text '
-        'path (the bitmap path is Day 14 scope, see this class\'s doc '
-        'comment) — rather than failing to produce a PDF at all', () async {
+    test('a Khmer receipt without a context still renders — via the '
+        'font-fallback pw.Text path, since the bitmap path (Day 14, see '
+        'khmer_receipt_dispatch_test.dart) needs a BuildContext — rather '
+        'than failing to produce a PDF at all', () async {
       final bytes = await _service().buildReceiptPdf(
         _khmerReceipt,
         PrinterPaperSize.mm80,

@@ -3474,6 +3474,12 @@ class AppLocalizationsKm extends AppLocalizations {
   String get heldTicketsTapToRestore => 'ចុចដើម្បីស្តារឡើងវិញ';
 
   @override
+  String get heldTicketsPrintBill => 'បោះពុម្ពវិក្កយបត្រ';
+
+  @override
+  String get heldTicketsPrintNumber => 'បោះពុម្ពលេខសម្គាល់';
+
+  @override
   String get modifierSheetQuantity => 'បរិមាណ';
 
   @override

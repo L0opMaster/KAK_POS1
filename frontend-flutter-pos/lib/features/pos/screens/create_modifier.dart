@@ -435,8 +435,8 @@ class _CreateModifierState extends ConsumerState<CreateModifier> {
                 ? context.l10n.createModifierEditTitle
                 : context.l10n.createModifierCreateTitle,
           ),
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black87,
+          // backgroundColor: Colors.white,
+          // foregroundColor: Colors.black87,
           elevation: 1,
         ),
         body: SafeArea(
@@ -581,8 +581,7 @@ class _CreateModifierState extends ConsumerState<CreateModifier> {
                                         ),
                                       )
                                     : Text(
-                                        context.l10n.commonDelete
-                                            .toUpperCase(),
+                                        context.l10n.commonDelete.toUpperCase(),
                                         style: const TextStyle(
                                           fontWeight: FontWeight.bold,
                                         ),

@@ -946,6 +946,70 @@
   "paymentScreenShort": "Short",
   "paymentScreenChargeCash": "Charge Cash",
   "paymentScreenPayFullAmount": "Pay Full Amount",
+  "paymentScreenPayLater": "Pay Later / Credit",
+  "paymentScreenCreditRequiresCustomer": "Select a customer first to sell on credit",
+  "paymentScreenCreditDialogTitle": "Credit Sale",
+  "paymentScreenCreditDueDateLabel": "Due Date",
+  "paymentScreenCreditExpiresLabel": "Expiration Date (optional)",
+  "paymentScreenCreditNotesLabel": "Notes (optional)",
+  "paymentScreenCreditConfirm": "Create Credit Sale",
+  "paymentScreenCreditDueDateInvalid": "Due date cannot be before today",
+  "paymentScreenCreditExpiresInvalid": "Expiration date cannot be before the due date",
+  "paymentScreenCreditSaleCreated": "Credit Sale Created",
+  "paymentScreenCreditStatusLabel": "Status",
+  "paymentScreenCreditDueLabel": "Due",
+  "paymentScreenCreditSaleFailed": "Credit sale failed: {error}",
+  "@paymentScreenCreditSaleFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "creditRepaymentDialogTitle": "Record Payment",
+  "creditPaymentReceiptTitle": "CREDIT PAYMENT",
+  "creditPaymentReceiptCreditSaleLabel": "Credit Sale",
+  "creditPaymentReceiptPreviousBalanceLabel": "Previous Balance",
+  "creditPaymentReceiptPaymentLabel": "Payment",
+  "creditRepaymentRemainingLabel": "Remaining Balance",
+  "creditRepaymentAmountLabel": "Payment Amount",
+  "creditRepaymentPayFullButton": "Pay Full Balance",
+  "creditRepaymentMethodLabel": "Payment Method",
+  "creditRepaymentNotesLabel": "Notes (optional)",
+  "creditRepaymentConfirmButton": "Pay {amount}",
+  "@creditRepaymentConfirmButton": {
+    "placeholders": {
+      "amount": {
+        "type": "Object"
+      }
+    }
+  },
+  "creditRepaymentAmountInvalid": "Enter a valid amount",
+  "creditRepaymentExceedsBalance": "Amount exceeds remaining balance",
+  "creditRepaymentSuccess": "Payment recorded",
+  "creditRepaymentFailed": "Payment failed: {error}",
+  "@creditRepaymentFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "customerManagementCreditSalesTitle": "Credit Sales",
+  "customerManagementTotalCreditLabel": "Total Credit",
+  "customerManagementTotalPaidLabel": "Total Paid",
+  "customerManagementOutstandingLabel": "Outstanding",
+  "customerManagementRecordPaymentButton": "Record Payment",
+  "customerManagementPaymentHistoryTitle": "Payment History",
+  "customerManagementNoCreditSales": "No credit sales",
+  "customerManagementNoPaymentHistory": "No payments recorded yet",
+  "receiptsScreenRecordPaymentAction": "Record Payment",
+  "creditStatusOpen": "Open",
+  "creditStatusPartiallyPaid": "Partially Paid",
+  "creditStatusPaid": "Paid",
+  "creditStatusOverdue": "Overdue",
+  "creditStatusExpired": "Expired",
+  "creditStatusCancelled": "Cancelled",
   "paymentScreenTotalLabel": "Total: {amount}",
   "@paymentScreenTotalLabel": {
     "placeholders": {
@@ -2260,6 +2324,8 @@
   },
   "waitingTicketsReady": "Ready",
   "waitingTicketsCollected": "Collected",
+  "waitingTicketsPrintYourNumber": "Your Number",
+  "waitingTicketsPrintInstruction": "Please come to the counter when your number is called",
   "cashierPerformanceTitle": "Sales by Cashier",
   "reportsNoDataForPeriod": "No data for this period",
   "reportsTxCount": "{count} tx",

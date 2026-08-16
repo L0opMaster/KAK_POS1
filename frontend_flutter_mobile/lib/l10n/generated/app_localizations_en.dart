@@ -3465,6 +3465,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get heldTicketsTapToRestore => 'Tap to restore';
 
   @override
+  String get heldTicketsPrintBill => 'Print bill';
+
+  @override
+  String get heldTicketsPrintNumber => 'Print number';
+
+  @override
   String get modifierSheetQuantity => 'Quantity';
 
   @override

@@ -5,17 +5,22 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
+import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
+
 import '../../../core/providers/language_provider.dart';
 import '../../../core/services/api_service.dart';
+import '../../../core/utils/khmer_text.dart';
 import '../../../core/utils/print_perf.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../models/receipt_models.dart';
 import 'printing/khmer_pdf_font.dart';
 import 'printing/printer_pdf_format.dart';
 import 'printing/printer_profile.dart';
+import 'printing/receipt_bitmap_renderer.dart';
 import 'printing/receipt_layout_spec.dart';
 import 'printing/receipt_view_model.dart';
 import 'printing/thermal_printer_service.dart';
+import 'printing/ticket_line_widgets.dart';
 
 const _grey = PdfColor.fromInt(0xFF999999);
 const _greyDark = PdfColor.fromInt(0xFF666666);
@@ -23,37 +28,38 @@ const _green = PdfColor.fromInt(0xFF4CAF50);
 
 /// Ported from `frontend-flutter-pos/lib/features/pos/services/
 /// print_service.dart` — PARTIAL PORT. `printReceipt`/`buildReceiptPdf`/
-/// `_pageContent`/`_receiptPageContent` and all its private row-building
-/// helpers are COPY/ADAPT NEARLY EXACTLY for the `pdfDriver` transport —
-/// confirmed (like source) zero platform-conditional code needed.
+/// `_pageContent`/`_khmerImagePageContent`/`_receiptPageContent` and all
+/// its private row-building helpers are COPY/ADAPT NEARLY EXACTLY —
+/// confirmed (like source) zero platform-conditional code needed anywhere
+/// in this pipeline, PDF or Khmer-bitmap-embedded PDF alike.
 ///
-/// Two things dropped, both genuinely unreachable in this port today:
-///  - `buildReceiptsPdf` (one combined PDF for "Print All") — no caller;
-///    `receipts_screen.dart` (Day 12) never built that action. Add it back
-///    when/if that day happens, not speculatively.
-///  - The Khmer bitmap-image branch of `_pageContent` (source's
-///    `_khmerImagePageContent`, via `ReceiptBitmapRenderer`) — that's Day
-///    14 scope. `_pageContent` here always takes source's OWN documented
-///    fallback path for this exact case ("without a context, a Khmer
-///    receipt still renders — via the older `pw.Text` path — rather than
-///    failing to produce a PDF at all"): Khmer text renders through
-///    `KhmerPdfFont`'s fallback font, imperfectly shaped but functional,
-///    never a crash or a missing PDF. `context` stays a parameter so the
-///    call sites (and this method's signature) don't need to change again
-///    when Day 14 adds the bitmap branch here.
+/// One thing dropped, genuinely unreachable in this port today:
+/// `buildReceiptsPdf` (one combined PDF for "Print All") — no caller;
+/// `receipts_screen.dart` (Day 12) never built that action. Add it back
+/// when/if that action happens, not speculatively.
 ///
-/// `printReceipt`'s non-`pdfDriver` branch (bluetooth/usb/network) can
-/// only be reached once Settings (Day 19) lets a cashier actually pick
-/// one of those — until then `ThermalPrinterService.loadConfig()` always
-/// returns `PrinterConfig.defaultConfig` (`pdfDriver`), so it's a
+/// `printReceipt`'s non-`pdfDriver` branch (bluetooth/usb/network, wired
+/// via `ThermalPrinterService.printReceipt` — Day 15/16) can only be
+/// reached once Settings (Day 19) lets a cashier actually pick one of
+/// those — until then `ThermalPrinterService.loadConfig()` always returns
+/// `PrinterConfig.defaultConfig` (`pdfDriver`), so it's a
 /// currently-unreachable defensive branch, not dead code to delete —
-/// deleting it would silently break the day a real Day 15/16/19 transport
-/// gets configured.
+/// deleting it would silently break the day a real Day 19 transport gets
+/// configured.
 class PrintService {
-  PrintService(this._api, this._ref);
+  PrintService(
+    this._api,
+    this._ref, {
+    this.bitmapRenderer = const ReceiptBitmapRenderer(),
+  });
 
   final ApiService _api;
   final Ref _ref;
+
+  /// Injectable for tests — the same pattern [EscPosReceiptBuilder]
+  /// (Day 15) uses to substitute a fake renderer that skips real
+  /// off-screen widget mounting (which needs a live `Overlay`/frame pump).
+  final ReceiptBitmapRenderer bitmapRenderer;
 
   /// Print a receipt for the given [saleId]. Returns true if the print job
   /// was submitted successfully.
@@ -72,32 +78,284 @@ class PrintService {
         l10n,
       );
 
-      final config = await _ref
-          .read(thermalPrinterServiceProvider)
-          .loadConfig();
-      if (config.transportType == PrinterTransportType.pdfDriver) {
-        final pdfBytes = await buildReceiptPdf(
-          viewModel,
-          config.paperSize,
-          context: context,
-        );
-        await Printing.layoutPdf(
-          onLayout: (_) => pdfBytes,
-          name: 'receipt_$saleId',
-        );
-        return true;
-      }
-      // Non-PDF transports need Day 15/16's real ESC/POS dispatch — see
-      // this class's doc comment for why this branch can't be reached yet.
-      debugPrint(
-        'Print failed: ${config.transportType.name} transport not '
-        'supported yet (Day 15/16).',
+      return printReceiptViewModel(
+        context,
+        viewModel,
+        jobName: 'receipt_$saleId',
       );
-      return false;
     } catch (e) {
       debugPrint('Print failed: $e');
       return false;
     }
+  }
+
+  /// Print an already-built [receipt] directly — no backend sale lookup.
+  /// Used for [printReceipt] itself (after it fetches and builds the view
+  /// model) and for a pre-payment "bill" print of an in-progress cart or
+  /// held ticket (see [ReceiptViewModel.fromCart]), where no sale exists
+  /// yet. Shares the exact PDF/thermal transport branching [printReceipt]
+  /// already used, so a pre-payment bill and the final paid receipt always
+  /// come out of the same pipeline. Returns true if the print job was
+  /// submitted successfully.
+  Future<bool> printReceiptViewModel(
+    BuildContext context,
+    ReceiptViewModel receipt, {
+    required String jobName,
+  }) async {
+    try {
+      final config = await _ref
+          .read(thermalPrinterServiceProvider)
+          .loadConfig();
+      if (!context.mounted) return false;
+      if (config.transportType == PrinterTransportType.pdfDriver) {
+        final pdfBytes = await buildReceiptPdf(
+          receipt,
+          config.paperSize,
+          context: context,
+        );
+        await Printing.layoutPdf(onLayout: (_) => pdfBytes, name: jobName);
+      } else {
+        if (!context.mounted) return false;
+        await _ref
+            .read(thermalPrinterServiceProvider)
+            .printReceipt(context, receipt, config);
+      }
+      return true;
+    } catch (e) {
+      if (e is ReceiptRenderException) {
+        debugPrint('Khmer receipt render failed: ${e.message}');
+      } else {
+        debugPrint('Print failed: $e');
+      }
+      return false;
+    }
+  }
+
+  /// Prints a compact queue-number ticket — just the number in large print,
+  /// not an itemized bill — so a customer can carry it and be called up
+  /// when their order is ready. Distinct from [printReceiptViewModel],
+  /// which always renders the full receipt layout (header/items/totals)
+  /// that a bare number ticket has no use for.
+  ///
+  /// [heading]/[instruction] are best-effort labels (e.g. "Your Number" /
+  /// "Please come to the counter when your number is called") — the PDF
+  /// path renders them through [KhmerPdfFont]'s fallback-aware theme same
+  /// as every other PDF in the app. Native ESC/POS text has no Khmer glyphs
+  /// at all, so if any of [businessName]/[heading]/[instruction] is Khmer,
+  /// the whole ticket is rasterized as one bitmap via
+  /// [ReceiptBitmapRenderer.renderWidget] (see [WaitingNumberTicketContent])
+  /// instead of native ESC/POS text — a fully Latin/English ticket stays
+  /// fast native text. Returns true if the print job was submitted
+  /// successfully.
+  Future<bool> printWaitingNumberTicket(
+    BuildContext context, {
+    required int waitingNumber,
+    String? businessName,
+    String? heading,
+    String? instruction,
+  }) async {
+    final numberText = '#${waitingNumber.toString().padLeft(3, '0')}';
+    // Native pw.Text (PDF) and native ESC/POS text both need this same
+    // decision: package:pdf's font-fallback shaping isn't reliable for
+    // Khmer (see [_khmerImagePageContent]'s doc comment) and native ESC/POS
+    // text has no Khmer glyphs at all — so on EITHER transport, if any of
+    // businessName/heading/instruction is Khmer, the whole ticket is
+    // rasterized as one Flutter-shaped bitmap via WaitingNumberTicketContent
+    // instead of native text. Computed once here so both builders below
+    // agree on the same decision.
+    final hasKhmer = [
+      businessName,
+      heading,
+      instruction,
+    ].whereType<String>().any(containsKhmerText);
+    try {
+      final config = await _ref
+          .read(thermalPrinterServiceProvider)
+          .loadConfig();
+      if (!context.mounted) return false;
+      if (config.transportType == PrinterTransportType.pdfDriver) {
+        final pdfBytes = await _buildWaitingNumberPdf(
+          context,
+          numberText,
+          config.paperSize,
+          hasKhmer: hasKhmer,
+          businessName: businessName,
+          heading: heading,
+          instruction: instruction,
+        );
+        await Printing.layoutPdf(
+          onLayout: (_) => pdfBytes,
+          name: 'ticket_$waitingNumber',
+        );
+      } else {
+        if (!context.mounted) return false;
+        final bytes = await _buildWaitingNumberEscPos(
+          context,
+          numberText,
+          config.paperSize,
+          hasKhmer: hasKhmer,
+          businessName: businessName,
+          heading: heading,
+          instruction: instruction,
+        );
+        await _ref.read(thermalPrinterServiceProvider).printRaw(bytes, config);
+      }
+      return true;
+    } catch (e) {
+      debugPrint('Waiting number ticket print failed: $e');
+      return false;
+    }
+  }
+
+  Future<Uint8List> _buildWaitingNumberPdf(
+    BuildContext context,
+    String numberText,
+    PrinterPaperSize paperSize, {
+    required bool hasKhmer,
+    String? businessName,
+    String? heading,
+    String? instruction,
+  }) async {
+    final doc = pw.Document(theme: await KhmerPdfFont.loadTheme());
+    final content = hasKhmer && context.mounted
+        ? await _khmerImageWidgetContent(
+            context,
+            WaitingNumberTicketContent(
+              businessName: businessName,
+              heading: heading,
+              numberText: numberText,
+              instruction: instruction,
+            ),
+            paperSize,
+          )
+        : pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+            children: [
+              if (businessName != null && businessName.isNotEmpty) ...[
+                pw.Text(
+                  businessName,
+                  textAlign: pw.TextAlign.center,
+                  style: pw.TextStyle(
+                    fontSize: 14,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+                pw.SizedBox(height: ReceiptSpacing.smallGap),
+              ],
+              if (heading != null && heading.isNotEmpty) ...[
+                pw.Text(
+                  heading,
+                  textAlign: pw.TextAlign.center,
+                  style: pw.TextStyle(fontSize: 13, color: _greyDark),
+                ),
+                pw.SizedBox(height: ReceiptSpacing.sectionGap),
+              ],
+              // Bordered box around the number — same "ticket stub" touch
+              // as WaitingNumberTicketContent (the Khmer bitmap path's
+              // widget), so the printed ticket looks the same regardless
+              // of which pipeline produced it. Stretched to the page's full
+              // available width (via the outer Column's `stretch`, not
+              // wrapped in `pw.Center`) so FittedBox has a genuinely bounded
+              // width to shrink into — at a fixed 64pt, "#055" plus this
+              // box's own padding doesn't fit `mm58`'s ~136pt usable width
+              // (only `mm80`'s ~204pt), so without this the number silently
+              // overflowed/clipped on the small paper size specifically.
+              pw.Container(
+                padding: const pw.EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: pw.BoxDecoration(
+                  border: pw.Border.all(color: PdfColors.black, width: 1.5),
+                  borderRadius: pw.BorderRadius.circular(6),
+                ),
+                child: pw.FittedBox(
+                  fit: pw.BoxFit.scaleDown,
+                  child: pw.Text(
+                    numberText,
+                    style: pw.TextStyle(
+                      fontSize: 64,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              if (instruction != null && instruction.isNotEmpty) ...[
+                pw.SizedBox(height: ReceiptSpacing.sectionGap),
+                pw.Text(
+                  instruction,
+                  textAlign: pw.TextAlign.center,
+                  style: pw.TextStyle(fontSize: 11, color: _greyDark),
+                ),
+              ],
+            ],
+          );
+    doc.addPage(
+      pw.Page(pageFormat: paperSize.pdfPageFormat, build: (_) => content),
+    );
+    return doc.save();
+  }
+
+  Future<List<int>> _buildWaitingNumberEscPos(
+    BuildContext context,
+    String numberText,
+    PrinterPaperSize paperSize, {
+    required bool hasKhmer,
+    String? businessName,
+    String? heading,
+    String? instruction,
+  }) async {
+    final profile = await CapabilityProfile.load();
+    final generator = Generator(paperSize.escPosPaperSize, profile);
+    var bytes = <int>[];
+    bytes += generator.reset();
+
+    if (hasKhmer) {
+      final image = await bitmapRenderer.renderWidget(
+        context,
+        WaitingNumberTicketContent(
+          businessName: businessName,
+          heading: heading,
+          numberText: numberText,
+          instruction: instruction,
+        ),
+        paperSize,
+      );
+      bytes += generator.imageRaster(image, align: PosAlign.center);
+    } else {
+      void line(
+        String text, {
+        bool bold = false,
+        PosTextSize size = PosTextSize.size1,
+      }) {
+        bytes += generator.text(
+          text,
+          styles: PosStyles(
+            align: PosAlign.center,
+            bold: bold,
+            height: size,
+            width: size,
+          ),
+        );
+      }
+
+      if (businessName != null && businessName.isNotEmpty) {
+        line(businessName, bold: true);
+      }
+      if (heading != null && heading.isNotEmpty) {
+        line(heading);
+      }
+      bytes += generator.feed(1);
+      line(numberText, bold: true, size: PosTextSize.size6);
+      bytes += generator.feed(1);
+      if (instruction != null && instruction.isNotEmpty) {
+        line(instruction);
+      }
+    }
+
+    bytes += generator.feed(2);
+    bytes += generator.cut();
+    return bytes;
   }
 
   /// Generate a PDF receipt from an already-localized [ReceiptViewModel],
@@ -111,7 +369,7 @@ class PrintService {
     BuildContext? context,
   }) async {
     final doc = pw.Document(theme: await KhmerPdfFont.loadTheme());
-    final content = _pageContent(context, r, paperSize);
+    final content = await _pageContent(context, r, paperSize);
 
     doc.addPage(
       pw.Page(pageFormat: paperSize.pdfPageFormat, build: (_) => content),
@@ -120,14 +378,90 @@ class PrintService {
     return timePrintStage('receiptPdfDocSave', () => doc.save());
   }
 
-  /// See this class's doc comment for why the Khmer-bitmap branch isn't
-  /// here yet — always takes the `pw.Text` path for now.
-  pw.Widget _pageContent(
+  /// [context] present and [r] Khmer → Flutter-rendered bitmap embedded as
+  /// a `pw.Image`. Otherwise → the existing `pw.Text`-based layout. Without
+  /// a [context], a Khmer receipt still renders — via the `pw.Text` path —
+  /// rather than failing to produce a PDF at all.
+  Future<pw.Widget> _pageContent(
     BuildContext? context,
     ReceiptViewModel r,
     PrinterPaperSize paperSize,
-  ) {
+  ) async {
+    if (r.containsKhmer && context != null && context.mounted) {
+      return _khmerImagePageContent(context, r, paperSize);
+    }
     return _receiptPageContent(r, paperSize);
+  }
+
+  /// Renders [r] via [ReceiptBitmapRenderer] (the same renderer the ESC/POS
+  /// thermal path uses for Khmer receipts — see `escpos_receipt_builder
+  /// .dart`, Day 15) and embeds it as a single full-page image, sized to
+  /// exactly fill the receipt's printable content width
+  /// (`paperSize.pdfPageFormat.availableWidth`) with height computed from
+  /// the source image's own aspect ratio, so it's never stretched/distorted
+  /// and never needs a second resize pass after rendering.
+  ///
+  /// Embeds the decoded `image` package raster directly via [pw.ImageImage]
+  /// instead of going through [pw.MemoryImage] with a PNG-encoded byte
+  /// array, which would round-trip freshly-rendered pixels through a PNG
+  /// encode only to have `doc.save()` immediately decode that same PNG
+  /// again — pure waste, since [pw.ImageImage] accepts [decoded] as-is.
+  Future<pw.Widget> _khmerImagePageContent(
+    BuildContext context,
+    ReceiptViewModel r,
+    PrinterPaperSize paperSize,
+  ) async {
+    final decoded = await timePrintStage(
+      'receiptPdfBitmapRender',
+      () => bitmapRenderer.renderImage(context, r, paperSize),
+    );
+    if (kDebugMode) {
+      debugPrint(
+        '[PrintPerf] receiptPdfBitmapDimensions='
+        '${decoded.width}x${decoded.height} '
+        'rawBytes=${decoded.width * decoded.height * 4}',
+      );
+    }
+    final targetWidth = paperSize.pdfPageFormat.availableWidth;
+    final targetHeight = targetWidth * decoded.height / decoded.width;
+    return pw.Image(
+      pw.ImageImage(decoded),
+      width: targetWidth,
+      height: targetHeight,
+      fit: pw.BoxFit.fill,
+    );
+  }
+
+  /// [_khmerImagePageContent], generalized to an arbitrary Flutter [child]
+  /// widget instead of a [ReceiptViewModel] — used by the waiting-number
+  /// ticket PDF builder, which has no [ReceiptViewModel] of its own but
+  /// needs the exact same "never send Khmer through pw.Text + font-fallback
+  /// shaping" treatment (see [_khmerImagePageContent]'s doc comment for why
+  /// that's unreliable for Khmer specifically).
+  Future<pw.Widget> _khmerImageWidgetContent(
+    BuildContext context,
+    Widget child,
+    PrinterPaperSize paperSize,
+  ) async {
+    final decoded = await timePrintStage(
+      'receiptPdfBitmapRender',
+      () => bitmapRenderer.renderWidgetImage(context, child, paperSize),
+    );
+    if (kDebugMode) {
+      debugPrint(
+        '[PrintPerf] receiptPdfBitmapDimensions='
+        '${decoded.width}x${decoded.height} '
+        'rawBytes=${decoded.width * decoded.height * 4}',
+      );
+    }
+    final targetWidth = paperSize.pdfPageFormat.availableWidth;
+    final targetHeight = targetWidth * decoded.height / decoded.width;
+    return pw.Image(
+      pw.ImageImage(decoded),
+      width: targetWidth,
+      height: targetHeight,
+      fit: pw.BoxFit.fill,
+    );
   }
 
   pw.Widget _receiptPageContent(

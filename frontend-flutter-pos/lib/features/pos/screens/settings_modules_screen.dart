@@ -72,7 +72,6 @@ class _SettingsModulesScreenState extends ConsumerState<SettingsModulesScreen> {
   late final TextEditingController _addressCtl;
   late final TextEditingController _phoneCtl;
   late final TextEditingController _websiteCtl;
-  late final TextEditingController _taxRatePercentCtl;
   late final TextEditingController _printerNameCtl;
   late final TextEditingController _printerTypeCtl;
   late final TextEditingController _printerAddressCtl;
@@ -103,7 +102,6 @@ class _SettingsModulesScreenState extends ConsumerState<SettingsModulesScreen> {
     _addressCtl = TextEditingController();
     _phoneCtl = TextEditingController();
     _websiteCtl = TextEditingController();
-    _taxRatePercentCtl = TextEditingController();
     _printerNameCtl = TextEditingController();
     _printerTypeCtl = TextEditingController();
     _printerAddressCtl = TextEditingController();
@@ -124,7 +122,6 @@ class _SettingsModulesScreenState extends ConsumerState<SettingsModulesScreen> {
     _addressCtl.dispose();
     _phoneCtl.dispose();
     _websiteCtl.dispose();
-    _taxRatePercentCtl.dispose();
     _printerNameCtl.dispose();
     _printerTypeCtl.dispose();
     _printerAddressCtl.dispose();
@@ -239,19 +236,9 @@ class _SettingsModulesScreenState extends ConsumerState<SettingsModulesScreen> {
       subtotal: 1.00,
       total: 1.00,
       paidAmount: 1.00,
-      currencyCode: 'USD',
+      currencyCode: 'KHR',
       footer: l10n.receiptThankYou,
     );
-  }
-
-  /// Formats a 0-1 tax fraction from the backend as a percent string for
-  /// display, e.g. 0.1 -> "10". Trims a trailing ".0" for whole numbers.
-  String _fractionToPercentText(num fraction) {
-    final percent = fraction * 100;
-    if (percent == percent.roundToDouble()) {
-      return percent.toInt().toString();
-    }
-    return percent.toString();
   }
 
   Future<void> _load() async {
@@ -275,8 +262,6 @@ class _SettingsModulesScreenState extends ConsumerState<SettingsModulesScreen> {
       _addressCtl.text = '${company['address'] ?? ''}';
       _phoneCtl.text = '${company['phone'] ?? ''}';
       _websiteCtl.text = '${company['website'] ?? ''}';
-      _taxRatePercentCtl.text =
-          _fractionToPercentText(tax['taxRate'] as num? ?? 0);
       _printerNameCtl.text = '${printers['printerName'] ?? ''}';
       _printerTypeCtl.text = '${printers['printerType'] ?? ''}';
       _printerAddressCtl.text = '${printers['printerAddress'] ?? ''}';
@@ -349,20 +334,15 @@ class _SettingsModulesScreenState extends ConsumerState<SettingsModulesScreen> {
     }
   }
 
+  /// Tax is per-product now (set on each item, see item_management_screen.dart)
+  /// — this no longer saves a store-wide rate, only the receipt tax-line
+  /// visibility toggle.
   Future<void> _saveTax() async {
     final l10n = context.l10n;
-    final percent = double.tryParse(_taxRatePercentCtl.text.trim());
-    if (percent == null || percent < 0 || percent > 100) {
-      _toast(l10n.formInvalidValue, isError: true);
-      return;
-    }
     final service = ref.read(settingsServiceProvider);
     setState(() => _savingTax = true);
     try {
-      await service.updateTax({
-        'taxRate': percent / 100,
-        'showTax': _showTax,
-      });
+      await service.updateTax({'showTax': _showTax});
       _toast(l10n.settingsTax);
     } catch (e) {
       _toast(e is ApiException ? e.message : l10n.errorGeneric, isError: true);
@@ -699,19 +679,9 @@ class _SettingsModulesScreenState extends ConsumerState<SettingsModulesScreen> {
                         title: l10n.settingsTax,
                         icon: Icons.receipt_long_outlined,
                         children: [
-                          _textField(
-                            _taxRatePercentCtl,
-                            l10n.settingsTaxRateLabel,
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                            inputFormatters: [
-                              FilteringTextInputFormatter.allow(
-                                RegExp(r'^\d*\.?\d*'),
-                              ),
-                            ],
-                            suffixText: '%',
-                          ),
+                          // Tax rate is per-product now (see
+                          // item_management_screen.dart) — this section only
+                          // controls whether the tax line prints on receipts.
                           SwitchListTile(
                             value: _showTax,
                             contentPadding: EdgeInsets.zero,

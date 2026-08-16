@@ -1,9 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../providers/currency_provider.dart';
 
 /// Ported from `frontend-flutter-pos/lib/core/config/currency_utils.dart` —
-/// COPY/ADAPT NEARLY EXACTLY.
+/// COPY/ADAPT NEARLY EXACTLY, re-synced to source's KHR-formatting fix
+/// (zero-decimal, thousands-grouped KHR display, e.g. "៛1,000" not
+/// "៛1000.00") — source's Cambodian Riel default currency work.
 const Map<String, String> _currencySymbols = {
   'USD': r'$',
   'KHR': '៛',
@@ -22,20 +25,34 @@ const Map<String, String> _currencySymbols = {
   'CAD': r'C$',
 };
 
+/// Currencies with no minor unit worth displaying (e.g. the smallest riel
+/// note is 100 KHR) — shown as whole numbers instead of `x.00`.
+const Set<String> _zeroDecimalCurrencies = {'KHR', 'VND', 'JPY', 'KRW'};
+
 /// Returns the currency symbol for the given currency code.
-/// Defaults to `$` if the code is unknown.
+/// Defaults to `៛` (KHR, the store default) if the code is null/unknown.
 String currencySymbol(String? currencyCode) {
-  if (currencyCode == null || currencyCode.isEmpty) return r'$';
+  if (currencyCode == null || currencyCode.isEmpty) return '៛';
   final upper = currencyCode.toUpperCase();
-  return _currencySymbols[upper] ?? r'$';
+  return _currencySymbols[upper] ?? '៛';
 }
 
-/// Formats an amount with the appropriate currency symbol.
-/// Example: formatAmount(12.50, 'USD') -> "$12.50"
+/// Formats an amount with the appropriate currency symbol and grouping.
+/// Example: formatAmount(12.50, 'USD') → "$12.50"
+/// Example: formatAmount(1000, 'KHR') → "៛1,000"
 String formatAmount(double amount, String? currencyCode) {
-  final symbol = currencySymbol(currencyCode);
-  final formatted = amount.toStringAsFixed(2);
-  return '$symbol$formatted';
+  final upper = currencyCode?.toUpperCase();
+  // Unknown/missing codes resolve to KHR for both symbol and decimals, so
+  // the two stay in sync instead of pairing a KHR symbol with USD-style cents.
+  final code = (upper != null && _currencySymbols.containsKey(upper)) ? upper : 'KHR';
+  final symbol = currencySymbol(code);
+  final decimalDigits = _zeroDecimalCurrencies.contains(code) ? 0 : 2;
+  final formatter = NumberFormat.currency(
+    locale: 'en_US',
+    symbol: symbol,
+    decimalDigits: decimalDigits,
+  );
+  return formatter.format(amount);
 }
 
 /// Convenience helper to watch the live currency code from settings.

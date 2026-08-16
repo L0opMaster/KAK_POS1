@@ -1942,6 +1942,145 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paymentScreenPayFullAmount => 'Pay Full Amount';
 
   @override
+  String get paymentScreenPayLater => 'Pay Later / Credit';
+
+  @override
+  String get paymentScreenCreditRequiresCustomer =>
+      'Select a customer first to sell on credit';
+
+  @override
+  String get paymentScreenCreditDialogTitle => 'Credit Sale';
+
+  @override
+  String get paymentScreenCreditDueDateLabel => 'Due Date';
+
+  @override
+  String get paymentScreenCreditExpiresLabel => 'Expiration Date (optional)';
+
+  @override
+  String get paymentScreenCreditNotesLabel => 'Notes (optional)';
+
+  @override
+  String get paymentScreenCreditConfirm => 'Create Credit Sale';
+
+  @override
+  String get paymentScreenCreditDueDateInvalid =>
+      'Due date cannot be before today';
+
+  @override
+  String get paymentScreenCreditExpiresInvalid =>
+      'Expiration date cannot be before the due date';
+
+  @override
+  String get paymentScreenCreditSaleCreated => 'Credit Sale Created';
+
+  @override
+  String get paymentScreenCreditStatusLabel => 'Status';
+
+  @override
+  String get paymentScreenCreditDueLabel => 'Due';
+
+  @override
+  String paymentScreenCreditSaleFailed(Object error) {
+    return 'Credit sale failed: $error';
+  }
+
+  @override
+  String get creditRepaymentDialogTitle => 'Record Payment';
+
+  @override
+  String get creditPaymentReceiptTitle => 'CREDIT PAYMENT';
+
+  @override
+  String get creditPaymentReceiptCreditSaleLabel => 'Credit Sale';
+
+  @override
+  String get creditPaymentReceiptPreviousBalanceLabel => 'Previous Balance';
+
+  @override
+  String get creditPaymentReceiptPaymentLabel => 'Payment';
+
+  @override
+  String get creditRepaymentRemainingLabel => 'Remaining Balance';
+
+  @override
+  String get creditRepaymentAmountLabel => 'Payment Amount';
+
+  @override
+  String get creditRepaymentPayFullButton => 'Pay Full Balance';
+
+  @override
+  String get creditRepaymentMethodLabel => 'Payment Method';
+
+  @override
+  String get creditRepaymentNotesLabel => 'Notes (optional)';
+
+  @override
+  String creditRepaymentConfirmButton(Object amount) {
+    return 'Pay $amount';
+  }
+
+  @override
+  String get creditRepaymentAmountInvalid => 'Enter a valid amount';
+
+  @override
+  String get creditRepaymentExceedsBalance =>
+      'Amount exceeds remaining balance';
+
+  @override
+  String get creditRepaymentSuccess => 'Payment recorded';
+
+  @override
+  String creditRepaymentFailed(Object error) {
+    return 'Payment failed: $error';
+  }
+
+  @override
+  String get customerManagementCreditSalesTitle => 'Credit Sales';
+
+  @override
+  String get customerManagementTotalCreditLabel => 'Total Credit';
+
+  @override
+  String get customerManagementTotalPaidLabel => 'Total Paid';
+
+  @override
+  String get customerManagementOutstandingLabel => 'Outstanding';
+
+  @override
+  String get customerManagementRecordPaymentButton => 'Record Payment';
+
+  @override
+  String get customerManagementPaymentHistoryTitle => 'Payment History';
+
+  @override
+  String get customerManagementNoCreditSales => 'No credit sales';
+
+  @override
+  String get customerManagementNoPaymentHistory => 'No payments recorded yet';
+
+  @override
+  String get receiptsScreenRecordPaymentAction => 'Record Payment';
+
+  @override
+  String get creditStatusOpen => 'Open';
+
+  @override
+  String get creditStatusPartiallyPaid => 'Partially Paid';
+
+  @override
+  String get creditStatusPaid => 'Paid';
+
+  @override
+  String get creditStatusOverdue => 'Overdue';
+
+  @override
+  String get creditStatusExpired => 'Expired';
+
+  @override
+  String get creditStatusCancelled => 'Cancelled';
+
+  @override
   String paymentScreenTotalLabel(Object amount) {
     return 'Total: $amount';
   }
@@ -3570,6 +3709,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get waitingTicketsCollected => 'Collected';
+
+  @override
+  String get waitingTicketsPrintYourNumber => 'Your Number';
+
+  @override
+  String get waitingTicketsPrintInstruction =>
+      'Please come to the counter when your number is called';
 
   @override
   String get cashierPerformanceTitle => 'Sales by Cashier';

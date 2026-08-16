@@ -7,6 +7,7 @@ import '../../../core/providers/language_provider.dart';
 import '../../../core/utils/bilingual.dart';
 import '../../../core/utils/l10n_extensions.dart';
 import '../models/cart_models.dart';
+import 'held_tickets_picker_sheet.dart';
 import 'product_modifier_sheet.dart';
 import 'qty_stepper.dart';
 
@@ -22,8 +23,10 @@ import 'qty_stepper.dart';
 /// | line total, each in a fixed-width `SizedBox`) is replaced with a
 /// 2-line card (name+details on top, price+total right-aligned; controls
 /// below) — fixed pixel-width columns don't survive a phone's narrower
-/// viewport. The empty-cart state drops source's "Open Held Tickets"
-/// button (Day 9 scope, no `HeldTicketsDialog` ported yet).
+/// viewport. The empty-cart state's "Open Held Tickets" button opens
+/// `held_tickets_picker_sheet.dart`'s bottom sheet instead of source's
+/// `HeldTicketsDialog` — same restore-a-held-ticket purpose, phone-shaped
+/// presentation.
 class CartItemsList extends ConsumerWidget {
   const CartItemsList({
     required this.items,
@@ -55,6 +58,12 @@ class CartItemsList extends ConsumerWidget {
             Text(context.l10n.cartItemsListTapToAdd,
                 style: TextStyle(
                     color: PosTheme.textHintOf(context), fontSize: 13)),
+            const SizedBox(height: PosTheme.spacingLg),
+            OutlinedButton.icon(
+              onPressed: () => showHeldTicketsPickerSheet(context, ref),
+              icon: const Icon(Icons.receipt_long_outlined, size: 18),
+              label: Text(context.l10n.cartItemsListOpenHeldTickets),
+            ),
           ],
         ),
       );
@@ -295,17 +304,23 @@ class _CartItemCard extends StatelessWidget {
                     children: [
                       Text(
                         formatAmount(lineTotal, currency),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                             fontWeight: FontWeight.w700, fontSize: 15),
                       ),
                       Text(
                         '${formatAmount(item.unitPrice, currency)} x ${item.qty}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                             fontSize: 11, color: PosTheme.textHintOf(context)),
                       ),
                       if ((item.discountAmount ?? 0) > 0)
                         Text(
                           '-${formatAmount(item.discountAmount! * item.qty, currency)}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w600,

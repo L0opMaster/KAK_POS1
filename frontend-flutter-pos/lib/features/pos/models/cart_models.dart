@@ -415,6 +415,10 @@ class CartItem {
       nameKm: json['productNameKm'] as String? ?? '',
       price: price,
       cost: 0,
+      // Matches the backend's SaleLineResponse.taxRate (flattened API shape
+      // for this branch — the nested-product branch above already carries
+      // this via Product.fromJson).
+      taxRate: (json['taxRate'] as num?)?.toDouble() ?? 0,
       stock: 0,
       active: true,
       trackInventory: false,
@@ -467,6 +471,7 @@ class CartItem {
           nameKm: 'សំពាធ',
           price: 10,
           cost: 5,
+          taxRate: 0,
           stock: 100,
           active: true,
           trackInventory: true,

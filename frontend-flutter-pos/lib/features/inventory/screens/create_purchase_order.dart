@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/config/currency_utils.dart';
 import '../../../core/config/pos_theme.dart';
 import '../../../core/providers/language_provider.dart';
 import '../../../core/utils/bilingual.dart';
@@ -157,6 +158,7 @@ class _CreatePurchaseOrderState extends ConsumerState<CreatePurchaseOrder> {
         .where((p) => p.purchasable && p.trackInventory)
         .toList();
     final lang = ref.watch(appLanguageProvider);
+    final currencyCode = watchCurrency(ref);
 
     return Scaffold(
       appBar: AppBar(
@@ -289,7 +291,7 @@ class _CreatePurchaseOrderState extends ConsumerState<CreatePurchaseOrder> {
           Align(
             alignment: Alignment.centerRight,
             child: Text(
-              '${context.l10n.cartSubtotal}: \$${_computeSubtotal().toStringAsFixed(2)}',
+              '${context.l10n.cartSubtotal}: ${formatAmount(_computeSubtotal(), currencyCode)}',
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
             ),
           ),

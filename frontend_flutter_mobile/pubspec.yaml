@@ -67,6 +67,30 @@ dependencies:
   pdf: ^3.10.4
   printing: ^5.12.0
 
+  # Raw pixel manipulation for the Khmer receipt bitmap path
+  # (ReceiptBitmapRenderer decodes to img.Image; EscPosReceiptBuilder
+  # Floyd-Steinberg-dithers it for 1-bit thermal output). Same version
+  # frontend-flutter-pos depends on. Added Day 14.
+  image: ^4.3.0
+
+  # Raw ESC/POS byte building (Generator/CapabilityProfile) for the
+  # thermal (bluetooth/usb/network) print path. Same version
+  # frontend-flutter-pos depends on. Added Day 15.
+  esc_pos_utils_plus: ^2.0.4
+
+  # Bluetooth (classic) thermal printer transport. Same version
+  # frontend-flutter-pos depends on. Added Day 16.
+  print_bluetooth_thermal: ^1.2.1
+
+  # USB thermal printer transport (Android). Same version
+  # frontend-flutter-pos depends on. Added Day 16.
+  flutter_pos_printer_platform_image_3: ^1.2.4
+
+  # Runtime permission requests (Bluetooth) — genuinely new in this
+  # project; frontend-flutter-pos declares this dependency too but never
+  # actually imports it anywhere (confirmed by grep). Added Day 16.
+  permission_handler: ^11.2.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

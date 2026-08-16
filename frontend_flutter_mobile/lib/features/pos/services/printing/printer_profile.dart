@@ -1,27 +1,23 @@
+import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
+
 /// Ported from `frontend-flutter-pos/lib/features/pos/services/printing/
-/// printer_profile.dart` — PARTIAL PORT. `PrinterPaperSize.escPosPaperSize`
-/// (maps to `esc_pos_utils_plus`'s `PaperSize`) is dropped — it's needed
-/// only by the raw ESC/POS thermal transport path (Day 15/16), which
-/// doesn't exist in this port yet, and adding the `esc_pos_utils_plus`
-/// package now just for an unused getter isn't worth the dependency.
-/// `dotWidth` is kept even though nothing calls it until Day 14's bitmap
-/// rasterizer exists — it's a zero-cost `int` getter describing the same
-/// physical paper property `mm58`/`mm80` already name, not a new
-/// dependency. Everything else (`PrinterTransportType`, `PrinterConfig`)
-/// is COPY/ADAPT NEARLY EXACTLY, full shape — a settings model is more
-/// useful ported whole than split across days, same reasoning as
-/// `sale_service.dart` (Day 11).
+/// printer_profile.dart` — COPY/ADAPT NEARLY EXACTLY, full file (as of
+/// Day 15, which added the `esc_pos_utils_plus` dependency
+/// `escPosPaperSize` needs).
 enum PrinterPaperSize {
   mm58,
   mm80;
 
   int get dotWidth => this == PrinterPaperSize.mm58 ? 384 : 576;
+
+  PaperSize get escPosPaperSize =>
+      this == PrinterPaperSize.mm58 ? PaperSize.mm58 : PaperSize.mm80;
 }
 
 /// How the app reaches the physical printer. [pdfDriver] hands a PDF to the
-/// OS print dialog/share sheet — the only transport this port implements
-/// so far (Day 13). The other three (raw ESC/POS over a named transport)
-/// are Day 15/16 scope.
+/// OS print dialog/share sheet (Day 13). The other three send raw ESC/POS
+/// bytes directly over the named transport, for thermal printers with no
+/// OS driver at all (Day 15/16).
 enum PrinterTransportType { pdfDriver, bluetooth, usb, network }
 
 /// A saved printer configuration, persisted in Settings (Day 19 — not

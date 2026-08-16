@@ -53,6 +53,23 @@ class ReceiptBitmapRenderer {
     BuildContext context,
     ReceiptViewModel receipt,
     PrinterPaperSize paperSize,
+  ) {
+    return renderWidgetImage(context, ReceiptContent(receipt: receipt), paperSize);
+  }
+
+  /// [renderImage], generalized to an arbitrary [child] widget instead of a
+  /// [ReceiptViewModel] — same off-screen-mount-and-rasterize machinery,
+  /// just not hard-coded to [ReceiptContent]. Added for the lightweight,
+  /// non-receipt tickets (queue-number ticket, credit payment stub — see
+  /// `print_service.dart`) that need a single Khmer field rendered as a
+  /// bitmap but have no [ReceiptViewModel] behind them to build one from.
+  ///
+  /// Requires a [BuildContext] with an [Overlay] ancestor (any screen
+  /// context works — the app always has a root `Navigator`/`Overlay`).
+  Future<img.Image> renderWidgetImage(
+    BuildContext context,
+    Widget child,
+    PrinterPaperSize paperSize,
   ) async {
     final boundaryKey = GlobalKey();
     final overlay = Overlay.of(context, rootOverlay: true);
@@ -95,7 +112,7 @@ class ReceiptBitmapRenderer {
                     // width above, not a loose/full-screen constraint from
                     // the Overlay — see [ReceiptBitmapRenderer] doc comment.
                     measuredMaxWidth = constraints.maxWidth;
-                    return ReceiptContent(receipt: receipt);
+                    return child;
                   },
                 ),
               ),
@@ -169,6 +186,20 @@ class ReceiptBitmapRenderer {
     PrinterPaperSize paperSize,
   ) async {
     final decoded = await renderImage(context, receipt, paperSize);
+    return timePrintStageSync(
+        'receiptDither',
+        () =>
+            img.ditherImage(decoded, kernel: img.DitherKernel.floydSteinberg));
+  }
+
+  /// [renderWidgetImage], dithered to 1-bit for `Generator.imageRaster()` —
+  /// same reasoning as [render], generalized to an arbitrary [child] widget.
+  Future<img.Image> renderWidget(
+    BuildContext context,
+    Widget child,
+    PrinterPaperSize paperSize,
+  ) async {
+    final decoded = await renderWidgetImage(context, child, paperSize);
     return timePrintStageSync(
         'receiptDither',
         () =>

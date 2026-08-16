@@ -63,6 +63,7 @@ void main() {
       nameEn: 'Iced Caramel Macchiato with Extra Shot',
       nameKm: 'កាហ្វេម៉ាគាទីតទឹកកកជាមួយម្សៅបន្ថែម',
       cost: 1,
+      taxRate: 0,
       price: 3.5,
       active: true,
       categoryId: 1,

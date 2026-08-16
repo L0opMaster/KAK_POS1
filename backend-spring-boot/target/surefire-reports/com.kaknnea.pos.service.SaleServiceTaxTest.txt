@@ -1,0 +1,70 @@
+-------------------------------------------------------------------------------
+Test set: com.kaknnea.pos.service.SaleServiceTaxTest
+-------------------------------------------------------------------------------
+Tests run: 6, Failures: 0, Errors: 6, Skipped: 0, Time elapsed: 0.074 s <<< FAILURE! -- in com.kaknnea.pos.service.SaleServiceTaxTest
+com.kaknnea.pos.service.SaleServiceTaxTest.zeroTaxRateProductContributesNoTax -- Time elapsed: 0.042 s <<< ERROR!
+java.lang.IllegalStateException: Method not found: com.kaknnea.pos.service.SaleService.computeLineTaxes(java.util.ImmutableCollections$List12,java.math.BigDecimal,java.math.BigDecimal)
+	at org.springframework.util.ReflectionUtils.handleReflectionException(ReflectionUtils.java:104)
+	at org.springframework.test.util.ReflectionTestUtils.invokeMethod(ReflectionTestUtils.java:502)
+	at org.springframework.test.util.ReflectionTestUtils.invokeMethod(ReflectionTestUtils.java:427)
+	at com.kaknnea.pos.service.SaleServiceTaxTest.computeLineTaxes(SaleServiceTaxTest.java:85)
+	at com.kaknnea.pos.service.SaleServiceTaxTest.zeroTaxRateProductContributesNoTax(SaleServiceTaxTest.java:107)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+com.kaknnea.pos.service.SaleServiceTaxTest.invoiceDiscountIsProratedAcrossLinesBeforeTaxing -- Time elapsed: 0.007 s <<< ERROR!
+java.lang.IllegalStateException: Method not found: com.kaknnea.pos.service.SaleService.computeLineTaxes(java.util.ImmutableCollections$List12,java.math.BigDecimal,java.math.BigDecimal)
+	at org.springframework.util.ReflectionUtils.handleReflectionException(ReflectionUtils.java:104)
+	at org.springframework.test.util.ReflectionTestUtils.invokeMethod(ReflectionTestUtils.java:502)
+	at org.springframework.test.util.ReflectionTestUtils.invokeMethod(ReflectionTestUtils.java:427)
+	at com.kaknnea.pos.service.SaleServiceTaxTest.computeLineTaxes(SaleServiceTaxTest.java:85)
+	at com.kaknnea.pos.service.SaleServiceTaxTest.invoiceDiscountIsProratedAcrossLinesBeforeTaxing(SaleServiceTaxTest.java:122)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+com.kaknnea.pos.service.SaleServiceTaxTest.blendedTaxRate_derivesEffectiveRateForDisplay -- Time elapsed: 0.005 s <<< ERROR!
+java.lang.IllegalStateException: Method not found: com.kaknnea.pos.service.SaleService.blendedTaxRate(java.math.BigDecimal,java.math.BigDecimal)
+	at org.springframework.util.ReflectionUtils.handleReflectionException(ReflectionUtils.java:104)
+	at org.springframework.test.util.ReflectionTestUtils.invokeMethod(ReflectionTestUtils.java:502)
+	at org.springframework.test.util.ReflectionTestUtils.invokeMethod(ReflectionTestUtils.java:427)
+	at com.kaknnea.pos.service.SaleServiceTaxTest.blendedTaxRate(SaleServiceTaxTest.java:89)
+	at com.kaknnea.pos.service.SaleServiceTaxTest.blendedTaxRate_derivesEffectiveRateForDisplay(SaleServiceTaxTest.java:136)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+com.kaknnea.pos.service.SaleServiceTaxTest.sumsEachLinesOwnTaxAtItsOwnRate_noDiscount -- Time elapsed: 0.004 s <<< ERROR!
+java.lang.IllegalStateException: Method not found: com.kaknnea.pos.service.SaleService.computeLineTaxes(java.util.ImmutableCollections$List12,java.math.BigDecimal,java.math.BigDecimal)
+	at org.springframework.util.ReflectionUtils.handleReflectionException(ReflectionUtils.java:104)
+	at org.springframework.test.util.ReflectionTestUtils.invokeMethod(ReflectionTestUtils.java:502)
+	at org.springframework.test.util.ReflectionTestUtils.invokeMethod(ReflectionTestUtils.java:427)
+	at com.kaknnea.pos.service.SaleServiceTaxTest.computeLineTaxes(SaleServiceTaxTest.java:85)
+	at com.kaknnea.pos.service.SaleServiceTaxTest.sumsEachLinesOwnTaxAtItsOwnRate_noDiscount(SaleServiceTaxTest.java:98)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+com.kaknnea.pos.service.SaleServiceTaxTest.emptySubtotal_returnsZeroTaxWithoutDividingByZero -- Time elapsed: 0.004 s <<< ERROR!
+java.lang.IllegalStateException: Method not found: com.kaknnea.pos.service.SaleService.computeLineTaxes(java.util.ImmutableCollections$ListN,java.math.BigDecimal,java.math.BigDecimal)
+	at org.springframework.util.ReflectionUtils.handleReflectionException(ReflectionUtils.java:104)
+	at org.springframework.test.util.ReflectionTestUtils.invokeMethod(ReflectionTestUtils.java:502)
+	at org.springframework.test.util.ReflectionTestUtils.invokeMethod(ReflectionTestUtils.java:427)
+	at com.kaknnea.pos.service.SaleServiceTaxTest.computeLineTaxes(SaleServiceTaxTest.java:85)
+	at com.kaknnea.pos.service.SaleServiceTaxTest.emptySubtotal_returnsZeroTaxWithoutDividingByZero(SaleServiceTaxTest.java:129)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
+com.kaknnea.pos.service.SaleServiceTaxTest.blendedTaxRate_zeroTaxableReturnsZeroWithoutDividingByZero -- Time elapsed: 0.003 s <<< ERROR!
+java.lang.IllegalStateException: Method not found: com.kaknnea.pos.service.SaleService.blendedTaxRate(java.math.BigDecimal,java.math.BigDecimal)
+	at org.springframework.util.ReflectionUtils.handleReflectionException(ReflectionUtils.java:104)
+	at org.springframework.test.util.ReflectionTestUtils.invokeMethod(ReflectionTestUtils.java:502)
+	at org.springframework.test.util.ReflectionTestUtils.invokeMethod(ReflectionTestUtils.java:427)
+	at com.kaknnea.pos.service.SaleServiceTaxTest.blendedTaxRate(SaleServiceTaxTest.java:89)
+	at com.kaknnea.pos.service.SaleServiceTaxTest.blendedTaxRate_zeroTaxableReturnsZeroWithoutDividingByZero(SaleServiceTaxTest.java:142)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+

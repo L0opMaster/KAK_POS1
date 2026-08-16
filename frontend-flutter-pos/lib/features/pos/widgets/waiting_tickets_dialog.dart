@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/config/currency_utils.dart';
 import '../../../core/config/pos_theme.dart';
+import '../../../core/providers/company_provider.dart';
 import '../../../core/utils/l10n_extensions.dart';
 import '../models/cart_models.dart';
 import '../providers/waiting_ticket_provider.dart';
+import '../services/print_service.dart';
 
 class WaitingTicketsDialog extends ConsumerWidget {
   const WaitingTicketsDialog({super.key});
@@ -163,6 +165,12 @@ class _WaitingTicketTile extends ConsumerWidget {
               ],
             ),
           ),
+          IconButton(
+            tooltip: context.l10n.receiptPrint,
+            icon: const Icon(Icons.print_outlined,
+                size: 20, color: PosTheme.accentBlue),
+            onPressed: () => _printWaitingTicket(context, ref, ticket),
+          ),
           if (ticket.status != WaitingTicketStatus.ready)
             OutlinedButton(
               onPressed: () async {
@@ -186,6 +194,55 @@ class _WaitingTicketTile extends ConsumerWidget {
             child: Text(context.l10n.waitingTicketsCollected),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Prints a compact queue-number ticket for [ticket] — just the waiting
+/// number in large print, not an itemized bill — so the customer can carry
+/// it and come back to the counter when their order/number is called. See
+/// [PrintService.printWaitingNumberTicket] for the itemized-bill vs.
+/// bare-number distinction (that's `held_tickets_dialog.dart`'s
+/// `_printTicket`, for the *held ticket* bill, a different flow).
+Future<void> _printWaitingTicket(
+  BuildContext context,
+  WidgetRef ref,
+  WaitingTicket ticket,
+) async {
+  try {
+    Map<String, dynamic>? company;
+    try {
+      company = await ref.read(companyProfileProvider.future);
+    } catch (_) {
+      // No company profile yet — the ticket still prints without a
+      // business name header.
+    }
+
+    if (!context.mounted) return;
+    final ok = await ref.read(printServiceProvider).printWaitingNumberTicket(
+          context,
+          waitingNumber: ticket.waitingNumber,
+          businessName: company?['businessName'] as String?,
+          heading: context.l10n.waitingTicketsPrintYourNumber,
+          instruction: context.l10n.waitingTicketsPrintInstruction,
+        );
+    if (!context.mounted) return;
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.printerPrintFailed),
+          backgroundColor: PosTheme.errorRed,
+        ),
+      );
+    }
+  } catch (e) {
+    debugPrint('Waiting number ticket print failed: $e');
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(context.l10n.printerPrintFailed),
+        backgroundColor: PosTheme.errorRed,
       ),
     );
   }

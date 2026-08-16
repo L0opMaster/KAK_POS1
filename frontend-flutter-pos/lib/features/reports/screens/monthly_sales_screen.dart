@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/config/currency_utils.dart';
 import '../../../core/config/pos_theme.dart';
 import '../../../core/utils/l10n_extensions.dart';
 import '../services/report_service.dart';
@@ -110,6 +111,7 @@ class _MonthlySalesScreenState extends ConsumerState<MonthlySalesScreen> {
     final maxTotal =
         _data.fold<double>(0, (m, m2) => m2.total > m ? m2.total : m);
     final grandTotal = _data.fold<double>(0, (s, m) => s + m.total);
+    final cur = watchCurrency(ref);
 
     return RefreshIndicator(
       onRefresh: _load,
@@ -133,7 +135,7 @@ class _MonthlySalesScreenState extends ConsumerState<MonthlySalesScreen> {
                           fontSize: 13,
                           fontWeight: FontWeight.w500)),
                   const SizedBox(height: 4),
-                  Text('\$${_fmtNum(grandTotal)}',
+                  Text(formatAmount(grandTotal, cur),
                       style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
@@ -182,7 +184,7 @@ class _MonthlySalesScreenState extends ConsumerState<MonthlySalesScreen> {
                     SizedBox(
                       width: 80,
                       child: Text(
-                        '\$${_fmtNum(m.total)}',
+                        formatAmount(m.total, cur),
                         textAlign: TextAlign.right,
                         style: const TextStyle(
                             fontWeight: FontWeight.w600,
@@ -199,6 +201,4 @@ class _MonthlySalesScreenState extends ConsumerState<MonthlySalesScreen> {
       ),
     );
   }
-
-  String _fmtNum(double v) => v.toStringAsFixed(2);
 }

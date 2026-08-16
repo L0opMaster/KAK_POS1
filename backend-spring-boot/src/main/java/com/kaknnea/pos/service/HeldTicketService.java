@@ -21,6 +21,7 @@ import com.kaknnea.pos.repository.TicketOperationLogRepository;
 import com.kaknnea.pos.repository.UserRepository;
 import com.kaknnea.pos.util.DocumentNumberUtil;
 import com.kaknnea.pos.util.SecurityUtil;
+import com.kaknnea.pos.util.TaxCalculator;
 import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -253,6 +254,7 @@ public class HeldTicketService {
                 moved.setQuantity(move.getQty());
                 moved.setUnitPrice(sourceLine.getUnitPrice());
                 moved.setLineDiscount(moveDiscount);
+                moved.setTaxRate(sourceLine.getTaxRate());
                 moved.setLineNote(sourceLine.getLineNote());
                 moved.setModifierSummary(sourceLine.getModifierSummary());
                 moved.setModifierData(sourceLine.getModifierData());
@@ -328,6 +330,7 @@ public class HeldTicketService {
                 moved.setQuantity(line.getQuantity());
                 moved.setUnitPrice(line.getUnitPrice());
                 moved.setLineDiscount(line.getLineDiscount());
+                moved.setTaxRate(line.getTaxRate());
                 moved.setLineNote(line.getLineNote());
                 moved.setModifierSummary(line.getModifierSummary());
                 moved.setModifierData(line.getModifierData());
@@ -508,6 +511,7 @@ public class HeldTicketService {
                     : (req.getProduct().getPrice() != null ? req.getProduct().getPrice() : BigDecimal.ZERO);
             BigDecimal unitPrice = baseUnitPrice.add(modifierPriceDelta(req.getSelectedModifiers()));
             line.setUnitPrice(unitPrice);
+            line.setTaxRate(product.getTaxRate());
             BigDecimal discount = req.getDiscount() == null ? BigDecimal.ZERO : req.getDiscount();
             line.setLineDiscount(discount);
             line.setLineNote(req.getNote());
@@ -580,21 +584,27 @@ public class HeldTicketService {
     }
 
     private void recalculateTotals(Sale sale) {
+        // subtotal sums each line's already-net-of-its-own-lineDiscount
+        // lineTotal (set at construction time in syncLinesFromRequest/
+        // split/merge above) — same convention SaleService.create/update
+        // use, so TaxCalculator's per-line proration behaves identically
+        // here. discount is tracked separately only for display (it's
+        // already baked into subtotal via lineTotal, not subtracted again).
         BigDecimal subtotal = sale.getLines().stream()
-                .map(line -> line.getUnitPrice().multiply(line.getQuantity()))
+                .map(SaleLine::getLineTotal)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .setScale(2, RoundingMode.HALF_UP);
         BigDecimal discount = sale.getLines().stream()
                 .map(line -> line.getLineDiscount() == null ? BigDecimal.ZERO : line.getLineDiscount())
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .setScale(2, RoundingMode.HALF_UP);
-        BigDecimal taxable = subtotal.subtract(discount).max(BigDecimal.ZERO);
-        BigDecimal tax = taxable.multiply(BigDecimal.valueOf(sale.getTaxRate())).setScale(2, RoundingMode.HALF_UP);
-        BigDecimal grandTotal = taxable.add(tax).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal tax = TaxCalculator.computeLineTaxes(sale.getLines(), subtotal, BigDecimal.ZERO);
+        BigDecimal grandTotal = subtotal.add(tax).setScale(2, RoundingMode.HALF_UP);
 
         sale.setSubtotal(subtotal);
         sale.setDiscountAmount(discount);
         sale.setTaxAmount(tax);
+        sale.setTaxRate(TaxCalculator.blendedTaxRate(subtotal, tax));
         sale.setGrandTotal(grandTotal);
         sale.setTotalAmount(grandTotal);
         if (sale.getPaidAmount() == null) {

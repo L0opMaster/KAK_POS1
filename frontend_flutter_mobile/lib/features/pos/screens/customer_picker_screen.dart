@@ -114,7 +114,11 @@ class _CustomerPickerScreenState extends ConsumerState<CustomerPickerScreen> {
         final c = state.customers[i];
         return ListTile(
           leading: const CircleAvatar(child: Icon(Icons.person)),
-          title: Text(c.resolvedDisplayName),
+          title: Text(
+            c.resolvedDisplayName,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
           subtitle: c.phone != null ? Text(c.phone!) : null,
           onTap: () => _select(c.id),
         );

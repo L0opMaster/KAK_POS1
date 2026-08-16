@@ -88,7 +88,7 @@ class _SalesByModifierScreenState extends ConsumerState<SalesByModifierScreen> {
     try {
       final company =
           await ref.read(settingsServiceProvider).getCompanyProfile();
-      final cur = currencySymbol(readCurrency(ref));
+      final curCode = readCurrency(ref);
 
       final svc = ref.read(reportServiceProvider);
       final allRows = await fetchAllPages<ModifierPerformance>(
@@ -115,7 +115,7 @@ class _SalesByModifierScreenState extends ConsumerState<SalesByModifierScreen> {
                 m.groupName,
                 m.optionName,
                 _fmtNum(m.quantity),
-                '$cur${_fmtNum(m.revenue)}',
+                formatAmount(m.revenue, curCode),
               ])
           .toList();
 
@@ -141,7 +141,7 @@ class _SalesByModifierScreenState extends ConsumerState<SalesByModifierScreen> {
         },
         summary: [
           MapEntry(l10n.cartQty, _fmtNum(totalQty)),
-          MapEntry(l10n.reportsRevenue, '$cur${_fmtNum(totalRevenue)}'),
+          MapEntry(l10n.reportsRevenue, formatAmount(totalRevenue, curCode)),
         ],
         generatedAt: DateTime.now(),
         generatedLabel: l10n.reportPdfGeneratedLabel,
@@ -228,6 +228,7 @@ class _SalesByModifierScreenState extends ConsumerState<SalesByModifierScreen> {
         ),
       );
     }
+    final curCode = watchCurrency(ref);
     final content = data.content;
     final chartData = content
         .map(
@@ -243,7 +244,10 @@ class _SalesByModifierScreenState extends ConsumerState<SalesByModifierScreen> {
                 color: PosTheme.textPrimary,
                 fontSize: 15)),
         const SizedBox(height: 8),
-        ReportBarChart(data: chartData, valuePrefix: '\$'),
+        ReportBarChart(
+          data: chartData,
+          valueFormatter: (v) => formatAmount(v, curCode),
+        ),
         const SizedBox(height: 16),
         ...content.map((m) => Card(
               margin: const EdgeInsets.only(bottom: 6),
@@ -267,7 +271,7 @@ class _SalesByModifierScreenState extends ConsumerState<SalesByModifierScreen> {
                         _chip(context.l10n.cartQty, _fmtNum(m.quantity)),
                         const SizedBox(width: 8),
                         _chip(context.l10n.reportsRevenue,
-                            '\$${_fmtNum(m.revenue)}',
+                            formatAmount(m.revenue, curCode),
                             bold: true),
                       ],
                     ),

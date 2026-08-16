@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/config/currency_utils.dart';
 import '../../../core/config/pos_theme.dart';
 import '../../../core/providers/language_provider.dart';
 import '../../../core/utils/bilingual.dart';
@@ -122,6 +123,7 @@ class _TopProductsScreenState extends ConsumerState<TopProductsScreen> {
 
   Widget _buildContent() {
     final lang = ref.watch(appLanguageProvider);
+    final cur = watchCurrency(ref);
     final maxQty =
         _data.fold<double>(0, (m, p) => m > p.quantity ? m : p.quantity);
     return RefreshIndicator(
@@ -181,7 +183,7 @@ class _TopProductsScreenState extends ConsumerState<TopProductsScreen> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis),
                         ),
-                        Text('\$${_fmtNum(p.total)}',
+                        Text(formatAmount(p.total, cur),
                             style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: PosTheme.primaryGreen)),

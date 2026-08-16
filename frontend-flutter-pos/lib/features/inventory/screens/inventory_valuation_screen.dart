@@ -61,7 +61,7 @@ class _InventoryValuationScreenState
     if (report == null) return null;
     final l10n = context.l10n;
     final company = await ref.read(settingsServiceProvider).getCompanyProfile();
-    final cur = currencySymbol(readCurrency(ref));
+    final currencyCode = readCurrency(ref);
     final items = _filtered(report.items);
 
     final rows = items
@@ -70,8 +70,8 @@ class _InventoryValuationScreenState
               i.sku,
               i.stock.toStringAsFixed(
                   i.stock.truncateToDouble() == i.stock ? 0 : 2),
-              '$cur${i.cost.toStringAsFixed(2)}',
-              '$cur${i.totalValue.toStringAsFixed(2)}',
+              formatAmount(i.cost, currencyCode),
+              formatAmount(i.totalValue, currencyCode),
             ])
         .toList();
 
@@ -99,7 +99,7 @@ class _InventoryValuationScreenState
       summary: [
         MapEntry(l10n.inventoryValuationProductsLabel, '${items.length}'),
         MapEntry(l10n.inventoryValuationPdfTotalValueLabel,
-            '$cur${report.totalValue.toStringAsFixed(2)}'),
+            formatAmount(report.totalValue, currencyCode)),
       ],
       generatedAt: DateTime.now(),
       generatedLabel: l10n.reportPdfGeneratedLabel,
@@ -194,6 +194,7 @@ class _InventoryValuationScreenState
   }
 
   Widget _buildContent(InventoryValuationReport report) {
+    final currencyCode = watchCurrency(ref);
     final filtered = _filtered(report.items);
     final totalItems = filtered.length;
     final totalPages = math.max(1, (totalItems / _pageSize).ceil());
@@ -226,7 +227,7 @@ class _InventoryValuationScreenState
                             style: const TextStyle(
                                 color: Colors.white70, fontSize: 13)),
                         const SizedBox(height: 6),
-                        Text('\$${report.totalValue.toStringAsFixed(2)}',
+                        Text(formatAmount(report.totalValue, currencyCode),
                             style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 30,
@@ -366,7 +367,7 @@ class _InventoryValuationScreenState
                     ),
                   )
                 else
-                  ...pageItems.map(_buildRow),
+                  ...pageItems.map((item) => _buildRow(item, currencyCode)),
                 if (pageItems.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(
@@ -427,7 +428,7 @@ class _InventoryValuationScreenState
     );
   }
 
-  Widget _buildRow(InventoryValuationItem item) {
+  Widget _buildRow(InventoryValuationItem item, String currencyCode) {
     return Column(
       children: [
         Padding(
@@ -458,13 +459,13 @@ class _InventoryValuationScreenState
               ),
               SizedBox(
                 width: 90,
-                child: Text('\$${item.cost.toStringAsFixed(2)}',
+                child: Text(formatAmount(item.cost, currencyCode),
                     textAlign: TextAlign.right,
                     style: const TextStyle(fontSize: 13)),
               ),
               SizedBox(
                 width: 100,
-                child: Text('\$${item.totalValue.toStringAsFixed(2)}',
+                child: Text(formatAmount(item.totalValue, currencyCode),
                     textAlign: TextAlign.right,
                     style: TextStyle(
                         fontSize: 13,

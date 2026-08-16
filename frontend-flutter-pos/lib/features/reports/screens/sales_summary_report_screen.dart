@@ -90,7 +90,7 @@ class _SalesSummaryReportScreenState
     try {
       final company =
           await ref.read(settingsServiceProvider).getCompanyProfile();
-      final cur = currencySymbol(readCurrency(ref));
+      final cur = readCurrency(ref);
       final totals = data.totals;
 
       // Print/export must include every daily row matching the active
@@ -125,10 +125,10 @@ class _SalesSummaryReportScreenState
                 r.date,
                 '${r.orders}',
                 _fmtNum(r.quantity),
-                '$cur${_fmtNum(r.gross)}',
-                '$cur${_fmtNum(r.discount)}',
-                '$cur${_fmtNum(r.tax)}',
-                '$cur${_fmtNum(r.net)}',
+                formatAmount(r.gross, cur),
+                formatAmount(r.discount, cur),
+                formatAmount(r.tax, cur),
+                formatAmount(r.net, cur),
               ])
           .toList();
 
@@ -160,13 +160,13 @@ class _SalesSummaryReportScreenState
             ? const []
             : [
                 MapEntry(l10n.salesSummaryPdfGrossSalesLabel,
-                    '$cur${_fmtNum(totals.gross)}'),
+                    formatAmount(totals.gross, cur)),
                 MapEntry(l10n.salesSummaryPdfDiscountsLabel,
-                    '$cur${_fmtNum(totals.discount)}'),
-                MapEntry(
-                    l10n.salesSummaryPdfColTax, '$cur${_fmtNum(totals.tax)}'),
+                    formatAmount(totals.discount, cur)),
+                MapEntry(l10n.salesSummaryPdfColTax,
+                    formatAmount(totals.tax, cur)),
                 MapEntry(l10n.salesSummaryPdfNetSalesLabel,
-                    '$cur${_fmtNum(totals.net)}'),
+                    formatAmount(totals.net, cur)),
                 MapEntry(l10n.salesSummaryPdfTransactionsLabel,
                     '${totals.orders}'),
                 MapEntry(l10n.salesSummaryPdfItemsSoldLabel,
@@ -254,6 +254,7 @@ class _SalesSummaryReportScreenState
     final data = _data;
     if (data == null) return const SizedBox();
     final totals = data.totals;
+    final cur = watchCurrency(ref);
     final chartData =
         data.rows.map((r) => (label: r.date, value: r.net)).toList();
 
@@ -276,12 +277,15 @@ class _SalesSummaryReportScreenState
                       style: const TextStyle(
                           fontSize: 16, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
-                  _totRow(context.l10n.reportsGrossSales, totals.gross),
+                  _totRow(context.l10n.reportsGrossSales, totals.gross,
+                      currencyCode: cur),
                   _totRow(context.l10n.reportsDiscounts, totals.discount,
-                      color: PosTheme.errorRed),
-                  _totRow(context.l10n.cartTax, totals.tax),
+                      currencyCode: cur, color: PosTheme.errorRed),
+                  _totRow(context.l10n.cartTax, totals.tax,
+                      currencyCode: cur),
                   const Divider(),
                   _totRow(context.l10n.reportsNetSales, totals.net,
+                      currencyCode: cur,
                       bold: true, color: PosTheme.primaryGreen),
                   const Divider(),
                   _totRow(
@@ -294,7 +298,7 @@ class _SalesSummaryReportScreenState
                     _totRow(
                         context.l10n.reportsAvgPerSale,
                         totals.net / totals.orders,
-                        prefix: '\$'),
+                        currencyCode: cur),
                 ],
               ),
             ),
@@ -309,7 +313,8 @@ class _SalesSummaryReportScreenState
                   color: PosTheme.textPrimary,
                   fontSize: 15)),
           const SizedBox(height: 8),
-          ReportLineChart(data: chartData, valuePrefix: '\$'),
+          ReportLineChart(
+              data: chartData, valueFormatter: (v) => formatAmount(v, cur)),
           const SizedBox(height: 16),
         ],
 
@@ -321,7 +326,7 @@ class _SalesSummaryReportScreenState
                   color: PosTheme.textPrimary,
                   fontSize: 15)),
           const SizedBox(height: 8),
-          ...data.cashierBreakdown.map((c) => _cashierCard(c)),
+          ...data.cashierBreakdown.map((c) => _cashierCard(c, cur)),
           const SizedBox(height: 16),
         ],
 
@@ -333,7 +338,7 @@ class _SalesSummaryReportScreenState
                   color: PosTheme.textPrimary,
                   fontSize: 15)),
           const SizedBox(height: 8),
-          ...data.rows.map((r) => _rowCard(r)),
+          ...data.rows.map((r) => _rowCard(r, cur)),
           ReportPaginationBar(meta: data.rowsMeta, onPageChange: _changePage),
         ] else
           Center(
@@ -350,7 +355,7 @@ class _SalesSummaryReportScreenState
   Widget _totRow(String label, double value,
       {bool bold = false,
       bool isInt = false,
-      String prefix = '',
+      String? currencyCode,
       Color? color}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -362,7 +367,9 @@ class _SalesSummaryReportScreenState
                   fontSize: 14,
                   color: bold ? PosTheme.textPrimary : PosTheme.textSecondary)),
           Text(
-            '$prefix${isInt ? value.toInt().toString() : '\$${_fmtNum(value)}'}',
+            isInt
+                ? value.toInt().toString()
+                : formatAmount(value, currencyCode),
             style: TextStyle(
                 fontSize: 14,
                 fontWeight: bold ? FontWeight.bold : FontWeight.w500,
@@ -373,7 +380,7 @@ class _SalesSummaryReportScreenState
     );
   }
 
-  Widget _rowCard(SalesSummaryRow r) {
+  Widget _rowCard(SalesSummaryRow r, String cur) {
     return Card(
       margin: const EdgeInsets.only(bottom: 6),
       elevation: 0,
@@ -394,9 +401,9 @@ class _SalesSummaryReportScreenState
               children: [
                 _chip(context.l10n.reportsOrders, '${r.orders}'),
                 const SizedBox(width: 8),
-                _chip(context.l10n.reportsGross, '\$${_fmtNum(r.gross)}'),
+                _chip(context.l10n.reportsGross, formatAmount(r.gross, cur)),
                 const SizedBox(width: 8),
-                _chip(context.l10n.reportsNet, '\$${_fmtNum(r.net)}',
+                _chip(context.l10n.reportsNet, formatAmount(r.net, cur),
                     bold: true),
               ],
             ),
@@ -428,7 +435,7 @@ class _SalesSummaryReportScreenState
     );
   }
 
-  Widget _cashierCard(CashierPerformance c) {
+  Widget _cashierCard(CashierPerformance c, String cur) {
     return Card(
       margin: const EdgeInsets.only(bottom: 6),
       elevation: 0,
@@ -457,7 +464,7 @@ class _SalesSummaryReportScreenState
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text('\$${_fmtNum(c.salesTotal)}',
+                Text(formatAmount(c.salesTotal, cur),
                     style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 13,

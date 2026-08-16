@@ -73,7 +73,9 @@ void main() {
     // currencyCodeProvider falls back to 'KHR' when /api/settings/general
     // is unreachable (as it always is in the test sandbox) — same fallback
     // [OLD/SOURCE]'s watchCurrency() uses, so this isn't a test-only stand-in.
-    expect(find.text('៛10.00'), findsOneWidget); // line total (5 x 2)
+    // KHR formats with zero decimal places and thousands grouping (see
+    // currency_utils.dart's formatAmount), so 5 x 2 = 10 -> "៛10".
+    expect(find.text('៛10'), findsOneWidget); // line total (5 x 2)
   });
 
   testWidgets('delete icon calls removeItem with the correct id',

@@ -72,6 +72,8 @@ public class SaleDtos {
         private String deliveryDate;
         private String paymentTerms;
         private String creditDueAt;
+        private String creditExpiresAt;
+        private String creditStatus;
         private Long customerId;
         private String customerName;
         private Long tableId;
@@ -108,6 +110,8 @@ public class SaleDtos {
         private BigDecimal unitPrice;
         private BigDecimal lineDiscount;
         private BigDecimal lineTotal;
+        /** Fraction (e.g. 0.08) — this line's product's own tax rate at sale time. */
+        private double taxRate;
         private String note;
         private String modifierSummary;
         private String modifierData;
@@ -164,6 +168,18 @@ public class SaleDtos {
         private BigDecimal amount;
         @NotNull
         private String method;
+        private String notes;
+    }
+
+    /**
+     * Optional body for POST /{id}/credit. All fields optional so a no-body
+     * call keeps the legacy behavior (due date derived from
+     * {@code paymentTerms}) — see SaleService.credit().
+     */
+    @Data
+    public static class CreditRequest {
+        private String dueDate; // ISO-8601 LocalDate, e.g. "2026-09-16"
+        private String expiresAt; // ISO-8601 LocalDate, optional
         private String notes;
     }
 

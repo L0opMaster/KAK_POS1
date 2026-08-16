@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/config/currency_utils.dart';
 import '../../../core/config/pos_theme.dart';
 import '../../../core/utils/l10n_extensions.dart';
 import '../../../core/utils/receipt_date_format.dart';
@@ -56,6 +57,7 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
       _loadedShiftId = null;
     }
     final cashState = ref.watch(cashEventProvider);
+    final cur = watchCurrency(ref);
 
     return Scaffold(
       appBar: AppBar(
@@ -105,20 +107,20 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
                 children: [
                   Text(
                     context.l10n.shiftScreenOpeningCash(
-                      '\$${currentShift.openingFloat.toStringAsFixed(2)}',
+                      formatAmount(currentShift.openingFloat, cur),
                     ),
                   ),
                   const SizedBox(height: 8),
                   if (currentShift.expectedCash != null)
                     Text(
                       context.l10n.shiftScreenExpectedCash(
-                        '\$${currentShift.expectedCash!.toStringAsFixed(2)}',
+                        formatAmount(currentShift.expectedCash!, cur),
                       ),
                     ),
                   if (currentShift.variance != null)
                     Text(
                       context.l10n.shiftScreenVariance(
-                        '\$${currentShift.variance!.toStringAsFixed(2)}',
+                        formatAmount(currentShift.variance!, cur),
                       ),
                     ),
                   const SizedBox(height: PosTheme.spacingMd),
@@ -178,8 +180,12 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
                     ),
                   ),
                   title: Text(event.type.label),
-                  subtitle: Text(event.reason),
-                  trailing: Text('\$${event.amount.toStringAsFixed(2)}'),
+                  subtitle: Text(
+                    event.reason,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: Text(formatAmount(event.amount, cur)),
                 ),
               ),
           ],

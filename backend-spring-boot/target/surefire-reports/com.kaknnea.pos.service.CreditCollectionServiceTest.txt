@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 Test set: com.kaknnea.pos.service.CreditCollectionServiceTest
 -------------------------------------------------------------------------------
-Tests run: 9, Failures: 4, Errors: 1, Skipped: 0, Time elapsed: 0.323 s <<< FAILURE! -- in com.kaknnea.pos.service.CreditCollectionServiceTest
-com.kaknnea.pos.service.CreditCollectionServiceTest.collect_withManualAllocations_sumMismatch_throwsApiException -- Time elapsed: 0.272 s <<< FAILURE!
+Tests run: 9, Failures: 4, Errors: 1, Skipped: 0, Time elapsed: 0.371 s <<< FAILURE! -- in com.kaknnea.pos.service.CreditCollectionServiceTest
+com.kaknnea.pos.service.CreditCollectionServiceTest.collect_withManualAllocations_sumMismatch_throwsApiException -- Time elapsed: 0.310 s <<< FAILURE!
 org.opentest4j.AssertionFailedError: Unexpected exception type thrown, expected: <com.kaknnea.pos.exception.ApiException> but was: <java.lang.NullPointerException>
 	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
 	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:67)
@@ -19,7 +19,7 @@ Caused by: java.lang.NullPointerException: Cannot invoke "com.kaknnea.pos.reposi
 	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:53)
 	... 6 more
 
-com.kaknnea.pos.service.CreditCollectionServiceTest.collect_withManualAllocations_exceedsOutstanding_throwsApiException -- Time elapsed: 0.006 s <<< FAILURE!
+com.kaknnea.pos.service.CreditCollectionServiceTest.collect_withManualAllocations_exceedsOutstanding_throwsApiException -- Time elapsed: 0.008 s <<< FAILURE!
 org.opentest4j.AssertionFailedError: Unexpected exception type thrown, expected: <com.kaknnea.pos.exception.ApiException> but was: <java.lang.NullPointerException>
 	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
 	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:67)
@@ -36,7 +36,7 @@ Caused by: java.lang.NullPointerException: Cannot invoke "com.kaknnea.pos.reposi
 	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:53)
 	... 6 more
 
-com.kaknnea.pos.service.CreditCollectionServiceTest.collect_withManualAllocations_appliesManualRows -- Time elapsed: 0.005 s <<< ERROR!
+com.kaknnea.pos.service.CreditCollectionServiceTest.collect_withManualAllocations_appliesManualRows -- Time elapsed: 0.006 s <<< ERROR!
 java.lang.NullPointerException: Cannot invoke "com.kaknnea.pos.repository.UserRepository.findByEmail(String)" because "this.userRepository" is null
 	at com.kaknnea.pos.service.CreditCollectionService.resolveShiftForCollection(CreditCollectionService.java:174)
 	at com.kaknnea.pos.service.CreditCollectionService.collect(CreditCollectionService.java:126)
@@ -45,7 +45,7 @@ java.lang.NullPointerException: Cannot invoke "com.kaknnea.pos.repository.UserRe
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
 	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
 
-com.kaknnea.pos.service.CreditCollectionServiceTest.collect_withManualAllocations_duplicateTarget_throwsApiException -- Time elapsed: 0.004 s <<< FAILURE!
+com.kaknnea.pos.service.CreditCollectionServiceTest.collect_withManualAllocations_duplicateTarget_throwsApiException -- Time elapsed: 0.006 s <<< FAILURE!
 org.opentest4j.AssertionFailedError: Unexpected exception type thrown, expected: <com.kaknnea.pos.exception.ApiException> but was: <java.lang.NullPointerException>
 	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
 	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:67)

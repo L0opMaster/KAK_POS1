@@ -2210,6 +2210,8 @@
     }
   },
   "heldTicketsTapToRestore": "Tap to restore",
+  "heldTicketsPrintBill": "Print bill",
+  "heldTicketsPrintNumber": "Print number",
   "modifierSheetQuantity": "Quantity",
   "modifierSheetNoteHint": "Add a note...",
   "modifierSheetValidationError": "Please select an option for all required modifiers.",

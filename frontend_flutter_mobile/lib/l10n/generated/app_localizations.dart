@@ -6242,6 +6242,18 @@ abstract class AppLocalizations {
   /// **'Tap to restore'**
   String get heldTicketsTapToRestore;
 
+  /// No description provided for @heldTicketsPrintBill.
+  ///
+  /// In en, this message translates to:
+  /// **'Print bill'**
+  String get heldTicketsPrintBill;
+
+  /// No description provided for @heldTicketsPrintNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Print number'**
+  String get heldTicketsPrintNumber;
+
   /// No description provided for @modifierSheetQuantity.
   ///
   /// In en, this message translates to:

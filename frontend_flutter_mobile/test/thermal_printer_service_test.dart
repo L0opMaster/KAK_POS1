@@ -12,7 +12,7 @@ void main() {
   group('ThermalPrinterService.loadConfig', () {
     test('a fresh install (nothing saved yet) returns PrinterConfig.'
         'defaultConfig', () async {
-      const service = ThermalPrinterService();
+      final service = ThermalPrinterService();
       final config = await service.loadConfig();
       expect(config.transportType, PrinterTransportType.pdfDriver);
       expect(config.paperSize, PrinterPaperSize.mm80);
@@ -23,14 +23,14 @@ void main() {
       SharedPreferences.setMockInitialValues({
         'thermal_printer_config': 'not valid json{{{',
       });
-      const service = ThermalPrinterService();
+      final service = ThermalPrinterService();
       final config = await service.loadConfig();
       expect(config.transportType, PrinterTransportType.pdfDriver);
       expect(config.paperSize, PrinterPaperSize.mm80);
     });
 
     test('saveConfig then loadConfig round-trips the saved value', () async {
-      const service = ThermalPrinterService();
+      final service = ThermalPrinterService();
       const saved = PrinterConfig(
         transportType: PrinterTransportType.network,
         paperSize: PrinterPaperSize.mm58,

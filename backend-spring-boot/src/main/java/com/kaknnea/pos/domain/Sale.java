@@ -206,6 +206,23 @@ public class Sale extends BaseEntity {
         this.creditDueAt = creditDueAt;
     }
 
+    /**
+     * Optional date after which this credit agreement is considered expired.
+     * Distinct from {@link #creditDueAt} (when payment is expected) — expiring
+     * never changes {@link #status}/{@link #paidAmount} on its own; an expired
+     * debt can still carry an outstanding balance.
+     */
+    @Column(name = "credit_expires_at")
+    private Instant creditExpiresAt;
+
+    public Instant getCreditExpiresAt() {
+        return creditExpiresAt;
+    }
+
+    public void setCreditExpiresAt(Instant creditExpiresAt) {
+        this.creditExpiresAt = creditExpiresAt;
+    }
+
     // ── Estimate/Quotation fields ────────────────────────────────────────────
 
     @Column(name = "estimate_expiry_date")

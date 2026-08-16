@@ -54,6 +54,9 @@ public class ProductDtos {
         private BigDecimal cost;
         @NotNull
         private BigDecimal price;
+        /** Fraction, e.g. 0.08 for 8% — this product's own tax rate. */
+        @NotNull
+        private Double taxRate;
         private boolean active = true;
         private boolean sellable = true;
         private boolean purchasable = false;
@@ -117,6 +120,7 @@ public class ProductDtos {
         private String description;
         private BigDecimal cost;
         private BigDecimal price;
+        private double taxRate;
         private BigDecimal resolvedPrice;
         private boolean active;
         private boolean sellable;

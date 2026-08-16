@@ -114,17 +114,6 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('shows tax rate as a percentage, not the raw fraction',
-      (tester) async {
-    await pumpScreen(tester);
-
-    expect(find.widgetWithText(TextField, 'Tax rate'), findsOneWidget);
-    final field = tester.widget<TextField>(
-      find.widgetWithText(TextField, 'Tax rate'),
-    );
-    expect(field.controller!.text, '10');
-  });
-
   testWidgets(
       'printer invoice footer loads its own value, distinct from the general receipt footer',
       (tester) async {
@@ -134,21 +123,20 @@ void main() {
     expect(find.text('Printer-only footer'), findsOneWidget);
   });
 
-  testWidgets('rejects an out-of-range tax rate without calling the API',
+  // Tax is per-product now (see item_management_screen.dart) — this screen
+  // no longer has a store-wide "Tax rate" field to test; toggling/saving
+  // "show tax on receipt" is what remains of the Tax settings card.
+  testWidgets('toggling show-tax and saving sends only showTax, no taxRate',
       (tester) async {
     await pumpScreen(tester);
 
-    await tester.enterText(
-      find.widgetWithText(TextField, 'Tax rate'),
-      '150',
-    );
+    await tester.tap(find.widgetWithText(SwitchListTile, 'Tax'));
     await tester.tap(find.text('Save Tax'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Enter a tax rate between 0 and 100'), findsOneWidget);
     expect(
-      fakeApi.calls.any((c) => c.startsWith('PUT /api/settings/tax')),
-      isFalse,
+      fakeApi.calls,
+      contains('PUT /api/settings/tax {showTax: false}'),
     );
   });
 
@@ -235,7 +223,14 @@ void main() {
       (tester) async {
     await pumpScreen(tester);
 
-    await tester.tap(find.widgetWithText(SwitchListTile, 'Cash'));
+    // The payment-methods list renders each row as a plain ListTile with a
+    // trailing Switch (_PaymentMethodTile), not a SwitchListTile.
+    await tester.tap(
+      find.descendant(
+        of: find.widgetWithText(ListTile, 'Cash'),
+        matching: find.byType(Switch),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(

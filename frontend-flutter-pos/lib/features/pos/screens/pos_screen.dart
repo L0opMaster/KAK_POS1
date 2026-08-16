@@ -40,10 +40,8 @@ class _PosScreenState extends ConsumerState<PosScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() async {
+    Future.microtask(() {
       ref.read(productsProvider.notifier).loadProducts();
-      // Sync tax rate from backend settings into the cart
-      ref.read(cartProvider.notifier).syncTaxRate();
     });
   }
 
@@ -775,7 +773,7 @@ class _CategoryFilterBarState extends ConsumerState<_CategoryFilterBar> {
     ];
 
     return Container(
-      height: 56,
+      height: 60,
       width: double.infinity,
       decoration: BoxDecoration(
         color: PosTheme.backgroundCardOf(context),

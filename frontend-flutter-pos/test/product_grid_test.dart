@@ -34,6 +34,7 @@ void main() {
           nameKm: p.nameKm,
           price: p.price,
           cost: p.cost,
+          taxRate: 0,
           stock: p.stock,
           active: p.active,
           trackInventory: p.trackInventory,

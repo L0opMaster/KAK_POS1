@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/config/currency_utils.dart';
 import '../../../core/providers/language_provider.dart';
 import '../../../core/utils/bilingual.dart';
 import '../../../core/utils/l10n_extensions.dart';
@@ -275,7 +276,7 @@ class _ModifierProductAssignmentScreenState
       controlAffinity: ListTileControlAffinity.leading,
       title: Text(name),
       subtitle: Text(
-        '\$${product.price.toStringAsFixed(2)}'
+        '${formatAmount(product.price, watchCurrency(ref))}'
         '${categoryName != null ? ' · $categoryName' : ''}',
         style: const TextStyle(fontSize: 12),
       ),

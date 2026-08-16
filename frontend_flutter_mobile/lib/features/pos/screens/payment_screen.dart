@@ -218,7 +218,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
 
   SaleResponse? _completedSale;
   bool _isSubmitting = false;
-  String _currency = 'USD';
+  String _currency = 'KHR';
 
   // Snapshot of the cart's items/subtotal/discount/tax right before it's
   // cleared on successful payment — the completed screen's "View Receipt"
@@ -238,7 +238,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   // The currency the customer is actually handing over (e.g. paying in
   // Riel even though prices are quoted in USD) and the raw number entered
   // in that currency, before conversion.
-  String _tenderCurrency = 'USD';
+  String _tenderCurrency = 'KHR';
   double? _cashReceivedRaw;
   final _cashReceivedCtl = TextEditingController();
 
@@ -625,9 +625,9 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
           inputFormatters: [
             FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
           ],
-          decoration: const InputDecoration(
-            prefixText: '\$ ',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            prefixText: '${currencySymbol(_currency)} ',
+            border: const OutlineInputBorder(),
           ),
           autofocus: true,
         ),
@@ -744,12 +744,16 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                context.l10n.paymentScreenCashReceived,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: PosTheme.textSecondaryOf(context),
+              Flexible(
+                child: Text(
+                  context.l10n.paymentScreenCashReceived,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: PosTheme.textSecondaryOf(context),
+                  ),
                 ),
               ),
               Row(
@@ -863,6 +867,8 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                     isExact
                         ? context.l10n.paymentScreenExact
                         : formatAmount(amount, _tenderCurrency),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
@@ -1131,13 +1137,17 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                             ],
                           ),
                         ),
-                        Text(
-                          context.l10n.paymentScreenOfAmount(
-                            formatAmount(widget.total, _currency),
-                          ),
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: PosTheme.textSecondaryOf(context),
+                        Flexible(
+                          child: Text(
+                            context.l10n.paymentScreenOfAmount(
+                              formatAmount(widget.total, _currency),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: PosTheme.textSecondaryOf(context),
+                            ),
                           ),
                         ),
                       ],
@@ -1208,12 +1218,16 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                               color: PosTheme.primaryGreen,
                             ),
                             const SizedBox(width: 4),
-                            Text(
-                              sp.method.label(context.l10n),
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: PosTheme.primaryGreen,
+                            Flexible(
+                              child: Text(
+                                sp.method.label(context.l10n),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: PosTheme.primaryGreen,
+                                ),
                               ),
                             ),
                             const Spacer(),
@@ -1539,20 +1553,30 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: large ? 16 : 14,
-            fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
-            color: PosTheme.textSecondaryOf(context),
+        Flexible(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: large ? 16 : 14,
+              fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+              color: PosTheme.textSecondaryOf(context),
+            ),
           ),
         ),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: large ? 20 : 15,
-            fontWeight: FontWeight.w800,
-            color: valueColor ?? PosTheme.textPrimaryOf(context),
+        const SizedBox(width: PosTheme.spacingSm),
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: large ? 20 : 15,
+              fontWeight: FontWeight.w800,
+              color: valueColor ?? PosTheme.textPrimaryOf(context),
+            ),
           ),
         ),
       ],

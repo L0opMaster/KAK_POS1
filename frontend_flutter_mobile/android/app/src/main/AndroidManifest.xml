@@ -3,10 +3,28 @@
          same permission frontend-flutter-pos and
          frontend_flutter_barcode_scanner both already declare. -->
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Flagged as a gap in DAY_02_MOBILE_PROJECT_CONFIGURATION.md
+         ("a release build of this POS app... will have no INTERNET
+         permission and all network calls will fail at the OS level"),
+         deliberately deferred until real network calls were wired up.
+         That's now true of every screen in the app — added here so a
+         release build can actually reach the backend (the debug-only
+         manifest overlay already grants this for `flutter run`, but that
+         overlay is stripped from release builds). -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Added Day 16 for BluetoothPrinterTransport (classic Bluetooth
+         connection to a paired thermal printer) — confirmed absent from
+         frontend-flutter-pos too, genuinely new for both projects.
+         BLUETOOTH_CONNECT/SCAN are the Android 12+ (API 31+) runtime
+         permissions; permission_handler's Permission.bluetoothConnect
+         (see printer_permission.dart) requests this at connect time. -->
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
     <application
         android:label="frontend_flutter_mobile"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:networkSecurityConfig="@xml/network_security_config">
         <activity
             android:name=".MainActivity"
             android:exported="true"

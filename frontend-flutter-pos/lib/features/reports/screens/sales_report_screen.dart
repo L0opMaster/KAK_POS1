@@ -89,7 +89,7 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
     try {
       final company =
           await ref.read(settingsServiceProvider).getCompanyProfile();
-      final cur = currencySymbol(readCurrency(ref));
+      final curCode = readCurrency(ref);
       final s = data.summary;
 
       // Print/export must include every sale matching the active filters,
@@ -132,10 +132,10 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
                 sale.saleDate ?? '',
                 sale.cashierName ?? '',
                 sale.paymentMethod ?? '',
-                '$cur${_fmtNum(sale.grossAmount)}',
-                '$cur${_fmtNum(sale.discountAmount)}',
-                '$cur${_fmtNum(sale.taxAmount)}',
-                '$cur${_fmtNum(sale.netAmount)}',
+                formatAmount(sale.grossAmount, curCode),
+                formatAmount(sale.discountAmount, curCode),
+                formatAmount(sale.taxAmount, curCode),
+                formatAmount(sale.netAmount, curCode),
               ])
           .toList();
 
@@ -166,13 +166,13 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
             ? const []
             : [
                 MapEntry(l10n.salesSummaryPdfGrossSalesLabel,
-                    '$cur${_fmtNum(s.totalGrossSales)}'),
+                    formatAmount(s.totalGrossSales, curCode)),
                 MapEntry(l10n.salesSummaryPdfDiscountsLabel,
-                    '$cur${_fmtNum(s.totalDiscount)}'),
+                    formatAmount(s.totalDiscount, curCode)),
                 MapEntry(
-                    l10n.salesSummaryPdfColTax, '$cur${_fmtNum(s.totalTax)}'),
+                    l10n.salesSummaryPdfColTax, formatAmount(s.totalTax, curCode)),
                 MapEntry(l10n.salesSummaryPdfNetSalesLabel,
-                    '$cur${_fmtNum(s.totalNetSales)}'),
+                    formatAmount(s.totalNetSales, curCode)),
                 MapEntry(l10n.salesSummaryPdfTransactionsLabel,
                     '${s.totalSalesCount}'),
               ],
@@ -258,6 +258,7 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
     final data = _data;
     if (data == null) return const SizedBox();
     final s = data.summary;
+    final curCode = watchCurrency(ref);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -279,19 +280,20 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
                           fontSize: 16, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
                   _sRow(context.l10n.reportsGrossSales,
-                      '\$${_fmtNum(s.totalGrossSales)}'),
+                      formatAmount(s.totalGrossSales, curCode)),
                   _sRow(context.l10n.reportsNetSales,
-                      '\$${_fmtNum(s.totalNetSales)}',
+                      formatAmount(s.totalNetSales, curCode),
                       bold: true, color: PosTheme.primaryGreen),
                   _sRow(context.l10n.reportsDiscounts,
-                      '\$${_fmtNum(s.totalDiscount)}'),
-                  _sRow(context.l10n.cartTax, '\$${_fmtNum(s.totalTax)}'),
+                      formatAmount(s.totalDiscount, curCode)),
+                  _sRow(context.l10n.cartTax,
+                      formatAmount(s.totalTax, curCode)),
                   const Divider(),
                   _sRow(context.l10n.reportsSalesCountLabel,
                       '${s.totalSalesCount}'),
                   _sRow(context.l10n.reportsItemsSold, '${s.totalItemsSold}'),
                   _sRow(context.l10n.reportsAvgSale,
-                      '\$${_fmtNum(s.averageSaleAmount)}'),
+                      formatAmount(s.averageSaleAmount, curCode)),
                 ],
               ),
             ),
@@ -316,7 +318,7 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
                 child: ListTile(
                   dense: true,
                   title: Text(p.method),
-                  trailing: Text('\$${_fmtNum(p.total)}',
+                  trailing: Text(formatAmount(p.total, curCode),
                       style: const TextStyle(fontWeight: FontWeight.w600)),
                   subtitle:
                       Text(context.l10n.reportsTransactionsCount(p.count)),
@@ -333,7 +335,7 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
                   color: PosTheme.textPrimary,
                   fontSize: 15)),
           const SizedBox(height: 8),
-          ...data.sales.map((sale) => _saleCard(sale)),
+          ...data.sales.map((sale) => _saleCard(sale, curCode)),
           ReportPaginationBar(meta: data.salesMeta, onPageChange: _changePage),
         ] else
           Center(
@@ -367,7 +369,7 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
     );
   }
 
-  Widget _saleCard(SalesDetail sale) {
+  Widget _saleCard(SalesDetail sale, String curCode) {
     final lang = ref.watch(appLanguageProvider);
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -388,7 +390,7 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
                       fontSize: 14,
                       color: PosTheme.textPrimary)),
             ),
-            Text('\$${_fmtNum(sale.netAmount)}',
+            Text(formatAmount(sale.netAmount, curCode),
                 style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
@@ -412,13 +414,16 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
             _detail(context.l10n.posTable, sale.tableNumber!),
           if (sale.customerName != null)
             _detail(context.l10n.posCustomer, sale.customerName!),
-          _detail(context.l10n.reportsGross, '\$${_fmtNum(sale.grossAmount)}'),
+          _detail(context.l10n.reportsGross,
+              formatAmount(sale.grossAmount, curCode)),
+          _detail(context.l10n.cartDiscount,
+              formatAmount(sale.discountAmount, curCode)),
+          _detail(context.l10n.cartTax, formatAmount(sale.taxAmount, curCode)),
           _detail(
-              context.l10n.cartDiscount, '\$${_fmtNum(sale.discountAmount)}'),
-          _detail(context.l10n.cartTax, '\$${_fmtNum(sale.taxAmount)}'),
-          _detail(context.l10n.receiptPaid, '\$${_fmtNum(sale.paidAmount)}'),
+              context.l10n.receiptPaid, formatAmount(sale.paidAmount, curCode)),
           if (sale.balance > 0)
-            _detail(context.l10n.reportsBalance, '\$${_fmtNum(sale.balance)}',
+            _detail(context.l10n.reportsBalance,
+                formatAmount(sale.balance, curCode),
                 color: PosTheme.errorRed),
           if (sale.creditSale)
             _Badge(context.l10n.reportsCreditSale, PosTheme.warningAmber),
@@ -446,7 +451,7 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
                           style: const TextStyle(
                               fontSize: 12, color: PosTheme.textHint)),
                       const SizedBox(width: 8),
-                      Text('\$${_fmtNum(item.totalPrice)}',
+                      Text(formatAmount(item.totalPrice, curCode),
                           style: const TextStyle(
                               fontSize: 13, fontWeight: FontWeight.w600)),
                     ],

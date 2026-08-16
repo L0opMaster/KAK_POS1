@@ -6,6 +6,7 @@
 /home/luffy/KAKNNEA/write-test-pos/backend-spring-boot/src/test/java/com/kaknnea/pos/controller/ShiftCashEventIntegrationTest.java
 /home/luffy/KAKNNEA/write-test-pos/backend-spring-boot/src/test/java/com/kaknnea/pos/service/CreditCollectionServiceTest.java
 /home/luffy/KAKNNEA/write-test-pos/backend-spring-boot/src/test/java/com/kaknnea/pos/controller/ProductCatalogIntegrationTest.java
+/home/luffy/KAKNNEA/write-test-pos/backend-spring-boot/src/test/java/com/kaknnea/pos/service/SaleServiceTaxTest.java
 /home/luffy/KAKNNEA/write-test-pos/backend-spring-boot/src/test/java/com/kaknnea/pos/controller/EstimateWorkflowIntegrationTest.java
 /home/luffy/KAKNNEA/write-test-pos/backend-spring-boot/src/test/java/com/kaknnea/pos/controller/PurchasingWorkflowIntegrationTest.java
 /home/luffy/KAKNNEA/write-test-pos/backend-spring-boot/src/test/java/com/kaknnea/pos/controller/ReportControllerIntegrationTest.java
@@ -13,8 +14,8 @@
 /home/luffy/KAKNNEA/write-test-pos/backend-spring-boot/src/test/java/com/kaknnea/pos/api/CustomerApiTest.java
 /home/luffy/KAKNNEA/write-test-pos/backend-spring-boot/src/test/java/com/kaknnea/pos/controller/DeliveryNoteControllerIntegrationTest.java
 /home/luffy/KAKNNEA/write-test-pos/backend-spring-boot/src/test/java/com/kaknnea/pos/controller/InventoryControllerIntegrationTest.java
-/home/luffy/KAKNNEA/write-test-pos/backend-spring-boot/src/test/java/com/kaknnea/pos/service/TmpKhmerInvoiceComparisonTest.java
 /home/luffy/KAKNNEA/write-test-pos/backend-spring-boot/src/test/java/com/kaknnea/pos/controller/CartControllerIntegrationTest.java
+/home/luffy/KAKNNEA/write-test-pos/backend-spring-boot/src/test/java/com/kaknnea/pos/service/SaleServiceCreditTest.java
 /home/luffy/KAKNNEA/write-test-pos/backend-spring-boot/src/test/java/com/kaknnea/pos/controller/SettingsControllerIntegrationTest.java
 /home/luffy/KAKNNEA/write-test-pos/backend-spring-boot/src/test/java/com/kaknnea/pos/controller/CustomerCreditCollectionIntegrationTest.java
 /home/luffy/KAKNNEA/write-test-pos/backend-spring-boot/src/test/java/com/kaknnea/pos/ApplicationIntegrationTest.java

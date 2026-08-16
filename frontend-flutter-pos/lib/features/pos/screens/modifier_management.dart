@@ -245,8 +245,8 @@ class _ModifierManagementState extends ConsumerState<ModifierManagement> {
       appBar: AppBar(
         automaticallyImplyLeading: true,
         title: Text(context.l10n.modifierManagementTitle),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
+        // backgroundColor: Colors.white,
+        // foregroundColor: Colors.black87,
         elevation: 1,
       ),
       body: SafeArea(
@@ -449,8 +449,8 @@ class _ModifierManagementState extends ConsumerState<ModifierManagement> {
 
                       // Delete icon near ADD MODIFIER.
                       IconButton(
-                        tooltip:
-                            context.l10n.modifierManagementDeleteSelectedTooltip,
+                        tooltip: context
+                            .l10n.modifierManagementDeleteSelectedTooltip,
                         onPressed: _selectedModifierIds.isEmpty
                             ? null
                             : _deleteSelectedModifiers,

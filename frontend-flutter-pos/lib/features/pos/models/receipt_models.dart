@@ -41,6 +41,19 @@ class ReceiptResponse {
   /// changes later. Null for sales made before this was tracked.
   final double? exchangeRateKhr;
 
+  /// ISO-8601 instant this credit sale is due — null for a non-credit sale.
+  final String? creditDueAt;
+
+  /// ISO-8601 instant the credit agreement expires — null if unset/non-credit.
+  final String? creditExpiresAt;
+
+  /// OPEN|PARTIALLY_PAID|PAID|OVERDUE|EXPIRED|CANCELLED — computed
+  /// server-side, null for a sale that was never a credit sale.
+  final String? creditStatus;
+
+  /// total - paidAmount for this sale specifically.
+  final double? remainingBalance;
+
   ReceiptResponse({
     this.businessName,
     this.address,
@@ -75,6 +88,10 @@ class ReceiptResponse {
     this.qrImageData,
     this.logoUrl,
     this.exchangeRateKhr,
+    this.creditDueAt,
+    this.creditExpiresAt,
+    this.creditStatus,
+    this.remainingBalance,
   });
 
   factory ReceiptResponse.fromJson(Map<String, dynamic> json) {
@@ -118,6 +135,10 @@ class ReceiptResponse {
       qrImageData: json['qrImageData'] as String?,
       logoUrl: json['logoUrl'] as String?,
       exchangeRateKhr: (json['exchangeRateKhr'] as num?)?.toDouble(),
+      creditDueAt: json['creditDueAt'] as String?,
+      creditExpiresAt: json['creditExpiresAt'] as String?,
+      creditStatus: json['creditStatus'] as String?,
+      remainingBalance: (json['remainingBalance'] as num?)?.toDouble(),
     );
   }
 }

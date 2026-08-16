@@ -291,7 +291,9 @@ public class SettingsService {
     public SettingsDtos.TaxSettingsResponse updateTax(SettingsDtos.TaxSettingsRequest request) {
         BusinessSettings businessSettings = getOrCreateBusinessSettings();
         InvoiceSettings invoiceSettings = getOrCreateInvoiceSettings();
-        businessSettings.setTaxRate(request.getTaxRate());
+        if (request.getTaxRate() != null) {
+            businessSettings.setTaxRate(request.getTaxRate());
+        }
         if (request.getShowTax() != null) {
             invoiceSettings.setShowTax(request.getShowTax());
         }

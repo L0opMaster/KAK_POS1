@@ -425,6 +425,7 @@ public class ProductService {
                                 : request.getDescription().trim());
                 product.setCost(request.getCost());
                 product.setPrice(request.getPrice());
+                product.setTaxRate(request.getTaxRate());
                 product.setActive(request.isActive());
                 product.setSellable(request.isSellable());
                 product.setPurchasable(request.isPurchasable());

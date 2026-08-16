@@ -102,7 +102,7 @@ class _SalesByItemScreenState extends ConsumerState<SalesByItemScreen> {
     try {
       final company =
           await ref.read(settingsServiceProvider).getCompanyProfile();
-      final cur = currencySymbol(readCurrency(ref));
+      final curCode = readCurrency(ref);
 
       // Print/export must include every item matching the active filters,
       // not just the ~20 currently loaded for on-screen pagination — walk
@@ -134,9 +134,9 @@ class _SalesByItemScreenState extends ConsumerState<SalesByItemScreen> {
                     en: r.nameEn, km: r.nameKm, language: language),
                 r.sku ?? '',
                 _fmtNum(r.quantitySold),
-                '$cur${_fmtNum(r.grossSales)}',
-                '$cur${_fmtNum(r.discount)}',
-                '$cur${_fmtNum(r.netSales)}',
+                formatAmount(r.grossSales, curCode),
+                formatAmount(r.discount, curCode),
+                formatAmount(r.netSales, curCode),
               ])
           .toList();
 
@@ -168,9 +168,9 @@ class _SalesByItemScreenState extends ConsumerState<SalesByItemScreen> {
         },
         summary: [
           MapEntry(l10n.salesSummaryPdfItemsSoldLabel, _fmtNum(totalQty)),
-          MapEntry(l10n.salesByItemGrossLabel, '$cur${_fmtNum(totalGross)}'),
-          MapEntry(l10n.cartDiscount, '$cur${_fmtNum(totalDiscount)}'),
-          MapEntry(l10n.salesByItemNetLabel, '$cur${_fmtNum(totalNet)}'),
+          MapEntry(l10n.salesByItemGrossLabel, formatAmount(totalGross, curCode)),
+          MapEntry(l10n.cartDiscount, formatAmount(totalDiscount, curCode)),
+          MapEntry(l10n.salesByItemNetLabel, formatAmount(totalNet, curCode)),
         ],
         generatedAt: DateTime.now(),
         generatedLabel: l10n.reportPdfGeneratedLabel,
@@ -296,6 +296,7 @@ class _SalesByItemScreenState extends ConsumerState<SalesByItemScreen> {
         ),
       );
     }
+    final curCode = watchCurrency(ref);
     final content = data.content;
     final chartData = content
         .take(10)
@@ -316,7 +317,9 @@ class _SalesByItemScreenState extends ConsumerState<SalesByItemScreen> {
         const SizedBox(height: 8),
         ReportBarChart(
           data: chartData,
-          valuePrefix: _sort == 'revenue' ? '\$' : '',
+          valueFormatter: _sort == 'revenue'
+              ? (v) => formatAmount(v, curCode)
+              : (v) => _fmtNum(v),
         ),
         const SizedBox(height: 16),
         ...content.map((r) => Card(
@@ -349,13 +352,13 @@ class _SalesByItemScreenState extends ConsumerState<SalesByItemScreen> {
                         _chip(context.l10n.cartQty, _fmtNum(r.quantitySold)),
                         const SizedBox(width: 8),
                         _chip(context.l10n.salesByItemGrossLabel,
-                            '\$${_fmtNum(r.grossSales)}'),
+                            formatAmount(r.grossSales, curCode)),
                         const SizedBox(width: 8),
                         _chip(context.l10n.cartDiscount,
-                            '\$${_fmtNum(r.discount)}'),
+                            formatAmount(r.discount, curCode)),
                         const SizedBox(width: 8),
                         _chip(context.l10n.salesByItemNetLabel,
-                            '\$${_fmtNum(r.netSales)}',
+                            formatAmount(r.netSales, curCode),
                             bold: true),
                       ],
                     ),

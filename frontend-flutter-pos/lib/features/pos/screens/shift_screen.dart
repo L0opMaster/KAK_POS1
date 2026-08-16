@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/config/currency_utils.dart';
 import '../../../core/config/pos_theme.dart';
 import '../models/cash_event_model.dart';
 import '../providers/cash_event_provider.dart';
@@ -45,6 +46,7 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
       _loadedShiftId = null;
     }
     final cashState = ref.watch(cashEventProvider);
+    final cur = watchCurrency(ref);
 
     return Scaffold(
       appBar: AppBar(title: Text(context.l10n.shiftScreenTitle)),
@@ -80,20 +82,20 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
                 children: [
                   Text(
                     context.l10n.shiftScreenOpeningCash(
-                      '\$${currentShift.openingFloat.toStringAsFixed(2)}',
+                      formatAmount(currentShift.openingFloat, cur),
                     ),
                   ),
                   const SizedBox(height: 8),
                   if (currentShift.expectedCash != null)
                     Text(
                       context.l10n.shiftScreenExpectedCash(
-                        '\$${currentShift.expectedCash!.toStringAsFixed(2)}',
+                        formatAmount(currentShift.expectedCash!, cur),
                       ),
                     ),
                   if (currentShift.variance != null)
                     Text(
                       context.l10n.shiftScreenVariance(
-                        '\$${currentShift.variance!.toStringAsFixed(2)}',
+                        formatAmount(currentShift.variance!, cur),
                       ),
                     ),
                   const SizedBox(height: 16),
@@ -154,7 +156,7 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
                   ),
                   title: Text(event.type.label),
                   subtitle: Text(event.reason),
-                  trailing: Text('\$${event.amount.toStringAsFixed(2)}'),
+                  trailing: Text(formatAmount(event.amount, cur)),
                 ),
               ),
           ],

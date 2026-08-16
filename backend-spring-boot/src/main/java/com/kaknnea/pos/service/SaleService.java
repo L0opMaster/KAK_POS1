@@ -29,6 +29,7 @@ import com.kaknnea.pos.repository.*;
 import com.kaknnea.pos.domain.CustomerCreditAllocation;
 import com.kaknnea.pos.util.DocumentNumberUtil;
 import com.kaknnea.pos.util.SecurityUtil;
+import com.kaknnea.pos.util.TaxCalculator;
 // import com.kaknnea.pos.service.AuditService;
 // import com.kaknnea.pos.service.PdfService;
 
@@ -119,6 +120,10 @@ public class SaleService {
     // implemented below and inside this class.
     // ...existing methods...
 
+    // Tax computation (computeLineTaxes/blendedTaxRate) lives in
+    // com.kaknnea.pos.util.TaxCalculator, shared with HeldTicketService —
+    // see that class's doc comment for why.
+
     @Transactional
     public SaleDtos.SaleResponse create(SaleDtos.SaleCreateRequest request) {
         if (request.getClientRef() != null && !request.getClientRef().isBlank()) {
@@ -167,6 +172,7 @@ public class SaleService {
             line.setQuantity(lineReq.getQuantity());
             line.setUnitPrice(unitPrice);
             line.setLineDiscount(lineReq.getLineDiscount() == null ? BigDecimal.ZERO : lineReq.getLineDiscount());
+            line.setTaxRate(product.getTaxRate());
             line.setLineNote(lineReq.getNote());
             line.setModifierSummary(lineReq.getModifierSummary());
             line.setModifierData(lineReq.getModifierData());
@@ -182,12 +188,13 @@ public class SaleService {
         BigDecimal subtotal = lines.stream().map(SaleLine::getLineTotal).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal discount = request.getInvoiceDiscount() == null ? BigDecimal.ZERO : request.getInvoiceDiscount();
         BigDecimal taxable = subtotal.subtract(discount);
-        BigDecimal taxAmount = taxable.multiply(BigDecimal.valueOf(request.getTaxRate())).setScale(2,
-            RoundingMode.HALF_UP);
+        // request.getTaxRate() is vestigial — tax is per-product now (see
+        // computeLineTaxes); a stale client still sending it is harmless.
+        BigDecimal taxAmount = TaxCalculator.computeLineTaxes(lines, subtotal, discount);
         BigDecimal grandTotal = taxable.add(taxAmount).add(sale.getDeliveryCharge()).add(sale.getOtherCharge());
         sale.setSubtotal(subtotal);
         sale.setDiscountAmount(discount);
-        sale.setTaxRate(request.getTaxRate());
+        sale.setTaxRate(TaxCalculator.blendedTaxRate(taxable, taxAmount));
         sale.setTaxAmount(taxAmount);
         sale.setGrandTotal(grandTotal);
         sale.setTotalAmount(grandTotal);
@@ -262,6 +269,7 @@ public class SaleService {
             line.setQuantity(lineReq.getQuantity());
             line.setUnitPrice(unitPrice);
             line.setLineDiscount(lineReq.getLineDiscount() == null ? BigDecimal.ZERO : lineReq.getLineDiscount());
+            line.setTaxRate(product.getTaxRate());
             line.setLineNote(lineReq.getNote());
             line.setModifierSummary(lineReq.getModifierSummary());
             line.setModifierData(lineReq.getModifierData());
@@ -280,12 +288,11 @@ public class SaleService {
         BigDecimal subtotal = lines.stream().map(SaleLine::getLineTotal).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal discount = request.getInvoiceDiscount() == null ? BigDecimal.ZERO : request.getInvoiceDiscount();
         BigDecimal taxable = subtotal.subtract(discount);
-        BigDecimal taxAmount = taxable.multiply(BigDecimal.valueOf(request.getTaxRate())).setScale(2,
-                RoundingMode.HALF_UP);
+        BigDecimal taxAmount = TaxCalculator.computeLineTaxes(lines, subtotal, discount);
         BigDecimal grandTotal = taxable.add(taxAmount).add(sale.getDeliveryCharge()).add(sale.getOtherCharge());
         sale.setSubtotal(subtotal);
         sale.setDiscountAmount(discount);
-        sale.setTaxRate(request.getTaxRate());
+        sale.setTaxRate(TaxCalculator.blendedTaxRate(taxable, taxAmount));
         sale.setTaxAmount(taxAmount);
         sale.setGrandTotal(grandTotal);
         sale.setTotalAmount(grandTotal);
@@ -319,13 +326,42 @@ public class SaleService {
     @Transactional
     public SaleDtos.SaleResponse voidSale(Long id, String reason) {
         Sale sale = saleRepository.findById(id).orElseThrow(() -> new ApiException("Sale not found"));
+        boolean wasCredit = sale.getCreditIssuedAt() != null;
+        boolean hadRepayments = wasCredit && sale.getPaidAmount() != null
+                && sale.getPaidAmount().compareTo(BigDecimal.ZERO) > 0;
+        if (hadRepayments) {
+            // A credit sale that already collected repayments must never just
+            // disappear — the customer's balance/history has to stay
+            // traceable. Cancel via refund instead, which preserves history.
+            throw new ApiException("Cannot void a credit sale with recorded repayments — refund instead");
+        }
         sale.setStatus("VOID");
         if (reason != null && !reason.isBlank()) {
             sale.setNote(reason);
         }
+        if (wasCredit && sale.getCustomer() != null) {
+            // Reverse the balance credit() added — mirrors that method's
+            // balance-add, in reverse — so voiding an unpaid credit sale
+            // doesn't leave a phantom balance on the customer.
+            Customer customer = sale.getCustomer();
+            BigDecimal outstanding = sale.getGrandTotal() == null ? BigDecimal.ZERO : sale.getGrandTotal();
+            BigDecimal currentBalance = customer.getCreditBalance() == null ? BigDecimal.ZERO : customer.getCreditBalance();
+            customer.setCreditBalance(currentBalance.subtract(outstanding).max(BigDecimal.ZERO));
+            customerRepository.save(customer);
+            creditAccountRepository.findByCustomerId(customer.getId()).ifPresent(account -> {
+                account.setBalance(customer.getCreditBalance());
+                creditAccountRepository.save(account);
+            });
+        }
         Sale saved = saleRepository.save(sale);
+        if (wasCredit && saved.getCustomer() != null) {
+            creditCollectionService.syncBalanceForCustomer(saved.getCustomer().getId());
+        }
         var actor = userRepository.findByEmail(SecurityUtil.currentUsername()).orElse(null);
         auditService.log(actor, "SALE_VOID", "Sale", String.valueOf(saved.getId()), null, saved);
+        if (wasCredit) {
+            auditService.log(actor, "SALE_CREDIT_CANCELLED", "Sale", String.valueOf(saved.getId()), null, saved);
+        }
         return toResponse(saved);
     }
 
@@ -427,7 +463,7 @@ public class SaleService {
     }
 
     @Transactional
-    public SaleDtos.SaleResponse credit(Long id) {
+    public SaleDtos.SaleResponse credit(Long id, SaleDtos.CreditRequest request) {
         Sale sale = saleRepository.findById(id).orElseThrow(() -> new ApiException("Sale not found"));
         Shift processingShift = resolveShiftForSaleProcessing(sale);
         if ("VOID".equals(sale.getStatus()) || "REFUNDED".equals(sale.getStatus())) {
@@ -448,6 +484,37 @@ public class SaleService {
             throw new ApiException("No remaining balance to credit");
         }
 
+        // Cashier-supplied due/expiration dates, if any — validated before any
+        // balance mutation so an invalid request never partially applies.
+        LocalDate today = LocalDate.now(ZoneId.systemDefault());
+        LocalDate dueDate = null;
+        LocalDate expiresAtDate = null;
+        String notes = null;
+        if (request != null) {
+            if (request.getDueDate() != null && !request.getDueDate().isBlank()) {
+                try {
+                    dueDate = LocalDate.parse(request.getDueDate().trim());
+                } catch (java.time.format.DateTimeParseException ex) {
+                    throw new ApiException("Invalid due date: " + request.getDueDate());
+                }
+                if (dueDate.isBefore(today)) {
+                    throw new ApiException("Due date cannot be before the sale date");
+                }
+            }
+            if (request.getExpiresAt() != null && !request.getExpiresAt().isBlank()) {
+                try {
+                    expiresAtDate = LocalDate.parse(request.getExpiresAt().trim());
+                } catch (java.time.format.DateTimeParseException ex) {
+                    throw new ApiException("Invalid expiration date: " + request.getExpiresAt());
+                }
+                LocalDate expiryFloor = dueDate != null ? dueDate : today;
+                if (expiresAtDate.isBefore(expiryFloor)) {
+                    throw new ApiException("Expiration date cannot be before the due date");
+                }
+            }
+            notes = request.getNotes();
+        }
+
         enforceCreditLimit(customer, creditAmount);
         validateSaleStockAvailable(sale);
 
@@ -466,10 +533,22 @@ public class SaleService {
         creditAccountRepository.save(account);
 
         Instant now = Instant.now();
-        int termDays = parseCreditTermDays(sale.getPaymentTerms());
+        ZoneId zone = ZoneId.systemDefault();
+        if (dueDate != null) {
+            sale.setCreditDueAt(dueDate.atStartOfDay(zone).toInstant());
+            sale.setCreditTermDays((int) ChronoUnit.DAYS.between(today, dueDate));
+        } else {
+            int termDays = parseCreditTermDays(sale.getPaymentTerms());
+            sale.setCreditDueAt(now.plus(termDays, ChronoUnit.DAYS));
+            sale.setCreditTermDays(termDays);
+        }
+        if (expiresAtDate != null) {
+            sale.setCreditExpiresAt(expiresAtDate.atStartOfDay(zone).toInstant());
+        }
+        if (notes != null && !notes.isBlank() && (sale.getNote() == null || sale.getNote().isBlank())) {
+            sale.setNote(notes);
+        }
         sale.setCreditIssuedAt(now);
-        sale.setCreditDueAt(now.plus(termDays, ChronoUnit.DAYS));
-        sale.setCreditTermDays(termDays);
         sale.setStatus("CREDIT");
         if (sale.getShift() == null && processingShift != null) {
             sale.setShift(processingShift);
@@ -688,7 +767,12 @@ public class SaleService {
 
     @Transactional
     public SaleDtos.SaleResponse repayCreditSale(Long id, SaleDtos.CreditRepaymentRequest request) {
-        Sale sale = saleRepository.findById(id).orElseThrow(() -> new ApiException("Sale not found"));
+        // Pessimistic write lock — without it, two concurrent repayments can
+        // both read the same paidAmount, both pass the "amount <= remaining"
+        // check below, and together overpay the sale. Same lock the
+        // customer-level FIFO repayment path already uses (see
+        // CreditCollectionService.applyAllocations).
+        Sale sale = saleRepository.findByIdForUpdate(id).orElseThrow(() -> new ApiException("Sale not found"));
         Shift paymentShift = resolveShiftForSaleProcessing(sale);
         if (!"CREDIT".equals(sale.getStatus())) {
             throw new ApiException("Only credit sales can be repaid");
@@ -1079,6 +1163,7 @@ public class SaleService {
             line.setQuantity(lineReq.getQuantity());
             line.setUnitPrice(unitPrice);
             line.setLineDiscount(lineReq.getLineDiscount() == null ? BigDecimal.ZERO : lineReq.getLineDiscount());
+            line.setTaxRate(product.getTaxRate());
             line.setLineNote(lineReq.getNote());
             line.setModifierSummary(lineReq.getModifierSummary());
             line.setModifierData(lineReq.getModifierData());
@@ -1093,11 +1178,11 @@ public class SaleService {
         BigDecimal subtotal = lines.stream().map(SaleLine::getLineTotal).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal discount = request.getInvoiceDiscount() == null ? BigDecimal.ZERO : request.getInvoiceDiscount();
         BigDecimal taxable = subtotal.subtract(discount);
-        BigDecimal taxAmount = taxable.multiply(BigDecimal.valueOf(request.getTaxRate())).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal taxAmount = TaxCalculator.computeLineTaxes(lines, subtotal, discount);
         BigDecimal grandTotal = taxable.add(taxAmount).add(sale.getDeliveryCharge()).add(sale.getOtherCharge());
         sale.setSubtotal(subtotal);
         sale.setDiscountAmount(discount);
-        sale.setTaxRate(request.getTaxRate());
+        sale.setTaxRate(TaxCalculator.blendedTaxRate(taxable, taxAmount));
         sale.setTaxAmount(taxAmount);
         sale.setGrandTotal(grandTotal);
         sale.setTotalAmount(grandTotal);
@@ -1382,6 +1467,48 @@ public class SaleService {
                 .replace("\"", "&quot;").replace("'", "&#39;");
     }
 
+    /**
+     * Read-time projection of a credit sale's finer-grained status —
+     * deliberately NOT a new persisted {@code sales.status} value (that stays
+     * DRAFT/HOLD/PAID/VOID/CREDIT/REFUNDED/PARTIALLY_REFUNDED as today).
+     * Only populated once a sale has ever been credited
+     * ({@code creditIssuedAt != null}); a plain cash sale gets null here.
+     * Shared by {@link #toResponse(Sale)} and {@link #receipt(Long)} so the
+     * two response shapes can never compute this differently.
+     */
+    private String computeCreditStatus(Sale sale) {
+        if (sale.getCreditIssuedAt() == null) {
+            return null;
+        }
+        String status = sale.getStatus();
+        if ("VOID".equals(status)) {
+            return "CANCELLED";
+        }
+        if ("PAID".equals(status)) {
+            return "PAID";
+        }
+        if (!"CREDIT".equals(status)) {
+            return null;
+        }
+        BigDecimal grandTotal = sale.getGrandTotal() == null ? BigDecimal.ZERO : sale.getGrandTotal();
+        BigDecimal paidAmount = sale.getPaidAmount() == null ? BigDecimal.ZERO : sale.getPaidAmount();
+        BigDecimal remaining = grandTotal.subtract(paidAmount);
+        Instant now = Instant.now();
+        boolean expired = sale.getCreditExpiresAt() != null && now.isAfter(sale.getCreditExpiresAt());
+        boolean overdue = sale.getCreditDueAt() != null && now.isAfter(sale.getCreditDueAt())
+                && remaining.compareTo(BigDecimal.ZERO) > 0;
+        if (expired) {
+            return "EXPIRED";
+        }
+        if (overdue) {
+            return "OVERDUE";
+        }
+        if (paidAmount.compareTo(BigDecimal.ZERO) > 0) {
+            return "PARTIALLY_PAID";
+        }
+        return "OPEN";
+    }
+
     private SaleDtos.SaleResponse toResponse(Sale sale) {
         SaleDtos.SaleResponse resp = new SaleDtos.SaleResponse();
         resp.setId(sale.getId());
@@ -1409,6 +1536,8 @@ public class SaleService {
         resp.setDeliveryDate(sale.getDeliveryDate() != null ? sale.getDeliveryDate().toString() : null);
         resp.setPaymentTerms(sale.getPaymentTerms());
         resp.setCreditDueAt(sale.getCreditDueAt() != null ? sale.getCreditDueAt().toString() : null);
+        resp.setCreditExpiresAt(sale.getCreditExpiresAt() != null ? sale.getCreditExpiresAt().toString() : null);
+        resp.setCreditStatus(computeCreditStatus(sale));
         resp.setCustomerId(sale.getCustomer() != null ? sale.getCustomer().getId() : null);
         resp.setCustomerName(sale.getCustomer() != null ? firstNonBlank(sale.getCustomer().getDisplayName(), sale.getCustomer().getNameEn(), sale.getCustomer().getNameKm()) : null);
         resp.setTableId(sale.getTable() != null ? sale.getTable().getId() : null);
@@ -1441,6 +1570,7 @@ public class SaleService {
             lr.setUnitPrice(line.getUnitPrice());
             lr.setLineDiscount(line.getLineDiscount());
             lr.setLineTotal(line.getLineTotal());
+            lr.setTaxRate(line.getTaxRate());
             lr.setNote(line.getLineNote());
             lr.setModifierSummary(line.getModifierSummary());
             lr.setModifierData(line.getModifierData());
@@ -1830,6 +1960,11 @@ public class SaleService {
         resp.setChangeAmount(sale.getChangeAmount());
         resp.setRefundedAmount(totalRefundedAmount(sale));
         resp.setStatus(sale.getStatus());
+        resp.setCreditDueAt(sale.getCreditDueAt() != null ? sale.getCreditDueAt().toString() : null);
+        resp.setCreditExpiresAt(sale.getCreditExpiresAt() != null ? sale.getCreditExpiresAt().toString() : null);
+        resp.setCreditStatus(computeCreditStatus(sale));
+        resp.setRemainingBalance(sale.getGrandTotal() != null && sale.getPaidAmount() != null
+                ? sale.getGrandTotal().subtract(sale.getPaidAmount()) : null);
         resp.setExchangeRateKhr(sale.getExchangeRateKhr());
         resp.setQrImageData(buildQrImageData(sale.getId(), 180));
         applyReceiptBalanceSummary(resp, sale);

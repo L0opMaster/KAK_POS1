@@ -35,6 +35,16 @@ public class SaleLine {
     @Column(name = "line_total", nullable = false, precision = 18, scale = 2)
     private BigDecimal lineTotal;
 
+    /**
+     * The tax rate (fraction, e.g. 0.08) actually applied to this line at
+     * sale time — captured from the product's own rate so a later edit to
+     * that product's tax rate never retroactively changes an already-sold
+     * line. {@code taxAmount} for a line is deliberately not persisted
+     * separately; compute it on demand as {@code lineTotal * taxRate}.
+     */
+    @Column(name = "tax_rate", nullable = false)
+    private double taxRate;
+
     @Column(name = "refunded_quantity", nullable = false, precision = 18, scale = 2)
     private BigDecimal refundedQuantity = BigDecimal.ZERO;
 

@@ -129,7 +129,7 @@ class _PrintTestScreenState extends ConsumerState<PrintTestScreen> {
       taxAmount: tax,
       total: total,
       paidAmount: total,
-      currencyCode: 'USD',
+      currencyCode: 'KHR',
       exchangeRateKhr: 4100,
       footer: 'Thank you for your purchase! អរគុណ',
     );
@@ -308,7 +308,7 @@ class _PrintTestScreenState extends ConsumerState<PrintTestScreen> {
         name,
         'SKU-$n',
         '${(n % 20) + 1}',
-        '\$${(n * 1.5).toStringAsFixed(2)}'
+        formatAmount(n * 1.5, readCurrency(ref)),
       ];
     });
   }

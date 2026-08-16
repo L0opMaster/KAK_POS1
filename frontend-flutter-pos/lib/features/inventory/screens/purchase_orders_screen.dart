@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
+import '../../../core/config/currency_utils.dart';
 import '../../../core/config/pos_theme.dart';
 import '../../../core/services/printing/a4_report_pdf.dart';
 import '../../../core/utils/l10n_extensions.dart';
@@ -134,6 +135,7 @@ class _PurchaseOrdersScreenState extends ConsumerState<PurchaseOrdersScreen> {
   Future<Uint8List> _buildOrderPdf(PurchaseOrder order) async {
     final l10n = context.l10n;
     final company = await ref.read(settingsServiceProvider).getCompanyProfile();
+    final currencyCode = readCurrency(ref);
 
     final details = <MapEntry<String, String>>[
       MapEntry(l10n.purchaseOrderPdfNumberLabel,
@@ -156,18 +158,19 @@ class _PurchaseOrdersScreenState extends ConsumerState<PurchaseOrdersScreen> {
               line.productNameEn ?? l10n.reportsProductFallback('${line.productId}'),
               line.quantity.toStringAsFixed(
                   line.quantity.truncateToDouble() == line.quantity ? 0 : 2),
-              '\$${line.unitCost.toStringAsFixed(2)}',
-              '\$${(line.lineTotal ?? line.quantity * line.unitCost).toStringAsFixed(2)}',
+              formatAmount(line.unitCost, currencyCode),
+              formatAmount(
+                  line.lineTotal ?? line.quantity * line.unitCost, currencyCode),
             ])
         .toList();
 
     final summary = <MapEntry<String, String>>[
       if (order.subtotal != null)
-        MapEntry(l10n.cartSubtotal, '\$${order.subtotal!.toStringAsFixed(2)}'),
+        MapEntry(l10n.cartSubtotal, formatAmount(order.subtotal!, currencyCode)),
       if (order.taxAmount != null)
-        MapEntry(l10n.cartTax, '\$${order.taxAmount!.toStringAsFixed(2)}'),
+        MapEntry(l10n.cartTax, formatAmount(order.taxAmount!, currencyCode)),
       if (order.totalAmount != null)
-        MapEntry(l10n.cartTotal, '\$${order.totalAmount!.toStringAsFixed(2)}'),
+        MapEntry(l10n.cartTotal, formatAmount(order.totalAmount!, currencyCode)),
     ];
 
     return A4ReportPdf.build(
@@ -341,6 +344,7 @@ class _PurchaseOrdersScreenState extends ConsumerState<PurchaseOrdersScreen> {
   }
 
   Widget _buildRow(PurchaseOrder order) {
+    final currencyCode = watchCurrency(ref);
     final status = order.status.toUpperCase();
     final actions = order.id == null ? const <String>[] : _actionsFor(status);
     return Column(
@@ -373,7 +377,7 @@ class _PurchaseOrdersScreenState extends ConsumerState<PurchaseOrdersScreen> {
                 ),
               ),
               if (order.totalAmount != null) ...[
-                Text('\$${order.totalAmount!.toStringAsFixed(2)}',
+                Text(formatAmount(order.totalAmount!, currencyCode),
                     style: TextStyle(fontWeight: FontWeight.bold, color: PosTheme.primaryGreen)),
                 const SizedBox(width: 12),
               ],

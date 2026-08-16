@@ -20,6 +20,7 @@ import '../providers/held_ticket_provider.dart';
 import '../providers/waiting_ticket_provider.dart' as waiting;
 import '../models/cart_models.dart';
 import '../models/receipt_models.dart';
+import '../utils/credit_status.dart';
 import '../widgets/receipt_preview_screen.dart';
 import '../providers/customer_display_provider.dart';
 
@@ -231,6 +232,12 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   int _processingIndex = -1;
 
   final _emailCtl = TextEditingController();
+  // Owned here (not local to _showCreditSaleDialog) so it's disposed at the
+  // normal State lifecycle point — see credit_repayment_dialog.dart's
+  // _CreditRepaymentDialogState doc comment for why a dialog-local
+  // controller disposed via `showDialog(...).whenComplete(...)` races the
+  // dialog's own closing animation and throws "used after being disposed".
+  final _creditNotesCtl = TextEditingController();
 
   // Holds the completed sale response from backend
   SaleResponse? _completedSale;
@@ -253,7 +260,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   // The currency the customer is actually handing over (e.g. they're
   // paying in Riel even though prices are quoted in USD) and the raw
   // number they/the cashier entered in that currency, before conversion.
-  String _tenderCurrency = 'USD';
+  String _tenderCurrency = 'KHR';
   double? _cashReceivedRaw;
   final _cashReceivedCtl = TextEditingController();
 
@@ -445,6 +452,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   void dispose() {
     _emailCtl.dispose();
     _cashReceivedCtl.dispose();
+    _creditNotesCtl.dispose();
     super.dispose();
   }
 
@@ -534,6 +542,135 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     _submitSaleToBackend();
   }
 
+  /// Entry point for the "Pay Later / Credit" button. A credit sale always
+  /// needs a customer to owe the balance to (enforced authoritatively by the
+  /// backend's `credit()` endpoint too — this is just an earlier, friendlier
+  /// prompt) — see `cart_panel.dart`'s `_CustomerPickerDialog`, which is
+  /// where `widget.customerId` actually gets set before this screen opens.
+  Future<void> _startCreditSale() async {
+    if (widget.customerId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.paymentScreenCreditRequiresCustomer)),
+      );
+      return;
+    }
+    final result = await _showCreditSaleDialog();
+    if (result == null || !mounted) return;
+    await _submitCreditSale(
+      dueDate: result.dueDate,
+      expiresAt: result.expiresAt,
+      notes: result.notes,
+    );
+  }
+
+  Future<_CreditSaleDialogResult?> _showCreditSaleDialog() {
+    DateTime dueDate = DateTime.now().add(const Duration(days: 30));
+    DateTime? expiresAt;
+    _creditNotesCtl.clear();
+
+    return showDialog<_CreditSaleDialogResult>(
+      context: context,
+      builder: (dialogCtx) {
+        return StatefulBuilder(
+          builder: (dialogCtx, setDialogState) {
+            Future<void> pickDueDate() async {
+              final picked = await showDatePicker(
+                context: dialogCtx,
+                initialDate: dueDate,
+                firstDate: DateTime.now(),
+                lastDate: DateTime.now().add(const Duration(days: 3650)),
+              );
+              if (picked != null) {
+                setDialogState(() {
+                  dueDate = picked;
+                  // An already-set expiration earlier than the new due date
+                  // would silently violate the due<=expires rule — clear it
+                  // rather than submit something the backend will reject.
+                  if (expiresAt != null && expiresAt!.isBefore(dueDate)) {
+                    expiresAt = null;
+                  }
+                });
+              }
+            }
+
+            Future<void> pickExpiresAt() async {
+              final picked = await showDatePicker(
+                context: dialogCtx,
+                initialDate: expiresAt ?? dueDate,
+                firstDate: dueDate,
+                lastDate: DateTime.now().add(const Duration(days: 3650)),
+              );
+              if (picked != null) setDialogState(() => expiresAt = picked);
+            }
+
+            return AlertDialog(
+              title: Text(dialogCtx.l10n.paymentScreenCreditDialogTitle),
+              content: SizedBox(
+                width: 340,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(dialogCtx.l10n.paymentScreenCreditDueDateLabel,
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: PosTheme.textSecondaryOf(dialogCtx))),
+                    const SizedBox(height: 6),
+                    OutlinedButton.icon(
+                      onPressed: pickDueDate,
+                      icon: const Icon(Icons.event, size: 18),
+                      label: Text(formatReceiptDate(dueDate)),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(dialogCtx.l10n.paymentScreenCreditExpiresLabel,
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: PosTheme.textSecondaryOf(dialogCtx))),
+                    const SizedBox(height: 6),
+                    OutlinedButton.icon(
+                      onPressed: pickExpiresAt,
+                      icon: const Icon(Icons.event_busy, size: 18),
+                      label: Text(expiresAt != null
+                          ? formatReceiptDate(expiresAt!)
+                          : dialogCtx.l10n.commonNone),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _creditNotesCtl,
+                      maxLines: 2,
+                      decoration: InputDecoration(
+                        labelText: dialogCtx.l10n.paymentScreenCreditNotesLabel,
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogCtx).pop(),
+                  child: Text(dialogCtx.l10n.commonCancel),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.of(dialogCtx).pop(
+                    _CreditSaleDialogResult(
+                      dueDate: dueDate,
+                      expiresAt: expiresAt,
+                      notes: _creditNotesCtl.text.trim(),
+                    ),
+                  ),
+                  child: Text(dialogCtx.l10n.paymentScreenCreditConfirm),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   /// Set the cash amount the customer handed over from a quick-cash preset
   /// (in whichever currency is currently selected as the tender currency),
   /// so the change/short indicator updates. Does not submit the sale —
@@ -589,12 +726,10 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
         if (widget.tableId != null) 'tableId': widget.tableId,
         'orderMode': _getOrderModeFromCart(),
         if (payments.isNotEmpty) 'payments': payments,
-        // The backend recomputes tax/discount/total server-side from these
-        // — see SaleService.createSale (taxable = subtotal - discount,
-        // taxAmount = taxable * taxRate) — but only if it's told the rate
-        // and discount actually applied on this cart; omitting them here is
-        // exactly why every finalized sale used to record zero tax.
-        'taxRate': cartSnapshot.taxRate,
+        // Tax is per-product now — the backend derives it entirely from
+        // each line's own product (see SaleService.computeLineTaxes), so
+        // there's no cart-wide rate to send. The invoice discount still
+        // needs to be told explicitly, same as before.
         if (cartSnapshot.discountAmount > 0)
           'invoiceDiscount': cartSnapshot.discountAmount,
       };
@@ -704,6 +839,119 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
               textColor: Colors.white,
               onPressed: _submitSaleToBackend,
             ),
+          ),
+        );
+        setState(() {
+          _paymentState = PaymentState.failed;
+          _isSubmitting = false;
+        });
+      }
+    }
+  }
+
+  /// Creates the sale (unpaid, same request shape [_submitSaleToBackend]
+  /// uses) and immediately converts it to a credit/"pay later" sale via
+  /// [SaleService.creditSale] instead of charging it. Kept as its own method
+  /// rather than folded into [_submitSaleToBackend] — the two diverge on
+  /// what gets called after `createSale` (`paySale` vs `creditSale`) and on
+  /// what the completed screen shows afterward (see `_buildCompleted`'s
+  /// `status == 'CREDIT'` branch), so sharing one method would mean a
+  /// bigger conditional inside the already-large submit flow for a change
+  /// this well-isolated.
+  Future<void> _submitCreditSale({
+    required DateTime dueDate,
+    DateTime? expiresAt,
+    String? notes,
+  }) async {
+    if (_isSubmitting) return;
+    setState(() => _isSubmitting = true);
+
+    try {
+      final CartState cartSnapshot = ref.read(cartProvider);
+      final List<CartItem> saleItems = List<CartItem>.from(cartSnapshot.items);
+      final OrderMode saleOrderMode = cartSnapshot.orderMode;
+
+      final saleService = ref.read(saleServiceProvider);
+
+      final request = <String, dynamic>{
+        'lines': widget.saleLines ?? [],
+        'clientRef': _clientRef,
+        'customerId': widget.customerId,
+        if (widget.tableId != null) 'tableId': widget.tableId,
+        'orderMode': _getOrderModeFromCart(),
+        // Tax is per-product now — nothing to send (see the other
+        // createSale call site's comment above).
+        if (cartSnapshot.discountAmount > 0)
+          'invoiceDiscount': cartSnapshot.discountAmount,
+      };
+
+      final saleResponse = await saleService.createSale(request);
+      final saleId = saleResponse.id;
+      _savedSaleItems = saleItems;
+
+      final creditResponse = await saleService.creditSale(
+        saleId,
+        dueDate: dueDate,
+        expiresAt: expiresAt,
+        notes: (notes != null && notes.isNotEmpty) ? notes : null,
+      );
+
+      if (!mounted) return;
+
+      if (widget.heldTicketId != null) {
+        unawaited(
+          ref
+              .read(heldTicketProvider.notifier)
+              .releaseTicketById(widget.heldTicketId!),
+        );
+      }
+
+      try {
+        await ref.read(waiting.waitingNumberServiceProvider).saveWaitingTicket(
+              waitingNumber: widget.waitingNumber,
+              items: saleItems,
+              orderMode: saleOrderMode,
+              status: WaitingTicketStatus.paid,
+              total: widget.total,
+              orderId: saleId,
+            );
+        ref.invalidate(waitingTicketsProvider);
+      } catch (e) {
+        debugPrint('Waiting ticket save failed (non-fatal): $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content:
+                  Text(context.l10n.paymentScreenWaitingTicketSaveFailed('$e')),
+              backgroundColor: PosTheme.warningAmber,
+            ),
+          );
+        }
+      }
+
+      await ref.read(cartProvider.notifier).clear(releaseWaitingNumber: false);
+
+      if (mounted) {
+        setState(() {
+          _completedSale = creditResponse;
+          _paymentState = PaymentState.completed;
+          _isSubmitting = false;
+        });
+      }
+
+      ref.read(customerDisplayProvider.notifier).broadcastIdle();
+
+      unawaited(_fetchCompletedReceipt(saleId));
+      if (mounted) {
+        unawaited(_autoPrintIfEnabled(context, saleId));
+      }
+    } catch (e) {
+      debugPrint('Credit sale submission failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.l10n.paymentScreenCreditSaleFailed('$e')),
+            backgroundColor: PosTheme.errorRed,
           ),
         );
         setState(() {
@@ -1304,6 +1552,27 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 14),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 28),
+            child: SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.schedule, size: 22),
+                label: Text(context.l10n.paymentScreenPayLater,
+                    style: const TextStyle(
+                        fontSize: 17, fontWeight: FontWeight.w700)),
+                onPressed: _startCreditSale,
+                style: OutlinedButton.styleFrom(
+                    foregroundColor: PosTheme.textPrimaryOf(context),
+                    side: BorderSide(color: PosTheme.borderColorOf(context)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.circular(PosTheme.radiusMedium))),
+              ),
+            ),
+          ),
           const SizedBox(height: 24),
         ]),
         ),
@@ -1573,7 +1842,9 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
           Text(
             _isSubmitting
                 ? context.l10n.paymentScreenSubmitting
-                : context.l10n.paymentScreenPaymentComplete,
+                : (sale?.status == 'CREDIT'
+                    ? context.l10n.paymentScreenCreditSaleCreated
+                    : context.l10n.paymentScreenPaymentComplete),
             style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w700),
           ),
           if (sale?.invoiceNumber != null) ...[
@@ -1651,52 +1922,70 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                   Divider(color: PosTheme.dividerColorOf(context)),
                   const SizedBox(height: 8),
 
-                  // Payment breakdown
-                  Text(context.l10n.paymentScreenPayments,
-                      style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: PosTheme.textSecondaryOf(context))),
-                  const SizedBox(height: 8),
-                  ..._splits
-                      .where((s) => s.status == SplitStatus.authorized)
-                      .map((s) => Padding(
-                            padding: const EdgeInsets.only(bottom: 6),
-                            child: _receiptRow(s.method.label(context.l10n),
-                                formatAmount(s.amount, _currency),
-                                valueColor: s.method.color),
-                          )),
-                  const SizedBox(height: 8),
-                  Divider(color: PosTheme.dividerColorOf(context)),
-                  const SizedBox(height: 8),
-                  _receiptRow(context.l10n.receiptPaid,
-                      formatAmount(_totalPaid, _currency),
-                      bold: true),
-                  if (_cashReceived != null) ...[
-                    _receiptRow(
-                        context.l10n.paymentScreenCashReceived,
-                        formatAmount(_cashReceivedRaw ?? _cashReceived!,
-                            _tenderCurrency)),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(context.l10n.receiptChange,
-                              style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: PosTheme.textSecondaryOf(context))),
-                          _dualCurrencyAmount(
-                            _changeDue,
-                            color: PosTheme.primaryGreen,
-                            primaryFontSize: 15,
-                            secondaryFontSize: 12,
-                          ),
-                        ],
+                  // Payment breakdown — or, for a credit sale, the due
+                  // date/status the customer/cashier need instead (nothing
+                  // has been paid yet, so a payment-method breakdown would
+                  // just show zero).
+                  if (sale?.status == 'CREDIT') ...[
+                    _receiptRow(context.l10n.paymentScreenCreditStatusLabel,
+                        creditStatusLabel(context.l10n, sale?.creditStatus),
+                        bold: true,
+                        valueColor: creditStatusColor(sale?.creditStatus)),
+                    if (sale?.creditDueAt != null) ...[
+                      const SizedBox(height: 6),
+                      _receiptRow(
+                          context.l10n.paymentScreenCreditDueLabel,
+                          formatReceiptDate(
+                              parseBackendTimestamp(sale!.creditDueAt) ??
+                                  DateTime.now())),
+                    ],
+                  ] else ...[
+                    Text(context.l10n.paymentScreenPayments,
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: PosTheme.textSecondaryOf(context))),
+                    const SizedBox(height: 8),
+                    ..._splits
+                        .where((s) => s.status == SplitStatus.authorized)
+                        .map((s) => Padding(
+                              padding: const EdgeInsets.only(bottom: 6),
+                              child: _receiptRow(s.method.label(context.l10n),
+                                  formatAmount(s.amount, _currency),
+                                  valueColor: s.method.color),
+                            )),
+                    const SizedBox(height: 8),
+                    Divider(color: PosTheme.dividerColorOf(context)),
+                    const SizedBox(height: 8),
+                    _receiptRow(context.l10n.receiptPaid,
+                        formatAmount(_totalPaid, _currency),
+                        bold: true),
+                    if (_cashReceived != null) ...[
+                      _receiptRow(
+                          context.l10n.paymentScreenCashReceived,
+                          formatAmount(_cashReceivedRaw ?? _cashReceived!,
+                              _tenderCurrency)),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(context.l10n.receiptChange,
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: PosTheme.textSecondaryOf(context))),
+                            _dualCurrencyAmount(
+                              _changeDue,
+                              color: PosTheme.primaryGreen,
+                              primaryFontSize: 15,
+                              secondaryFontSize: 12,
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ],
               ),
@@ -1900,4 +2189,17 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       ),
     );
   }
+}
+
+/// Result of the "Pay Later / Credit" dialog — see `_showCreditSaleDialog`.
+class _CreditSaleDialogResult {
+  final DateTime dueDate;
+  final DateTime? expiresAt;
+  final String? notes;
+
+  const _CreditSaleDialogResult({
+    required this.dueDate,
+    this.expiresAt,
+    this.notes,
+  });
 }

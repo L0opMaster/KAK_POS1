@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/config/currency_utils.dart';
 import '../../../core/config/pos_theme.dart';
 import '../../../core/providers/language_provider.dart';
 import '../../../core/utils/bilingual.dart';
@@ -533,7 +534,7 @@ class _ItemManagementScreenState extends ConsumerState<ItemManagementScreen> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    '\$${p.price.toStringAsFixed(2)}',
+                    formatAmount(p.price, watchCurrency(ref)),
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 15,
@@ -778,6 +779,7 @@ class ProductFormScreenState extends ConsumerState<ProductFormScreen> {
   late final TextEditingController _barcodeCtl;
   late final TextEditingController _priceCtl;
   late final TextEditingController _costCtl;
+  late final TextEditingController _taxRateCtl;
   late final TextEditingController _initialStockCtl;
   late final TextEditingController _lowStockCtl;
   late final TextEditingController _imageUrlCtl;
@@ -826,6 +828,10 @@ class ProductFormScreenState extends ConsumerState<ProductFormScreen> {
         text: p != null ? p.price.toStringAsFixed(2) : '');
     _costCtl =
         TextEditingController(text: p != null ? p.cost.toStringAsFixed(2) : '');
+    // Shown/entered as a percentage (e.g. "8"), stored as a fraction (0.08)
+    // — matches the convention the old store-wide Settings → Tax field used.
+    _taxRateCtl = TextEditingController(
+        text: p != null ? (p.taxRate * 100).toStringAsFixed(2) : '');
     _initialStockCtl = TextEditingController(
         text: p != null ? p.stock.toInt().toString() : '0');
     _lowStockCtl = TextEditingController(
@@ -889,6 +895,7 @@ class ProductFormScreenState extends ConsumerState<ProductFormScreen> {
     _barcodeCtl.dispose();
     _priceCtl.dispose();
     _costCtl.dispose();
+    _taxRateCtl.dispose();
     _initialStockCtl.dispose();
     _lowStockCtl.dispose();
     _imageUrlCtl.dispose();
@@ -1013,6 +1020,7 @@ class ProductFormScreenState extends ConsumerState<ProductFormScreen> {
       final service = ref.read(productServiceProvider);
       final price = double.tryParse(_priceCtl.text) ?? 0;
       final cost = double.tryParse(_costCtl.text) ?? 0;
+      final taxRatePercent = double.tryParse(_taxRateCtl.text) ?? 0;
       final stock = int.tryParse(_initialStockCtl.text) ?? 0;
 
       final product = Product(
@@ -1028,6 +1036,7 @@ class ProductFormScreenState extends ConsumerState<ProductFormScreen> {
             : _descriptionCtl.text.trim(),
         cost: cost,
         price: price,
+        taxRate: taxRatePercent / 100,
         active: _active,
         sellable: _sellable,
         purchasable: _purchasable,
@@ -1275,7 +1284,7 @@ class ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                     controller: _priceCtl,
                     decoration: InputDecoration(
                       labelText: context.l10n.itemManagementSellPriceLabel,
-                      prefixText: '\$ ',
+                      prefixText: '${currencySymbol(watchCurrency(ref))} ',
                       border: const OutlineInputBorder(),
                     ),
                     keyboardType:
@@ -1297,7 +1306,7 @@ class ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                     controller: _costCtl,
                     decoration: InputDecoration(
                       labelText: context.l10n.formCost,
-                      prefixText: '\$ ',
+                      prefixText: '${currencySymbol(watchCurrency(ref))} ',
                       border: const OutlineInputBorder(),
                     ),
                     keyboardType:
@@ -1305,6 +1314,32 @@ class ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 12),
+            // Every item carries its own tax rate — there is no more
+            // store-wide fallback (see Sale.taxRate/Product.taxRate on the
+            // backend), so this is required just like Sell Price.
+            TextFormField(
+              controller: _taxRateCtl,
+              decoration: InputDecoration(
+                labelText: context.l10n.settingsTaxRateLabel,
+                suffixText: '%',
+                border: const OutlineInputBorder(),
+              ),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              validator: (v) {
+                if (v == null || v.trim().isEmpty) {
+                  return context.l10n.commonRequired;
+                }
+                final parsed = double.tryParse(v.trim());
+                if (parsed == null) {
+                  return context.l10n.itemManagementInvalidNumber;
+                }
+                if (parsed < 0 || parsed > 100) {
+                  return context.l10n.itemManagementInvalidNumber;
+                }
+                return null;
+              },
             ),
             const SizedBox(height: 16),
 

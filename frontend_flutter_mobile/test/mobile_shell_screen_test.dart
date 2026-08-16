@@ -14,6 +14,7 @@ import 'package:frontend_flutter_mobile/features/pos/screens/customer_picker_scr
 import 'package:frontend_flutter_mobile/features/pos/screens/pos_register_screen.dart';
 import 'package:frontend_flutter_mobile/features/pos/screens/receipts_screen.dart';
 import 'package:frontend_flutter_mobile/features/pos/screens/table_picker_screen.dart';
+import 'package:frontend_flutter_mobile/features/pos/widgets/cart_fab.dart';
 import 'package:frontend_flutter_mobile/features/shell/mobile_shell_screen.dart';
 import 'package:frontend_flutter_mobile/l10n/generated/app_localizations.dart';
 import 'package:frontend_flutter_mobile/main.dart';
@@ -159,6 +160,27 @@ void main() {
     },
   );
 
+  testWidgets(
+    'the cart FAB only shows on the Register tab',
+    (tester) async {
+      await tester.pumpWidget(_wrapShell());
+      await tester.pumpAndSettle();
+
+      // Empty cart -> CartFab renders but stays invisible either way, so
+      // just confirm it's mounted on Register (index 0)...
+      expect(find.byType(CartFab), findsOneWidget);
+
+      await tester.tap(find.text('Tables'));
+      await tester.pumpAndSettle();
+      // ...and gone once a non-Register tab is selected.
+      expect(find.byType(CartFab), findsNothing);
+
+      await tester.tap(find.text('Register'));
+      await tester.pumpAndSettle();
+      expect(find.byType(CartFab), findsOneWidget);
+    },
+  );
+
   testWidgets('More tab lists Customers/Shifts/Settings placeholders and '
       'a working Logout', (tester) async {
     await tester.pumpWidget(_wrapShell());
@@ -169,8 +191,24 @@ void main() {
 
     expect(find.text('Customers'), findsOneWidget);
     expect(find.text('Shifts'), findsOneWidget);
-    expect(find.text('Settings'), findsOneWidget);
     expect(find.text('Cashier Person'), findsOneWidget); // currentUserProvider
+
+    // 'Settings' and 'Logout' are further down the More tab's list than
+    // the initial viewport reaches now that Inventory (Day 17) and
+    // Reports (Day 18) added two more entries above them — scroll to
+    // bring each into the widget tree before asserting on it.
+    await tester.scrollUntilVisible(
+      find.text('Settings'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Settings'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('Logout'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Logout'), findsOneWidget);
   });
 
@@ -224,6 +262,12 @@ void main() {
 
     await tester.tap(find.text('More'));
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.widgetWithText(ListTile, 'Logout'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(ListTile, 'Logout'));
     await tester.pumpAndSettle();
 
@@ -245,6 +289,12 @@ void main() {
       expect(find.byType(MobileShellScreen), findsOneWidget);
 
       await tester.tap(find.text('More'));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.widgetWithText(ListTile, 'Logout'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(ListTile, 'Logout'));
       await tester.pumpAndSettle();

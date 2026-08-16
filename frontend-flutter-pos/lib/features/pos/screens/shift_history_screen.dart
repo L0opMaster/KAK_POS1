@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/config/currency_utils.dart';
 import '../../../core/config/pos_theme.dart';
 import '../../../core/utils/l10n_extensions.dart';
 import '../../../core/utils/receipt_date_format.dart';
@@ -89,13 +90,14 @@ class _ShiftHistoryScreenState extends ConsumerState<ShiftHistoryScreen> {
   }
 }
 
-class _ShiftHistoryCard extends StatelessWidget {
+class _ShiftHistoryCard extends ConsumerWidget {
   const _ShiftHistoryCard({required this.shift});
 
   final Shift shift;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cur = watchCurrency(ref);
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -144,23 +146,23 @@ class _ShiftHistoryCard extends StatelessWidget {
             runSpacing: 4,
             children: [
               Text(context.l10n.shiftScreenOpeningCash(
-                '\$${shift.openingFloat.toStringAsFixed(2)}',
+                formatAmount(shift.openingFloat, cur),
               )),
               if (shift.salesTotal != null)
                 Text(context.l10n.shiftHistorySales(
-                  '\$${shift.salesTotal!.toStringAsFixed(2)}',
+                  formatAmount(shift.salesTotal!, cur),
                 )),
               if (shift.closingCash != null)
                 Text(context.l10n.shiftHistoryClosingCash(
-                  '\$${shift.closingCash!.toStringAsFixed(2)}',
+                  formatAmount(shift.closingCash!, cur),
                 )),
               if (shift.expectedCash != null)
                 Text(context.l10n.shiftScreenExpectedCash(
-                  '\$${shift.expectedCash!.toStringAsFixed(2)}',
+                  formatAmount(shift.expectedCash!, cur),
                 )),
               if (shift.variance != null)
                 Text(context.l10n.shiftScreenVariance(
-                  '\$${shift.variance!.toStringAsFixed(2)}',
+                  formatAmount(shift.variance!, cur),
                 )),
             ],
           ),

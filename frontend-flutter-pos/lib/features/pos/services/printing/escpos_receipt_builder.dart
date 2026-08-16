@@ -137,6 +137,15 @@ class EscPosReceiptBuilder {
     if (receipt.paymentMethodLabel != null) {
       row(labels.paymentMethod, receipt.paymentMethodLabel!);
     }
+    if (receipt.creditStatus != null) {
+      bytes += generator.hr(ch: '-');
+      row(labels.creditStatus,
+          receipt.creditStatusDisplay ?? receipt.creditStatus!);
+      if (receipt.creditDueAt != null) row(labels.dueDate, receipt.creditDueAt!);
+      if (receipt.remainingBalance != null && receipt.remainingBalance! > 0) {
+        row(labels.remaining, receipt.fmt(receipt.remainingBalance!));
+      }
+    }
     bytes += generator.hr();
     line(receipt.footer, align: PosAlign.center, bold: true);
     // Settings → Company Profile's "Website" field — same source as the

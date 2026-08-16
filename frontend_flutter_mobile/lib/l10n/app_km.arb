@@ -1022,6 +1022,8 @@
   "heldTicketsEmptyHint": "ចុច \"ផ្អាក\" លើការលក់ ដើម្បីរក្សាទុកនៅទីនេះ",
   "heldTicketsTicketLabel": "សំបុត្រ #{ticketNumber}",
   "heldTicketsTapToRestore": "ចុចដើម្បីស្តារឡើងវិញ",
+  "heldTicketsPrintBill": "បោះពុម្ពវិក្កយបត្រ",
+  "heldTicketsPrintNumber": "បោះពុម្ពលេខសម្គាល់",
   "modifierSheetQuantity": "បរិមាណ",
   "modifierSheetNoteHint": "បន្ថែមកំណត់ចំណាំ...",
   "modifierSheetValidationError": "សូមជ្រើសរើសជម្រើសសម្រាប់គ្រប់ក្រុមជម្រើសដែលទាមទារ។",

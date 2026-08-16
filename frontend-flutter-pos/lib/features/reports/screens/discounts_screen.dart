@@ -87,7 +87,7 @@ class _DiscountsScreenState extends ConsumerState<DiscountsScreen> {
     try {
       final company =
           await ref.read(settingsServiceProvider).getCompanyProfile();
-      final cur = currencySymbol(readCurrency(ref));
+      final cur = readCurrency(ref);
 
       final svc = ref.read(reportServiceProvider);
       final allRows = await fetchAllPages<DiscountRow>(
@@ -115,7 +115,7 @@ class _DiscountsScreenState extends ConsumerState<DiscountsScreen> {
                 r.date ?? '',
                 r.employeeName ?? '',
                 r.discountType ?? '',
-                '-$cur${_fmtNum(r.amount)}',
+                '-${formatAmount(r.amount, cur)}',
               ])
           .toList();
 
@@ -139,7 +139,7 @@ class _DiscountsScreenState extends ConsumerState<DiscountsScreen> {
         summary: [
           MapEntry(l10n.discountsScreenDiscountsGiven, '${allRows.length}'),
           MapEntry(l10n.discountsScreenTotalDiscountAmount,
-              '$cur${_fmtNum(totalAmount)}'),
+              formatAmount(totalAmount, cur)),
         ],
         generatedAt: DateTime.now(),
         generatedLabel: l10n.reportPdfGeneratedLabel,
@@ -216,6 +216,7 @@ class _DiscountsScreenState extends ConsumerState<DiscountsScreen> {
       );
 
   Widget _buildContent() {
+    final cur = watchCurrency(ref);
     final data = _data;
     if (data == null) return const SizedBox();
     final chartData = data.rows
@@ -247,7 +248,7 @@ class _DiscountsScreenState extends ConsumerState<DiscountsScreen> {
                 _sRow(context.l10n.discountsScreenDiscountsGiven,
                     '${data.totals.count}'),
                 _sRow(context.l10n.discountsScreenTotalDiscountAmount,
-                    '\$${_fmtNum(data.totals.totalAmount)}',
+                    formatAmount(data.totals.totalAmount, cur),
                     bold: true, color: PosTheme.accentBlue),
               ],
             ),
@@ -270,7 +271,8 @@ class _DiscountsScreenState extends ConsumerState<DiscountsScreen> {
                   color: PosTheme.textPrimary,
                   fontSize: 15)),
           const SizedBox(height: 8),
-          ReportBarChart(data: chartData, valuePrefix: '\$'),
+          ReportBarChart(
+              data: chartData, valueFormatter: (v) => formatAmount(v, cur)),
           const SizedBox(height: 16),
           Text(context.l10n.discountsScreenTransactionsTitle,
               style: const TextStyle(
@@ -278,14 +280,14 @@ class _DiscountsScreenState extends ConsumerState<DiscountsScreen> {
                   color: PosTheme.textPrimary,
                   fontSize: 15)),
           const SizedBox(height: 8),
-          ...data.rows.map(_rowCard),
+          ...data.rows.map((r) => _rowCard(r, cur)),
           ReportPaginationBar(meta: data.meta, onPageChange: _changePage),
         ],
       ],
     );
   }
 
-  Widget _rowCard(DiscountRow r) {
+  Widget _rowCard(DiscountRow r, String cur) {
     final hasReason = r.reason != null && r.reason!.isNotEmpty;
     return Card(
       margin: const EdgeInsets.only(bottom: 6),
@@ -307,7 +309,7 @@ class _DiscountsScreenState extends ConsumerState<DiscountsScreen> {
                           fontWeight: FontWeight.w600,
                           color: PosTheme.textPrimary)),
                 ),
-                Text('-\$${_fmtNum(r.amount)}',
+                Text('-${formatAmount(r.amount, cur)}',
                     style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         color: PosTheme.accentBlue,
@@ -356,6 +358,4 @@ class _DiscountsScreenState extends ConsumerState<DiscountsScreen> {
       ),
     );
   }
-
-  String _fmtNum(double v) => v.toStringAsFixed(2);
 }

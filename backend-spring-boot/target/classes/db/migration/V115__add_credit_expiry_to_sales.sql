@@ -1,0 +1,1 @@
+ALTER TABLE sales ADD COLUMN credit_expires_at TIMESTAMP NULL;

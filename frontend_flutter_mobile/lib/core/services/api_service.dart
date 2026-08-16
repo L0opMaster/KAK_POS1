@@ -160,6 +160,27 @@ class ApiService {
     }
   }
 
+  /// Added Day 19 for `SettingsService.updatePaymentMethodStatus`/
+  /// `updateCurrencyStatus` — the first Day-19 callers to need a partial
+  /// update rather than `put`'s full-record replace.
+  Future<T> patch<T>(
+    final String path, {
+    final Object? data,
+    final Map<String, dynamic>? queryParameters,
+    final T Function(Object? data)? fromJson,
+  }) async {
+    try {
+      final response = await _dio.patch(
+        path,
+        data: data,
+        queryParameters: queryParameters,
+      );
+      return fromJson != null ? fromJson(response.data) : response.data as T;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   Exception _handleError(final DioException error) {
     var message = 'An error occurred';
 

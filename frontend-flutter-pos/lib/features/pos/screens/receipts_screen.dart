@@ -16,6 +16,8 @@ import '../services/printing/thermal_printer_service.dart';
 import '../services/sale_service.dart';
 import '../../../core/utils/l10n_extensions.dart';
 import '../../../core/providers/language_provider.dart';
+import '../utils/credit_status.dart';
+import '../widgets/credit_repayment_dialog.dart';
 import '../widgets/receipt_paper_view.dart';
 
 /// Progress shown while "Print All" is preparing (fetching full receipt
@@ -47,6 +49,7 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
   static const List<String?> _statusFilters = [
     null,
     'PAID',
+    'CREDIT',
     'VOID',
     'REFUNDED'
   ];
@@ -498,6 +501,8 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
     switch (filterStatus) {
       case 'PAID':
         return context.l10n.receiptPaid;
+      case 'CREDIT':
+        return context.l10n.receiptsScreenStatusCredit;
       case 'VOID':
         return context.l10n.receiptsScreenStatusVoid;
       case 'REFUNDED':
@@ -510,7 +515,16 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
   /// Readable label for an actual sale's status (badges) — every real
   /// backend status (see SaleService) gets a distinct label; anything
   /// unmapped falls back to its raw value rather than showing blank.
-  String _statusBadgeLabel(BuildContext context, String status) {
+  /// [creditStatus] (OPEN/PARTIALLY_PAID/PAID/OVERDUE/EXPIRED/CANCELLED —
+  /// see `SaleResponse.creditStatus`/`ReceiptResponse.creditStatus`) refines
+  /// the generic 'CREDIT' [status] into the finer label a credit sale
+  /// actually needs (e.g. "Overdue" instead of just "Credit"). Falls back to
+  /// the plain CREDIT label when it isn't available yet (still loading).
+  String _statusBadgeLabel(BuildContext context, String status,
+      {String? creditStatus}) {
+    if (status == 'CREDIT' && creditStatus != null) {
+      return creditStatusLabel(context.l10n, creditStatus);
+    }
     switch (status) {
       case 'PAID':
         return context.l10n.receiptPaid;
@@ -532,8 +546,11 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
   }
 
   /// Distinct color per status family so VOID/REFUNDED/etc. don't all
-  /// collapse into the same "not paid" orange.
-  Color _statusColor(String status) {
+  /// collapse into the same "not paid" orange. A CREDIT sale defers to
+  /// [creditStatusColor] (red once overdue/expired) instead of the flat grey
+  /// every other unmapped status gets.
+  Color _statusColor(String status, {String? creditStatus}) {
+    if (status == 'CREDIT') return creditStatusColor(creditStatus);
     switch (status) {
       case 'PAID':
         return Colors.green;
@@ -554,6 +571,8 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
     switch (status) {
       case 'PAID':
         return Icons.check_circle_rounded;
+      case 'CREDIT':
+        return Icons.schedule_rounded;
       case 'VOID':
         return Icons.block_rounded;
       case 'REFUNDED':
@@ -692,7 +711,8 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
   // ─────────────────────────────────────────────
 
   Widget _buildSaleCard(SaleResponse sale) {
-    final statusColor = _statusColor(sale.status);
+    final statusColor =
+        _statusColor(sale.status, creditStatus: sale.creditStatus);
     final fmt = (double v) => formatAmount(v, sale.currency);
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -779,7 +799,8 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      _statusBadgeLabel(context, sale.status),
+                      _statusBadgeLabel(context, sale.status,
+                          creditStatus: sale.creditStatus),
                       style: TextStyle(
                           fontSize: 9,
                           fontWeight: FontWeight.w700,
@@ -865,12 +886,14 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
               if (receipt.status != null)
                 Center(
                   child: Text(
-                    _statusBadgeLabel(context, receipt.status!),
+                    _statusBadgeLabel(context, receipt.status!,
+                        creditStatus: receipt.creditStatus),
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1.5,
-                      color: _statusColor(receipt.status!),
+                      color: _statusColor(receipt.status!,
+                          creditStatus: receipt.creditStatus),
                     ),
                   ),
                 ),
@@ -895,6 +918,16 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
                           style: const TextStyle(fontSize: 13)),
                       style: TextButton.styleFrom(
                           foregroundColor: Colors.redAccent),
+                    ),
+                  if (receipt.status == 'CREDIT' &&
+                      (receipt.remainingBalance ?? 0) > 0)
+                    TextButton.icon(
+                      onPressed: () => _recordCreditPayment(receipt),
+                      icon: const Icon(Icons.payments_outlined, size: 16),
+                      label: Text(context.l10n.receiptsScreenRecordPaymentAction,
+                          style: const TextStyle(fontSize: 13)),
+                      style: TextButton.styleFrom(
+                          foregroundColor: PosTheme.primaryGreen),
                     ),
                   PopupMenuButton<String>(
                     icon: const Icon(Icons.more_horiz, color: Colors.grey),
@@ -949,6 +982,32 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
         ),
       ),
     );
+  }
+
+  /// Opens the shared credit-repayment dialog (same one the Customer Credit
+  /// Detail screen uses — see `credit_repayment_dialog.dart`) for the sale
+  /// currently shown in the receipt detail view. [ReceiptResponse] doesn't
+  /// carry every [SaleResponse] field, but it has everything the dialog
+  /// actually needs (id/invoiceNumber/total/paidAmount/customerName/credit
+  /// fields), so it's translated into one here rather than issuing a second
+  /// `getSale` fetch just to get the same data in a different shape.
+  Future<void> _recordCreditPayment(ReceiptResponse receipt) async {
+    final sale = SaleResponse(
+      id: receipt.saleId,
+      invoiceNumber: receipt.saleNumber,
+      status: receipt.status ?? 'CREDIT',
+      grandTotal: receipt.total,
+      paidAmount: receipt.paidAmount,
+      customerName: receipt.customerName,
+      currency: receipt.currency,
+      creditDueAt: receipt.creditDueAt,
+      creditExpiresAt: receipt.creditExpiresAt,
+      creditStatus: receipt.creditStatus,
+    );
+    final updated = await showCreditRepaymentDialog(context, ref, sale: sale);
+    if (updated == null || !mounted) return;
+    await ref.read(receiptProvider.notifier).loadReceipt(receipt.saleId);
+    _refresh();
   }
 
   void _showEmailDialog(BuildContext context, ReceiptResponse receipt) {

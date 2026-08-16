@@ -39,11 +39,89 @@ class CreditCollectionAllocationRow {
   });
 }
 
-class CreditLedgerResponse {
-  final double creditBalance;
-  CreditLedgerResponse({
-    required this.creditBalance,
+/// One row in a customer's credit ledger — mirrors the backend's
+/// `CreditCollectionDtos.LedgerEntry` (`GET /api/customers/{id}/credit-ledger`).
+/// `entryType` is one of OPENING_BALANCE|CREDIT_SALE|COLLECTION|SALE_RETURN|
+/// CREDIT_NOTE|DEBIT_NOTE. For a CREDIT_SALE row, `saleId`/`invoiceNumber`
+/// identify the sale and `remainingAmount` is what's still owed on it; for a
+/// COLLECTION row, `saleId` (when present) links the payment back to the
+/// sale it was applied against.
+class CreditLedgerEntry {
+  final String entryType;
+  final String? targetType;
+  final int? saleId;
+  final String? invoiceNumber;
+  final int? openingBalanceId;
+  final int? paymentId;
+  final double amount;
+  final double? remainingAmount;
+  final String? note;
+  final String createdAt;
+  final int? agingDays;
+
+  const CreditLedgerEntry({
+    required this.entryType,
+    this.targetType,
+    this.saleId,
+    this.invoiceNumber,
+    this.openingBalanceId,
+    this.paymentId,
+    required this.amount,
+    this.remainingAmount,
+    this.note,
+    required this.createdAt,
+    this.agingDays,
   });
+
+  factory CreditLedgerEntry.fromJson(Map<String, dynamic> json) {
+    return CreditLedgerEntry(
+      entryType: (json['entryType'] as String?) ?? '',
+      targetType: json['targetType'] as String?,
+      saleId: (json['saleId'] as num?)?.toInt(),
+      invoiceNumber: json['invoiceNumber'] as String?,
+      openingBalanceId: (json['openingBalanceId'] as num?)?.toInt(),
+      paymentId: (json['paymentId'] as num?)?.toInt(),
+      amount: (json['amount'] as num?)?.toDouble() ?? 0,
+      remainingAmount: (json['remainingAmount'] as num?)?.toDouble(),
+      note: json['note'] as String?,
+      createdAt: (json['createdAt'] as String?) ?? '',
+      agingDays: (json['agingDays'] as num?)?.toInt(),
+    );
+  }
+}
+
+/// A customer's full credit ledger — mirrors the backend's
+/// `CreditCollectionDtos.LedgerResponse`. `entries` is already sorted
+/// newest-first by the backend.
+class CreditLedgerResponse {
+  final int customerId;
+  final String customerName;
+  final double creditBalance;
+  final double creditLimit;
+  final bool creditHold;
+  final List<CreditLedgerEntry> entries;
+
+  const CreditLedgerResponse({
+    required this.customerId,
+    required this.customerName,
+    required this.creditBalance,
+    required this.creditLimit,
+    required this.creditHold,
+    required this.entries,
+  });
+
+  factory CreditLedgerResponse.fromJson(Map<String, dynamic> json) {
+    return CreditLedgerResponse(
+      customerId: (json['customerId'] as num?)?.toInt() ?? 0,
+      customerName: (json['customerName'] as String?) ?? '',
+      creditBalance: (json['creditBalance'] as num?)?.toDouble() ?? 0,
+      creditLimit: (json['creditLimit'] as num?)?.toDouble() ?? 0,
+      creditHold: json['creditHold'] as bool? ?? false,
+      entries: (json['entries'] as List<dynamic>? ?? const [])
+          .map((e) => CreditLedgerEntry.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+  }
 }
 
 class CustomerSaleHistory {
@@ -68,6 +146,7 @@ class Customer {
   final int id;
   final double creditLimit;
   final double creditBalance;
+  final bool creditHold;
   final String type;
   final String status;
   final String nameEn;
@@ -85,6 +164,7 @@ class Customer {
     required this.id,
     required this.creditLimit,
     required this.creditBalance,
+    this.creditHold = false,
     required this.type,
     required this.status,
     required this.nameEn,
@@ -109,6 +189,7 @@ class Customer {
       id: (json['id'] as num?)?.toInt() ?? 0,
       creditLimit: (json['creditLimit'] as num?)?.toDouble() ?? 0,
       creditBalance: (json['creditBalance'] as num?)?.toDouble() ?? 0,
+      creditHold: json['creditHold'] as bool? ?? false,
       type: (json['type'] as String?) ?? 'WALK_IN',
       status: (json['status'] as String?) ?? 'ACTIVE',
       nameEn: (json['nameEn'] as String?) ?? '',

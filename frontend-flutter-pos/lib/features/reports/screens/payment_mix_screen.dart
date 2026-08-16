@@ -89,7 +89,7 @@ class _PaymentMixScreenState extends ConsumerState<PaymentMixScreen> {
     try {
       final company =
           await ref.read(settingsServiceProvider).getCompanyProfile();
-      final cur = currencySymbol(readCurrency(ref));
+      final cur = readCurrency(ref);
 
       final svc = ref.read(reportServiceProvider);
       final allRows = await fetchAllPages<PaymentBreakdown>(
@@ -115,7 +115,7 @@ class _PaymentMixScreenState extends ConsumerState<PaymentMixScreen> {
           .map((p) => [
                 p.method,
                 '${p.count}',
-                '$cur${_fmtNum(p.total)}',
+                formatAmount(p.total, cur),
               ])
           .toList();
 
@@ -140,7 +140,7 @@ class _PaymentMixScreenState extends ConsumerState<PaymentMixScreen> {
         },
         summary: [
           MapEntry(l10n.reportsTransactions, '$totalCount'),
-          MapEntry(l10n.receiptTotal, '$cur${_fmtNum(grandTotal)}'),
+          MapEntry(l10n.receiptTotal, formatAmount(grandTotal, cur)),
         ],
         generatedAt: DateTime.now(),
         generatedLabel: l10n.reportPdfGeneratedLabel,
@@ -220,6 +220,7 @@ class _PaymentMixScreenState extends ConsumerState<PaymentMixScreen> {
     final total = _rows.fold<double>(0, (s, p) => s + p.total);
     final chartData =
         _rows.map((p) => (label: p.method, value: p.total)).toList();
+    final cur = watchCurrency(ref);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -239,7 +240,7 @@ class _PaymentMixScreenState extends ConsumerState<PaymentMixScreen> {
                   color: PosTheme.textPrimary,
                   fontSize: 15)),
           const SizedBox(height: 8),
-          ReportPieChart(data: chartData, valuePrefix: '\$'),
+          ReportPieChart(data: chartData),
           const SizedBox(height: 16),
           ..._rows.map((p) {
             final pct = total > 0 ? p.total / total * 100 : 0.0;
@@ -290,7 +291,7 @@ class _PaymentMixScreenState extends ConsumerState<PaymentMixScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text('\$${_fmtNum(p.total)}',
+                        Text(formatAmount(p.total, cur),
                             style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: PosTheme.textPrimary)),
@@ -307,7 +308,7 @@ class _PaymentMixScreenState extends ConsumerState<PaymentMixScreen> {
           const SizedBox(height: 8),
           Center(
             child: Text(
-                '${context.l10n.paymentMixTotalLabel} \$${_fmtNum(total)}',
+                '${context.l10n.paymentMixTotalLabel} ${formatAmount(total, cur)}',
                 style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
@@ -363,6 +364,4 @@ class _PaymentMixScreenState extends ConsumerState<PaymentMixScreen> {
         return const Color(0xFF546E7A);
     }
   }
-
-  String _fmtNum(double v) => v.toStringAsFixed(2);
 }
