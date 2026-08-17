@@ -71,7 +71,7 @@ class CartTotals extends ConsumerWidget {
           _row(l10n.cartSubtotal, formatAmount(subtotal, cur)),
           const SizedBox(height: 4),
           _row(
-            '${l10n.cartTax} (${(cart.taxRate * 100).toStringAsFixed(0)}%)',
+            '${l10n.cartTax} (${(cart.blendedTaxRate * 100).toStringAsFixed(0)}%)',
             formatAmount(tax, cur),
           ),
           if (hasItemDiscounts) ...[

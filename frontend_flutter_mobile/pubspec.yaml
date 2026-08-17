@@ -91,6 +91,15 @@ dependencies:
   # actually imports it anywhere (confirmed by grep). Added Day 16.
   permission_handler: ^11.2.0
 
+  # WebSocket client for the customer-display and phone-scanner relay
+  # features — same version frontend-flutter-pos and
+  # frontend_flutter_barcode_scanner both depend on.
+  web_socket_channel: ^3.0.3
+
+  # Report bar/line/pie charts — same version frontend-flutter-pos depends
+  # on (locked at 1.2.0 there).
+  fl_chart: ^1.2.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -10,8 +10,8 @@ import 'mobile_report_list_screen.dart';
 
 /// Ported from `frontend-flutter-pos/lib/features/reports/screens/
 /// sales_by_modifier_screen.dart` via `MobileReportListScreen`. Bar chart
-/// (labeled `"$groupName: $optionName"`) dropped (see
-/// `report_list_config.dart`'s doc comment).
+/// (labeled `"$groupName: $optionName"`) and the cashier filter are both
+/// wired in via the shared config.
 class MobileSalesByModifierScreen extends ConsumerWidget {
   const MobileSalesByModifierScreen({super.key});
 
@@ -50,6 +50,7 @@ class MobileSalesByModifierScreen extends ConsumerWidget {
               required to,
               fromHour,
               toHour,
+              employeeId,
               required page,
               required size,
             }) => service.salesByModifier(
@@ -57,6 +58,7 @@ class MobileSalesByModifierScreen extends ConsumerWidget {
               to: to,
               fromHour: fromHour,
               toHour: toHour,
+              employeeId: employeeId,
               page: page,
               size: size,
             ),
@@ -66,7 +68,16 @@ class MobileSalesByModifierScreen extends ConsumerWidget {
             formatAmount(rows.fold<double>(0, (s, r) => s + r.revenue), cur),
           ),
         ],
-        pdfExport: ReportPdfConfig(pdfTitle: l10n.salesByModifierTopOptionsTitle),
+        pdfExport: ReportPdfConfig(
+          pdfTitle: l10n.salesByModifierTopOptionsTitle,
+        ),
+        showEmployeeFilter: true,
+        chartKind: ChartKind.bar,
+        chartValueFormatter: (v) => formatAmount(v, cur),
+        chartBuilder: (rows) => [
+          for (final r in rows)
+            (label: '${r.groupName}: ${r.optionName}', value: r.revenue),
+        ],
       ),
     );
   }

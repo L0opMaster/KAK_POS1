@@ -12,9 +12,11 @@ import 'mobile_report_list_screen.dart';
 
 /// Ported from `frontend-flutter-pos/lib/features/reports/screens/
 /// category_performance_screen.dart` via `MobileReportListScreen`. Bar
-/// chart dropped (see `report_list_config.dart`'s doc comment). Category
-/// name falls back to `categoryPerformanceFallbackName('#id')`, matching
-/// source, for rows whose category was deleted after the sale.
+/// chart (revenue per category) and the cashier filter are both wired in
+/// via the shared config. Category name falls back to
+/// `categoryPerformanceFallbackName('#id')`, matching source, for rows
+/// whose category was deleted after the sale — same fallback used for the
+/// chart's bar labels as for the table column.
 class MobileCategoryPerformanceScreen extends ConsumerWidget {
   const MobileCategoryPerformanceScreen({super.key});
 
@@ -25,20 +27,19 @@ class MobileCategoryPerformanceScreen extends ConsumerWidget {
     final cur = watchCurrency(ref);
     final service = ref.read(reportServiceProvider);
 
+    String categoryLabel(CategoryPerformance r) => r.categoryNameEn != null
+        ? resolveBilingual(
+            en: r.categoryNameEn!,
+            km: r.categoryNameKm,
+            language: language,
+          )
+        : l10n.categoryPerformanceFallbackName('${r.categoryId}');
+
     return MobileReportListScreen<CategoryPerformance>(
       config: ReportListConfig<CategoryPerformance>(
         title: l10n.reportsSalesByCategory,
         columns: [
-          ReportColumn(
-            header: l10n.formCategory,
-            cell: (r) => r.categoryNameEn != null
-                ? resolveBilingual(
-                    en: r.categoryNameEn!,
-                    km: r.categoryNameKm,
-                    language: language,
-                  )
-                : l10n.categoryPerformanceFallbackName('${r.categoryId}'),
-          ),
+          ReportColumn(header: l10n.formCategory, cell: categoryLabel),
           ReportColumn(
             header: l10n.cartQty,
             cell: (r) => r.quantity.toStringAsFixed(0),
@@ -56,6 +57,7 @@ class MobileCategoryPerformanceScreen extends ConsumerWidget {
               required to,
               fromHour,
               toHour,
+              employeeId,
               required page,
               required size,
             }) => service.categoryPerformance(
@@ -63,6 +65,7 @@ class MobileCategoryPerformanceScreen extends ConsumerWidget {
               to: to,
               fromHour: fromHour,
               toHour: toHour,
+              employeeId: employeeId,
               page: page,
               size: size,
             ),
@@ -73,6 +76,12 @@ class MobileCategoryPerformanceScreen extends ConsumerWidget {
           ),
         ],
         pdfExport: ReportPdfConfig(pdfTitle: l10n.reportsSalesByCategory),
+        showEmployeeFilter: true,
+        chartKind: ChartKind.bar,
+        chartValueFormatter: (v) => formatAmount(v, cur),
+        chartBuilder: (rows) => [
+          for (final r in rows) (label: categoryLabel(r), value: r.total),
+        ],
       ),
     );
   }

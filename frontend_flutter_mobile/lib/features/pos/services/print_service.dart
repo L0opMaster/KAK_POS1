@@ -33,10 +33,8 @@ const _green = PdfColor.fromInt(0xFF4CAF50);
 /// confirmed (like source) zero platform-conditional code needed anywhere
 /// in this pipeline, PDF or Khmer-bitmap-embedded PDF alike.
 ///
-/// One thing dropped, genuinely unreachable in this port today:
-/// `buildReceiptsPdf` (one combined PDF for "Print All") — no caller;
-/// `receipts_screen.dart` (Day 12) never built that action. Add it back
-/// when/if that action happens, not speculatively.
+/// `buildReceiptsPdf` (one combined PDF for "Print All") was added once
+/// `receipts_screen.dart` grew that action — see its doc comment.
 ///
 /// `printReceipt`'s non-`pdfDriver` branch (bluetooth/usb/network, wired
 /// via `ThermalPrinterService.printReceipt` — Day 15/16) can only be
@@ -376,6 +374,40 @@ class PrintService {
     );
 
     return timePrintStage('receiptPdfDocSave', () => doc.save());
+  }
+
+  /// Builds ONE PDF document containing every receipt in [receipts], each
+  /// on its own page (in `package:pdf`, a fresh [pw.Page] is a hard page
+  /// boundary — the same boundary a single-receipt job already gets, just
+  /// repeated). Used by "Print All" on `receipts_screen.dart` so a
+  /// PDF/driver printer gets exactly one print job — and one OS print
+  /// dialog — no matter how many receipts are in the batch, instead of one
+  /// job per receipt. Each page reuses the identical layout [buildReceiptPdf]
+  /// draws for a single receipt (via [_pageContent]), so a batch-printed
+  /// receipt is pixel-for-pixel the same as one printed individually.
+  ///
+  /// [context] is threaded through to [buildReceiptPdf]'s Khmer bitmap path
+  /// — see that method's doc comment. Receipts are rendered one at a time,
+  /// in order (not `Future.wait`), the same sequential discipline
+  /// [ThermalPrinterService.printReceipts] already uses for its batch, since
+  /// concurrent off-screen widget mounts race against each other.
+  Future<Uint8List> buildReceiptsPdf(
+    List<ReceiptViewModel> receipts,
+    PrinterPaperSize paperSize, {
+    BuildContext? context,
+  }) async {
+    final doc = pw.Document(theme: await KhmerPdfFont.loadTheme());
+
+    await timePrintStage('receiptsPdfContentTotal', () async {
+      for (final r in receipts) {
+        final content = await _pageContent(context, r, paperSize);
+        doc.addPage(
+          pw.Page(pageFormat: paperSize.pdfPageFormat, build: (_) => content),
+        );
+      }
+    });
+
+    return timePrintStage('receiptsPdfDocSave', () => doc.save());
   }
 
   /// [context] present and [r] Khmer → Flutter-rendered bitmap embedded as

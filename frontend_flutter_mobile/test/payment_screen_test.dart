@@ -32,11 +32,25 @@ class _RecordedCreateSale {
 /// Fake `SaleService` — records every `createSale`/`paySale` call so tests
 /// can assert on the exact request shape and (for the idempotency test)
 /// that a retry after failure reuses the same `clientRef`.
+class _RecordedCreditSale {
+  _RecordedCreditSale({
+    required this.saleId,
+    required this.dueDate,
+    this.expiresAt,
+    this.notes,
+  });
+  final int saleId;
+  final DateTime dueDate;
+  final DateTime? expiresAt;
+  final String? notes;
+}
+
 class _FakeSaleService extends SaleService {
   _FakeSaleService() : super(ApiService());
 
   final List<_RecordedCreateSale> createSaleCalls = [];
   final List<Map<String, dynamic>> paySaleCalls = [];
+  final List<_RecordedCreditSale> creditSaleCalls = [];
   bool failNextCreateSale = false;
   int _nextId = 100;
 
@@ -70,6 +84,32 @@ class _FakeSaleService extends SaleService {
       status: 'PAID',
       grandTotal: 10,
       paidAmount: 10,
+    );
+  }
+
+  @override
+  Future<SaleResponse> creditSale(
+    int saleId, {
+    DateTime? dueDate,
+    DateTime? expiresAt,
+    String? notes,
+  }) async {
+    creditSaleCalls.add(
+      _RecordedCreditSale(
+        saleId: saleId,
+        dueDate: dueDate!,
+        expiresAt: expiresAt,
+        notes: notes,
+      ),
+    );
+    return SaleResponse(
+      id: saleId,
+      invoiceNumber: 'INV-$saleId',
+      status: 'CREDIT',
+      grandTotal: 10,
+      paidAmount: 0,
+      creditStatus: 'OPEN',
+      creditDueAt: dueDate.toIso8601String(),
     );
   }
 }
@@ -221,6 +261,86 @@ void main() {
         payments.fold<double>(0, (sum, p) => sum + (p['amount'] as double)),
         10.0,
       );
+    },
+  );
+
+  testWidgets(
+    'Pay Later without a customer attached shows a snackbar and never '
+    'touches the sale service',
+    (tester) async {
+      final saleService = _FakeSaleService();
+      await tester.pumpWidget(
+        _wrap(
+          PaymentScreen(total: 10.0, saleLines: const [], waitingNumber: 3),
+          [
+            saleServiceProvider.overrideWithValue(saleService),
+            cartServiceProvider.overrideWithValue(_FakeCartService()),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Pay Later / Credit'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Select a customer first to sell on credit'),
+        findsOneWidget,
+      );
+      expect(saleService.createSaleCalls, isEmpty);
+      expect(saleService.creditSaleCalls, isEmpty);
+    },
+  );
+
+  testWidgets(
+    'Pay Later with a customer attached: createSale then creditSale (never '
+    'paySale), cart cleared, completed screen shows credit status instead '
+    'of a payment breakdown',
+    (tester) async {
+      final saleService = _FakeSaleService();
+      await tester.pumpWidget(
+        _wrap(
+          PaymentScreen(
+            total: 10.0,
+            saleLines: const [
+              {'productId': 1, 'quantity': 2},
+            ],
+            waitingNumber: 4,
+            customerId: 42,
+          ),
+          [
+            saleServiceProvider.overrideWithValue(saleService),
+            cartServiceProvider.overrideWithValue(_FakeCartService()),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Pay Later / Credit'));
+      await tester.pumpAndSettle();
+
+      // The credit-sale dialog is open — confirm with its default due date.
+      expect(find.text('Credit Sale'), findsOneWidget);
+      await tester.tap(find.text('Create Credit Sale'));
+      await tester.pumpAndSettle();
+
+      expect(saleService.createSaleCalls, hasLength(1));
+      expect(saleService.createSaleCalls.single.request['customerId'], 42);
+      expect(saleService.paySaleCalls, isEmpty);
+      expect(saleService.creditSaleCalls, hasLength(1));
+      expect(saleService.creditSaleCalls.single.saleId, 100);
+
+      // Body heading reflects the credit path — the AppBar title stays the
+      // generic "Payment Complete" regardless of credit status (matches
+      // source: only the body heading is credit-aware), so this only
+      // checks the body got its own distinct heading, not that "Payment
+      // Complete" is absent entirely.
+      expect(find.text('Credit Sale Created'), findsOneWidget);
+      // Status/due-date shown instead of a payment breakdown (nothing was
+      // actually paid).
+      expect(find.text('Status'), findsOneWidget);
+      expect(find.text('Open'), findsOneWidget);
+      expect(find.text('Payments'), findsNothing);
     },
   );
 }

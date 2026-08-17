@@ -9,9 +9,10 @@ import '../widgets/report_list_config.dart';
 import 'mobile_report_list_screen.dart';
 
 /// Ported from `frontend-flutter-pos/lib/features/reports/screens/
-/// payment_mix_screen.dart` via `MobileReportListScreen`. Pie chart +
-/// per-row share bar dropped (see `report_list_config.dart`'s doc
-/// comment) — the underlying total/count columns are unchanged.
+/// payment_mix_screen.dart` via `MobileReportListScreen`. Pie chart
+/// (share of total by payment method) and the cashier filter are both
+/// wired in via the shared config — the underlying total/count columns
+/// are unchanged.
 class MobilePaymentMixScreen extends ConsumerWidget {
   const MobilePaymentMixScreen({super.key});
 
@@ -25,7 +26,10 @@ class MobilePaymentMixScreen extends ConsumerWidget {
       config: ReportListConfig<PaymentBreakdown>(
         title: l10n.reportsSalesByPaymentType,
         columns: [
-          ReportColumn(header: l10n.receiptPaymentMethod, cell: (r) => r.method),
+          ReportColumn(
+            header: l10n.receiptPaymentMethod,
+            cell: (r) => r.method,
+          ),
           ReportColumn(
             header: l10n.reportsTransactions,
             cell: (r) => '${r.count}',
@@ -43,6 +47,7 @@ class MobilePaymentMixScreen extends ConsumerWidget {
               required to,
               fromHour,
               toHour,
+              employeeId,
               required page,
               required size,
             }) => service.paymentMix(
@@ -50,6 +55,7 @@ class MobilePaymentMixScreen extends ConsumerWidget {
               to: to,
               fromHour: fromHour,
               toHour: toHour,
+              employeeId: employeeId,
               page: page,
               size: size,
             ),
@@ -64,6 +70,11 @@ class MobilePaymentMixScreen extends ConsumerWidget {
           ),
         ],
         pdfExport: ReportPdfConfig(pdfTitle: l10n.reportsSalesByPaymentType),
+        showEmployeeFilter: true,
+        chartKind: ChartKind.pie,
+        chartBuilder: (rows) => [
+          for (final r in rows) (label: r.method, value: r.total),
+        ],
       ),
     );
   }

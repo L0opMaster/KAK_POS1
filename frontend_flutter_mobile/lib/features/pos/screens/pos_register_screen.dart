@@ -3,12 +3,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/config/currency_utils.dart';
 import '../../../core/config/pos_theme.dart';
 import '../../../core/utils/l10n_extensions.dart';
 import '../models/cart_models.dart';
 import '../models/product_models.dart';
 import '../providers/cart_provider.dart';
 import '../providers/category_provider.dart';
+import '../providers/customer_display_provider.dart';
 import '../providers/product_provider.dart';
 import 'barcode_scanner_screen.dart';
 import '../widgets/category_tabs.dart';
@@ -108,6 +110,18 @@ class _PosRegisterScreenState extends ConsumerState<PosRegisterScreen> {
     final productState = ref.watch(productsProvider);
     final categoriesAsync = ref.watch(categoriesProvider);
     final categories = categoriesAsync.asData?.value ?? const <Category>[];
+
+    // Broadcasts the live cart to a paired customer-facing display on every
+    // change — a no-op if no session is active (see
+    // `CustomerDisplayNotifier._send`), matching source's
+    // `pos_screen.dart` wiring exactly.
+    final currencyCode = watchCurrency(ref);
+    ref.listen<CartState>(cartProvider, (previous, next) {
+      ref.read(customerDisplayProvider.notifier).broadcastCartState(
+            next,
+            currencySymbol: currencySymbol(currencyCode),
+          );
+    });
 
     return Column(
       children: [

@@ -8,6 +8,7 @@ import '../providers/cart_provider.dart';
 import '../providers/customer_provider.dart';
 import '../providers/table_selection_provider.dart';
 import '../screens/customer_picker_screen.dart';
+import '../screens/mobile_waiting_tickets_screen.dart';
 import 'table_picker_sheet.dart';
 
 IconData _orderModeIcon(OrderMode mode) {
@@ -51,6 +52,10 @@ OrderMode _nextOrderMode(OrderMode mode) {
 /// `cart.orderMode` and sends it as `'DINE_IN'|'TAKEAWAY'|'DELIVERY'` in
 /// the sale-create request — this header is the missing piece that lets a
 /// cashier actually change it away from the `dineIn` default.
+///
+/// Also carries the entry point into the waiting-tickets "queue board"
+/// (`_IconChip` -> `MobileWaitingTicketsScreen`), mirroring source's
+/// trigger point in `cart_panel.dart`'s header/toolbar area.
 class CartHeader extends ConsumerWidget {
   const CartHeader({super.key});
 
@@ -116,6 +121,16 @@ class CartHeader extends ConsumerWidget {
               const SizedBox(width: PosTheme.spacingSm),
               _WaitingNumberChip(number: cart.waitingNumber!),
             ],
+            const SizedBox(width: PosTheme.spacingSm),
+            _IconChip(
+              icon: Icons.list_alt_rounded,
+              tooltip: l10n.waitingTicketsTitle,
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const MobileWaitingTicketsScreen(),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -164,6 +179,46 @@ class _Chip extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Icon-only counterpart of [_Chip] — same size/spacing/tooltip pattern,
+/// used as the entry point to the waiting-tickets queue board (see
+/// `frontend-flutter-pos/lib/features/pos/widgets/cart_panel.dart`'s
+/// matching trigger point in its header/toolbar area).
+class _IconChip extends StatelessWidget {
+  const _IconChip({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(PosTheme.radiusPill),
+          onTap: onTap,
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 30, minWidth: 30),
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(PosTheme.radiusPill),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
+            ),
+            child: Icon(icon, size: 16, color: Colors.white),
           ),
         ),
       ),

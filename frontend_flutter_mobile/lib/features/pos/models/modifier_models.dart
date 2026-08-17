@@ -39,6 +39,82 @@ bool _toBool(dynamic value, {bool defaultValue = false}) {
   return defaultValue;
 }
 
+// ─────────────────────────────────────────────
+// Requests — added for the admin modifier-group CRUD screens (list,
+// create/edit, product-assignment). Field shapes and JSON key mapping are
+// byte-identical to `frontend-flutter-pos/lib/features/pos/models/
+// modifier_models.dart`'s requests (e.g. `isRequired` maps to JSON key
+// "required"). The read-only response classes above are untouched.
+// ─────────────────────────────────────────────
+
+class ModifierGroupRequest {
+  final String nameEn;
+  final String nameKm;
+  final bool isRequired;
+  final bool multiSelect;
+  final bool active;
+  final int displayOrder;
+
+  const ModifierGroupRequest({
+    required this.nameEn,
+    required this.nameKm,
+    this.isRequired = false,
+    this.multiSelect = false,
+    this.active = true,
+    this.displayOrder = 0,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'nameEn': nameEn,
+      'nameKm': nameKm,
+      'required': isRequired,
+      'multiSelect': multiSelect,
+      'active': active,
+      'displayOrder': displayOrder,
+    };
+  }
+}
+
+class ModifierOptionRequest {
+  final String nameEn;
+  final String nameKm;
+  final double priceDelta;
+  final bool active;
+  final int displayOrder;
+
+  const ModifierOptionRequest({
+    required this.nameEn,
+    required this.nameKm,
+    required this.priceDelta,
+    this.active = true,
+    this.displayOrder = 0,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'nameEn': nameEn,
+      'nameKm': nameKm,
+      'priceDelta': priceDelta,
+      'active': active,
+      'displayOrder': displayOrder,
+    };
+  }
+}
+
+// Used when updating existing options or adding new options.
+class ModifierOptionUpsert {
+  final int? id;
+  final ModifierOptionRequest request;
+
+  const ModifierOptionUpsert({
+    required this.id,
+    required this.request,
+  });
+
+  bool get isNew => id == null;
+}
+
 class ModifierOptionResponse {
   final int id;
   final String nameEn;
@@ -129,6 +205,84 @@ class ModifierGroupResponse {
       'multiSelect': multiSelect,
       'active': active,
       'displayOrder': displayOrder,
+      'options': options.map((o) => o.toJson()).toList(),
+    };
+  }
+
+  // Added for the admin modifier-group CRUD flow (`ModifierNotifier`
+  // attaches freshly-created/updated options onto the group response
+  // returned by the create/update group call). Purely additive — does not
+  // change parsing/serialization behavior relied on by
+  // `product_modifier_sheet.dart` or `Product.modifierGroups`.
+  ModifierGroupResponse copyWith({
+    int? id,
+    String? nameEn,
+    String? nameKm,
+    bool? isRequired,
+    bool? multiSelect,
+    bool? active,
+    int? displayOrder,
+    List<ModifierOptionResponse>? options,
+  }) {
+    return ModifierGroupResponse(
+      id: id ?? this.id,
+      nameEn: nameEn ?? this.nameEn,
+      nameKm: nameKm ?? this.nameKm,
+      isRequired: isRequired ?? this.isRequired,
+      multiSelect: multiSelect ?? this.multiSelect,
+      active: active ?? this.active,
+      displayOrder: displayOrder ?? this.displayOrder,
+      options: options ?? this.options,
+    );
+  }
+}
+
+// Added for `ModifierService.getProductModifiers` (used by the admin
+// modifier-group CRUD flow). Ported byte-for-byte from
+// `frontend-flutter-pos/lib/features/pos/models/modifier_models.dart`.
+class ProductModifiersResponse {
+  final int groupId;
+  final String groupNameEn;
+  final String groupNameKm;
+  final bool isRequired;
+  final bool multiSelect;
+  final List<ModifierOptionResponse> options;
+
+  const ProductModifiersResponse({
+    required this.groupId,
+    required this.groupNameEn,
+    required this.groupNameKm,
+    required this.isRequired,
+    required this.multiSelect,
+    this.options = const [],
+  });
+
+  factory ProductModifiersResponse.fromJson(Map<String, dynamic> json) {
+    final rawOptions = json['options'];
+
+    return ProductModifiersResponse(
+      groupId: _toInt(json['groupId']),
+      groupNameEn: json['groupNameEn']?.toString() ?? '',
+      groupNameKm: json['groupNameKm']?.toString() ?? '',
+      isRequired: _toBool(json['required']),
+      multiSelect: _toBool(json['multiSelect']),
+      options: rawOptions is List
+          ? rawOptions
+              .whereType<Map>()
+              .map((item) =>
+                  ModifierOptionResponse.fromJson(Map<String, dynamic>.from(item)))
+              .toList()
+          : const [],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'groupId': groupId,
+      'groupNameEn': groupNameEn,
+      'groupNameKm': groupNameKm,
+      'required': isRequired,
+      'multiSelect': multiSelect,
       'options': options.map((o) => o.toJson()).toList(),
     };
   }

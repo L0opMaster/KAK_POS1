@@ -1,4 +1,5 @@
 import '../models/report_models.dart';
+import 'report_charts.dart' show ChartRow;
 
 /// Genuinely new in this port — `[OLD/SOURCE]` has 11 separate, largely
 /// duplicated report screen files (`sales_summary_report_screen.dart`,
@@ -17,24 +18,28 @@ import '../models/report_models.dart';
 /// a genuinely different shape (year picker, no pagination, nested
 /// expansion) and keep their own screens.
 ///
-/// Dropped, deliberately, from all 8: the cashier/employee filter
-/// dropdown. Source populates its options from each response's own
-/// `cashiers`/`employees` field — plumbing that through a generic `<T>`
-/// config for 8 differently-shaped responses added real complexity for a
-/// secondary filter; date + hour range (the two filters every one of the
-/// 8 reports shares) are kept in full. Also dropped: the `fl_chart`
-/// bar/line/pie visualizations `report_charts.dart` drew above 7 of these
-/// 8 tables — the table data itself (and its PDF export) is unchanged,
-/// only the chart is omitted. Both are flagged here, not silently missing.
+/// The cashier/employee filter (`showEmployeeFilter`) and the `fl_chart`
+/// bar/line/pie visualization (`chartBuilder`/`chartKind`) that were
+/// previously dropped from all 8 of these screens (see prior revisions of
+/// this doc comment) are both filled in now: the cashier filter is sourced
+/// from `userAccountProvider` (the User account that processed the sale —
+/// this sidesteps a source bug where 7 of 9 report screens never
+/// populated their `employees:` prop), and the chart is derived
+/// client-side from the same page of rows already loaded for the table
+/// below it, per report type via `chartBuilder`.
 class ReportListConfig<T> {
   const ReportListConfig({
     required this.title,
     required this.columns,
     required this.fetchPage,
     this.showHourFilter = true,
+    this.showEmployeeFilter = false,
     this.initialFromDaysAgo = 6,
     this.summaryBuilder,
     this.pdfExport,
+    this.chartBuilder,
+    this.chartKind = ChartKind.bar,
+    this.chartValueFormatter,
   });
 
   final String title;
@@ -46,12 +51,18 @@ class ReportListConfig<T> {
     required String to,
     int? fromHour,
     int? toHour,
+    int? employeeId,
     required int page,
     required int size,
   })
   fetchPage;
 
   final bool showHourFilter;
+
+  /// Whether the AppBar shows a cashier-filter icon (person icon) that
+  /// opens a dialog to pick a User account to filter by, threaded through
+  /// as `fetchPage`'s `employeeId`.
+  final bool showEmployeeFilter;
 
   /// How many days before today the initial "from" date defaults to (e.g.
   /// 6 → a 7-day window ending today, matching several source screens'
@@ -68,7 +79,25 @@ class ReportListConfig<T> {
   /// print/PDF action (Taxes, Monthly Sales, Top Products) — see
   /// `mobile_reports_hub_screen.dart`'s doc comment.
   final ReportPdfConfig<T>? pdfExport;
+
+  /// Builds chart-ready data from the currently-loaded page of rows
+  /// (mirrors [summaryBuilder]'s pattern). `null` means no chart renders
+  /// for this report (e.g. Top Products, which has no chart on source
+  /// either).
+  final List<ChartRow> Function(List<T> rows)? chartBuilder;
+
+  /// Which chart widget to render when [chartBuilder] is non-null.
+  final ChartKind chartKind;
+
+  /// Optional value formatter (e.g. currency) passed to the bar/line
+  /// chart's tooltip. Pie charts always show a %-of-total per slice
+  /// regardless of this field.
+  final String Function(double)? chartValueFormatter;
 }
+
+/// Which `report_charts.dart` widget [ReportListConfig.chartBuilder]'s
+/// data should be rendered with.
+enum ChartKind { bar, line, pie }
 
 class ReportColumn<T> {
   const ReportColumn({

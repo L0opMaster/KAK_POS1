@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:printing/printing.dart';
@@ -5,14 +7,26 @@ import 'package:printing/printing.dart';
 import '../../../core/config/currency_utils.dart';
 import '../../../core/config/pos_theme.dart';
 import '../../../core/providers/language_provider.dart';
+import '../../../core/utils/bounded_concurrency.dart';
 import '../../../core/utils/l10n_extensions.dart';
 import '../models/receipt_models.dart';
 import '../providers/receipt_provider.dart';
 import '../services/print_service.dart';
+import '../services/printing/printer_profile.dart';
+import '../services/printing/receipt_bitmap_renderer.dart';
 import '../services/printing/receipt_view_model.dart';
 import '../services/printing/thermal_printer_service.dart';
 import '../services/sale_service.dart';
 import '../widgets/receipt_paper_view.dart';
+
+/// Progress shown while "Print All" is preparing (fetching full receipt
+/// detail per sale) or printing (building/emitting the batch print job).
+class _PrintAllProgress {
+  const _PrintAllProgress(this.done, this.total, this.stage);
+  final int done;
+  final int total;
+  final String stage;
+}
 
 /// MOBILE UI REIMPLEMENT of `frontend-flutter-pos/lib/features/pos/
 /// screens/receipts_screen.dart`. Source is a responsive split-pane
@@ -31,10 +45,18 @@ import '../widgets/receipt_paper_view.dart';
 /// Print One / Save PDF added Day 13, once `print_service.dart` existed —
 /// `_printOne` mirrors source's fetch-then-print split (a load failure
 /// gets its own message, distinct from a printer failure) and `_savePdf`
-/// mirrors source's `buildReceiptPdf` + `Printing.sharePdf` exactly. Still
-/// DROPPED: **Print All** (needs `buildReceiptsPdf`/bounded-concurrency
-/// batching — a bigger feature than "Day 13: print button", not core to
-/// this day's scope) and **Send by Email** (source's own version is a
+/// mirrors source's `buildReceiptPdf` + `Printing.sharePdf` exactly.
+///
+/// **Print All** — dropped in that earlier pass, now added: every sale
+/// matching the screen's CURRENT filters (`state.filteredSales`, already
+/// unbounded — this screen's list endpoints have no pagination to walk),
+/// not just what's on screen. Fetches full detail per sale (bounded
+/// concurrency via `mapBounded`), then emits ONE PDF job (pdfDriver) or ONE
+/// connect/print/disconnect batch (thermal) — never one job/connection per
+/// receipt. Mirrors source's `_printAllReceipts` exactly (see
+/// `frontend-flutter-pos/lib/features/pos/screens/receipts_screen.dart`).
+///
+/// Still DROPPED: **Send by Email** (source's own version is a
 /// non-functional stub — no real email API call is wired up there either
 /// — reproducing a fake "sent" toast has no value). Refund never depended
 /// on printing (a plain `SaleService.refundSale` call, ported Day 11).
@@ -58,6 +80,10 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
   /// Sale ids with an in-flight "Print One" — disables that row's button
   /// and prevents a repeated tap from firing a second print job.
   final Set<int> _printingIds = {};
+
+  /// True while "Print All" is running (fetching details, building the
+  /// batch job, or printing) — disables the Print All button itself.
+  bool _printAllRunning = false;
 
   @override
   void initState() {
@@ -106,6 +132,219 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
     }
   }
 
+  // ─────────────────────────────────────────────
+  // PRINT ALL — every sale matching the screen's CURRENT filters
+  // (state.filteredSales, already unbounded — this screen's list endpoints
+  // have no pagination to walk), not just what's on screen. Fetches full
+  // detail per sale (bounded concurrency), then emits ONE PDF job (driver)
+  // or ONE connect/print/disconnect batch (thermal) — never one job/
+  // connection per receipt.
+  // ─────────────────────────────────────────────
+
+  Future<void> _printAllReceipts(List<SaleResponse> sales) async {
+    final l10n = context.l10n;
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.receiptsScreenPrintAllConfirmTitle),
+        content: Text(l10n.receiptsScreenPrintAllConfirmBody(sales.length)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.commonCancel),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.receiptsScreenPrintAll),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    // Defensive de-dupe by id: this screen's sale list has no pagination to
+    // overlap, but keeping the guarantee explicit costs nothing and avoids
+    // silently trusting that invariant forever.
+    final ids = {for (final s in sales) s.id}.toList();
+
+    setState(() => _printAllRunning = true);
+    final progress = ValueNotifier(
+      _PrintAllProgress(0, ids.length, l10n.receiptsScreenPreparingReceipts),
+    );
+    var cancelled = false;
+
+    unawaited(
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => PopScope(
+          canPop: false,
+          child: ValueListenableBuilder<_PrintAllProgress>(
+            valueListenable: progress,
+            builder: (ctx, p, _) => AlertDialog(
+              content: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(p.stage),
+                        const SizedBox(height: 4),
+                        Text(
+                          l10n.receiptsScreenPrintAllProgress(p.done, p.total),
+                          style: TextStyle(
+                            color: PosTheme.textSecondaryOf(ctx),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              actions: p.stage == l10n.receiptsScreenPreparingReceipts
+                  ? [
+                      TextButton(
+                        onPressed: () => cancelled = true,
+                        child: Text(l10n.commonCancel),
+                      ),
+                    ]
+                  : const [],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final failedLabels = <String>[];
+    final viewModels = <ReceiptViewModel>[];
+    var printJobFailed = false;
+    String? printJobFailureMessage;
+    final language = ref.read(appLanguageProvider);
+    final saleService = ref.read(saleServiceProvider);
+
+    try {
+      // ── Prepare: full detail per sale, bounded concurrency ──
+      final results = await mapBounded<int, ReceiptViewModel>(
+        ids,
+        (id) async {
+          final raw = await saleService.getReceipt(id);
+          final receipt = ReceiptResponse.fromJson(raw);
+          return ReceiptViewModel.fromReceiptResponse(receipt, language, l10n);
+        },
+        isCancelled: () => cancelled,
+        onProgress: (done, total) => progress.value = _PrintAllProgress(
+          done,
+          total,
+          l10n.receiptsScreenPreparingReceipts,
+        ),
+      );
+
+      if (cancelled) return;
+      for (final r in results) {
+        if (r.isOk) {
+          viewModels.add(r.value!);
+        } else {
+          debugPrint(
+            'Print All: failed to load receipt id=${r.item}: ${r.error}',
+          );
+          failedLabels.add('#${r.item}');
+        }
+      }
+      if (viewModels.isEmpty) return;
+
+      // ── Print: one PDF job, or one connect/disconnect thermal batch ──
+      progress.value = _PrintAllProgress(
+        0,
+        viewModels.length,
+        l10n.receiptsScreenPrintingReceipts,
+      );
+      final config = await ref.read(thermalPrinterServiceProvider).loadConfig();
+      if (!mounted) return;
+
+      if (config.transportType == PrinterTransportType.pdfDriver) {
+        final bytes = await ref
+            .read(printServiceProvider)
+            .buildReceiptsPdf(viewModels, config.paperSize, context: context);
+        progress.value = _PrintAllProgress(
+          viewModels.length,
+          viewModels.length,
+          l10n.receiptsScreenPrintingReceipts,
+        );
+        await Printing.layoutPdf(onLayout: (_) => bytes, name: 'receipts_batch');
+      } else {
+        if (!mounted) return;
+        await ref
+            .read(thermalPrinterServiceProvider)
+            .printReceipts(
+              context,
+              viewModels,
+              config,
+              onProgress: (d, t) => progress.value = _PrintAllProgress(
+                d,
+                t,
+                l10n.receiptsScreenPrintingReceipts,
+              ),
+            );
+      }
+    } catch (e) {
+      debugPrint('Print All failed: $e');
+      printJobFailed = true;
+      if (e is ReceiptRenderException) printJobFailureMessage = e.message;
+    } finally {
+      navigator.pop(); // close the progress dialog
+      progress.dispose();
+      if (mounted) setState(() => _printAllRunning = false);
+    }
+
+    if (!mounted || cancelled) return;
+    if (printJobFailed) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            printJobFailureMessage ?? l10n.receiptsScreenPrintReceiptFailed,
+          ),
+        ),
+      );
+      return;
+    }
+    if (viewModels.isEmpty) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(l10n.receiptsScreenPrintAllPartialFailure(ids.length)),
+        ),
+      );
+      return;
+    }
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          l10n.receiptsScreenPrintAllDone(viewModels.length, ids.length),
+        ),
+      ),
+    );
+    if (failedLabels.isNotEmpty) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            l10n.receiptsScreenPrintAllPartialFailure(failedLabels.length),
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   void dispose() {
     _searchCtl.dispose();
@@ -134,6 +373,19 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
       appBar: AppBar(
         title: Text(context.l10n.navReceipts),
         actions: [
+          IconButton(
+            icon: _printAllRunning
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.print_outlined),
+            tooltip: context.l10n.receiptsScreenPrintAllTooltip,
+            onPressed: displaySales.isEmpty || _printAllRunning
+                ? null
+                : () => _printAllReceipts(displaySales),
+          ),
           IconButton(icon: const Icon(Icons.refresh), onPressed: _refresh),
         ],
       ),

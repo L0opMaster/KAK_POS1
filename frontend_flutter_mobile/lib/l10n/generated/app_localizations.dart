@@ -428,6 +428,12 @@ abstract class AppLocalizations {
   /// **'Tables'**
   String get navTables;
 
+  /// No description provided for @navCatalogManagement.
+  ///
+  /// In en, this message translates to:
+  /// **'Catalog Management'**
+  String get navCatalogManagement;
+
   /// No description provided for @navShifts.
   ///
   /// In en, this message translates to:
@@ -2000,6 +2006,12 @@ abstract class AppLocalizations {
   /// **'Failed to save'**
   String get categoryManagementSaveFailedPrefix;
 
+  /// No description provided for @categoryManagementSaving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving...'**
+  String get categoryManagementSaving;
+
   /// No description provided for @unitManagementUpdateFailedPrefix.
   ///
   /// In en, this message translates to:
@@ -2353,6 +2365,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sale #'**
   String get customerManagementSalePrefix;
+
+  /// No description provided for @customerManagementCreditSalesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit Sales'**
+  String get customerManagementCreditSalesTitle;
+
+  /// No description provided for @customerManagementPaymentHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment History'**
+  String get customerManagementPaymentHistoryTitle;
+
+  /// No description provided for @customerManagementNoCreditSales.
+  ///
+  /// In en, this message translates to:
+  /// **'No credit sales'**
+  String get customerManagementNoCreditSales;
+
+  /// No description provided for @customerManagementNoPaymentHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'No payments recorded yet'**
+  String get customerManagementNoPaymentHistory;
+
+  /// No description provided for @customerManagementRecordPaymentButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Record Payment'**
+  String get customerManagementRecordPaymentButton;
+
+  /// No description provided for @paymentScreenCreditDueLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Due'**
+  String get paymentScreenCreditDueLabel;
+
+  /// No description provided for @creditStatusOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get creditStatusOpen;
+
+  /// No description provided for @creditStatusPartiallyPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Partially Paid'**
+  String get creditStatusPartiallyPaid;
+
+  /// No description provided for @creditStatusPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid'**
+  String get creditStatusPaid;
+
+  /// No description provided for @creditStatusOverdue.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get creditStatusOverdue;
+
+  /// No description provided for @creditStatusExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Expired'**
+  String get creditStatusExpired;
+
+  /// No description provided for @creditStatusCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get creditStatusCancelled;
+
+  /// No description provided for @creditRepaymentDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Record Payment'**
+  String get creditRepaymentDialogTitle;
+
+  /// No description provided for @creditRepaymentRemainingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Remaining Balance'**
+  String get creditRepaymentRemainingLabel;
+
+  /// No description provided for @creditRepaymentAmountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment Amount'**
+  String get creditRepaymentAmountLabel;
+
+  /// No description provided for @creditRepaymentPayFullButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay Full Balance'**
+  String get creditRepaymentPayFullButton;
+
+  /// No description provided for @creditRepaymentMethodLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment Method'**
+  String get creditRepaymentMethodLabel;
+
+  /// No description provided for @creditRepaymentNotesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes (optional)'**
+  String get creditRepaymentNotesLabel;
+
+  /// No description provided for @creditRepaymentConfirmButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay {amount}'**
+  String creditRepaymentConfirmButton(Object amount);
+
+  /// No description provided for @creditRepaymentAmountInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid amount'**
+  String get creditRepaymentAmountInvalid;
+
+  /// No description provided for @creditRepaymentExceedsBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount exceeds remaining balance'**
+  String get creditRepaymentExceedsBalance;
+
+  /// No description provided for @creditRepaymentSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment recorded'**
+  String get creditRepaymentSuccess;
+
+  /// No description provided for @creditRepaymentFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment failed: {error}'**
+  String creditRepaymentFailed(Object error);
 
   /// No description provided for @debugSettingsUpdatedMessage.
   ///
@@ -3827,6 +3977,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sale failed: {error}'**
   String paymentScreenSaleFailed(Object error);
+
+  /// No description provided for @paymentScreenPayLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay Later / Credit'**
+  String get paymentScreenPayLater;
+
+  /// No description provided for @paymentScreenCreditRequiresCustomer.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a customer first to sell on credit'**
+  String get paymentScreenCreditRequiresCustomer;
+
+  /// No description provided for @paymentScreenCreditDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit Sale'**
+  String get paymentScreenCreditDialogTitle;
+
+  /// No description provided for @paymentScreenCreditDueDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Due Date'**
+  String get paymentScreenCreditDueDateLabel;
+
+  /// No description provided for @paymentScreenCreditExpiresLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Expiration Date (optional)'**
+  String get paymentScreenCreditExpiresLabel;
+
+  /// No description provided for @paymentScreenCreditNotesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes (optional)'**
+  String get paymentScreenCreditNotesLabel;
+
+  /// No description provided for @paymentScreenCreditConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Credit Sale'**
+  String get paymentScreenCreditConfirm;
+
+  /// No description provided for @paymentScreenCreditSaleCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit Sale Created'**
+  String get paymentScreenCreditSaleCreated;
+
+  /// No description provided for @paymentScreenCreditStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get paymentScreenCreditStatusLabel;
+
+  /// No description provided for @paymentScreenCreditSaleFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit sale failed: {error}'**
+  String paymentScreenCreditSaleFailed(Object error);
 
   /// No description provided for @itemManagementDeleteItemsTitle.
   ///
@@ -6487,6 +6697,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Collected'**
   String get waitingTicketsCollected;
+
+  /// No description provided for @waitingTicketsPrintYourNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Number'**
+  String get waitingTicketsPrintYourNumber;
+
+  /// No description provided for @waitingTicketsPrintInstruction.
+  ///
+  /// In en, this message translates to:
+  /// **'Please come to the counter when your number is called'**
+  String get waitingTicketsPrintInstruction;
 
   /// No description provided for @cashierPerformanceTitle.
   ///

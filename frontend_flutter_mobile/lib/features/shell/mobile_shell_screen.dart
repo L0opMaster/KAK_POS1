@@ -5,14 +5,22 @@ import '../../core/config/pos_theme.dart';
 import '../../core/dev/theme_demo_screen.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/utils/l10n_extensions.dart';
+import '../access_management/screens/mobile_access_management_hub_screen.dart';
+import '../catalog_management/screens/mobile_catalog_management_hub_screen.dart';
+import '../customer_management/screens/mobile_customer_management_screen.dart';
 import '../inventory/screens/mobile_inventory_hub_screen.dart';
+import '../pos/providers/held_ticket_provider.dart';
+import '../pos/providers/table_provider.dart';
 import '../pos/screens/customer_picker_screen.dart';
 import '../pos/screens/held_tickets_screen.dart';
+import '../pos/screens/mobile_phone_scanner_screen.dart';
 import '../pos/screens/pos_register_screen.dart';
 import '../pos/screens/receipts_screen.dart';
 import '../pos/screens/shift_screen.dart';
 import '../pos/screens/table_picker_screen.dart';
 import '../pos/widgets/cart_fab.dart';
+import '../pos/widgets/customer_display_status_button.dart';
+import '../pos/widgets/phone_scanner_receiver_button.dart';
 import '../reports/screens/mobile_reports_hub_screen.dart';
 import '../settings/screens/mobile_settings_screen.dart';
 
@@ -58,6 +66,26 @@ class MobileShellScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final index = ref.watch(shellTabIndexProvider);
+
+    // Every tab body below is an `IndexedStack` child — built ONCE when the
+    // shell first appears and never disposed/rebuilt again as `index`
+    // changes (that's the whole point of `IndexedStack`: preserve state
+    // instead of tearing tabs down). That means each tab's own `initState()`
+    // fires exactly once too, NOT every time the user switches back to it —
+    // so a screen whose data can go stale from an action taken on a
+    // DIFFERENT tab (or a different device entirely, e.g. another cashier
+    // occupying a table) never refetches on its own. Explicitly refresh
+    // Tables/Held Tickets here, every time the user actually switches to
+    // that tab, instead of relying on each screen's one-shot `initState`
+    // fetch.
+    ref.listen<int>(shellTabIndexProvider, (previous, next) {
+      if (previous == next) return;
+      if (next == 1) {
+        ref.read(tableProvider.notifier).search();
+      } else if (next == 2) {
+        ref.read(heldTicketProvider.notifier).loadHeldTickets();
+      }
+    });
     final destinations = [
       (
         icon: Icons.point_of_sale_outlined,
@@ -92,7 +120,19 @@ class MobileShellScreen extends ConsumerWidget {
     ];
 
     return Scaffold(
-      appBar: AppBar(title: Text(destinations[index].label)),
+      appBar: AppBar(
+        title: Text(destinations[index].label),
+        // Customer-display pairing + phone-scanner-relay receiving are both
+        // Register-screen concerns on source too (`pos_screen.dart`'s
+        // AppBar), so only show them on that tab, not Tables/Held
+        // Tickets/More.
+        actions: index == 0
+            ? const [
+                CustomerDisplayStatusButton(),
+                PhoneScannerReceiverButton(),
+              ]
+            : null,
+      ),
       body: IndexedStack(
         index: index,
         children: [for (final d in destinations) d.body],
@@ -151,6 +191,20 @@ class _MoreTab extends ConsumerWidget {
           ),
         ),
         ListTile(
+          leading: const Icon(Icons.contacts_outlined),
+          title: Text(l10n.posDrawerCustomerList),
+          // Admin customer CRUD + credit ledger/repayment — ported from
+          // source's Customers drawer section (customer_management_
+          // screen.dart, credit_status.dart, credit_repayment_dialog.dart).
+          // Distinct from the "Customers" tile above, which is the
+          // sale-time picker.
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const MobileCustomerManagementScreen(),
+            ),
+          ),
+        ),
+        ListTile(
           leading: const Icon(Icons.receipt_long_outlined),
           title: Text(l10n.navReceipts),
           // MODIFIED Day 12: opens the real receipt history screen
@@ -170,6 +224,37 @@ class _MoreTab extends ConsumerWidget {
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute<void>(
               builder: (_) => const MobileInventoryHubScreen(),
+            ),
+          ),
+        ),
+        ListTile(
+          leading: const Icon(Icons.storefront_outlined),
+          title: Text(l10n.navCatalogManagement),
+          // Admin CRUD for products/categories/units/modifiers/tables —
+          // ported from source's Items/Tables drawer sections
+          // (item_management_screen.dart, category_management_screen.dart,
+          // unit_management_screen.dart, modifier_management.dart +
+          // create_modifier.dart + modifier_product_assignment_screen.dart,
+          // table_management_screen.dart + create_table.dart). Grouped
+          // behind one hub screen, same pattern as Inventory Management
+          // above.
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const MobileCatalogManagementHubScreen(),
+            ),
+          ),
+        ),
+        ListTile(
+          leading: const Icon(Icons.badge_outlined),
+          title: Text(l10n.posDrawerEmployees),
+          // Employee/User Account/Role/Permission admin CRUD — ported from
+          // source's "Employees" drawer section (employee_management_
+          // screen.dart + create_employee.dart, user_account_screen.dart,
+          // role_management_screen.dart, permission_screen.dart). Grouped
+          // behind one hub screen, same pattern as Catalog Management above.
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const MobileAccessManagementHubScreen(),
             ),
           ),
         ),
@@ -205,6 +290,21 @@ class _MoreTab extends ConsumerWidget {
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute<void>(
               builder: (_) => const MobileSettingsScreen(),
+            ),
+          ),
+        ),
+        ListTile(
+          leading: const Icon(Icons.wifi_tethering),
+          title: Text(l10n.phoneScanScreenTitle),
+          // "Use this phone to scan into another device's cart" — the
+          // scanning-side role of the phone-scanner relay. Distinct from
+          // the local camera-scan icon in the Register search bar (which
+          // adds to THIS device's own cart) and from the
+          // `PhoneScannerReceiverButton` in the Register tab's AppBar
+          // (this same device RECEIVING scans FROM another phone).
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const MobilePhoneScannerScreen(),
             ),
           ),
         ),

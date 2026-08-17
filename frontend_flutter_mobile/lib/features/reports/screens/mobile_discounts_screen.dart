@@ -9,8 +9,9 @@ import '../widgets/report_list_config.dart';
 import 'mobile_report_list_screen.dart';
 
 /// Ported from `frontend-flutter-pos/lib/features/reports/screens/
-/// discounts_screen.dart` via `MobileReportListScreen`. Bar chart (top 15
-/// by amount) dropped (see `report_list_config.dart`'s doc comment); the
+/// discounts_screen.dart` via `MobileReportListScreen`. Bar chart (per-row
+/// discount amount, capped to the loaded page like source's top-15) and
+/// the cashier filter are both wired in via the shared config; the
 /// totals card is kept as the PDF's summary section, computed from the
 /// full (all-pages) row set rather than the backend's own `totals` field
 /// — same numbers either way, just derived client-side to fit the shared
@@ -53,6 +54,7 @@ class MobileDiscountsScreen extends ConsumerWidget {
               required to,
               fromHour,
               toHour,
+              employeeId,
               required page,
               required size,
             }) async {
@@ -61,6 +63,7 @@ class MobileDiscountsScreen extends ConsumerWidget {
                 to: to,
                 fromHour: fromHour,
                 toHour: toHour,
+                employeeId: employeeId,
                 page: page,
                 size: size,
               );
@@ -74,6 +77,16 @@ class MobileDiscountsScreen extends ConsumerWidget {
           ),
         ],
         pdfExport: ReportPdfConfig(pdfTitle: l10n.reportsDiscounts),
+        showEmployeeFilter: true,
+        chartKind: ChartKind.bar,
+        chartValueFormatter: (v) => formatAmount(v, cur),
+        chartBuilder: (rows) => [
+          for (final r in rows.take(15))
+            (
+              label: r.date ?? (r.saleNumber ?? '#${r.saleId}'),
+              value: r.amount,
+            ),
+        ],
       ),
     );
   }

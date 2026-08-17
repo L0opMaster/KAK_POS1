@@ -54,6 +54,12 @@ class Product {
   final double cost;
   final double price;
   final double? resolvedPrice;
+
+  /// Per-product tax rate as a fraction (0.08 = 8%) — matches source's
+  /// per-product model (no store-wide fallback). Added for admin item
+  /// management; existing read-only call sites that never set it default
+  /// to 0 and are unaffected.
+  final double taxRate;
   final bool active;
   final bool sellable;
   final bool purchasable;
@@ -88,6 +94,7 @@ class Product {
     required this.cost,
     required this.price,
     this.resolvedPrice,
+    this.taxRate = 0,
     required this.active,
     this.sellable = true,
     this.purchasable = false,
@@ -124,6 +131,7 @@ class Product {
         cost: (json['cost'] as num?)?.toDouble() ?? 0,
         price: (json['price'] as num?)?.toDouble() ?? 0,
         resolvedPrice: (json['resolvedPrice'] as num?)?.toDouble(),
+        taxRate: (json['taxRate'] as num?)?.toDouble() ?? 0,
         active: json['active'] as bool? ?? true,
         sellable: json['sellable'] as bool? ?? true,
         purchasable: json['purchasable'] as bool? ?? false,
@@ -166,6 +174,7 @@ class Product {
         if (description != null) 'description': description,
         'cost': cost,
         'price': price,
+        'taxRate': taxRate,
         'active': active,
         'sellable': sellable,
         'purchasable': purchasable,

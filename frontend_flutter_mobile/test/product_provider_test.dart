@@ -41,6 +41,39 @@ class _FakeProductService extends ProductService {
 
   @override
   Future<List<Category>> getCategories() async => categories;
+
+  int _nextId = 1000;
+
+  @override
+  Future<Product> createProduct(Product product) async {
+    final created = Product(
+      id: _nextId++,
+      sku: product.sku,
+      barcode: product.barcode,
+      nameEn: product.nameEn,
+      nameKm: product.nameKm,
+      cost: product.cost,
+      price: product.price,
+      taxRate: product.taxRate,
+      active: product.active,
+      categoryId: product.categoryId,
+    );
+    products.add(created);
+    return created;
+  }
+
+  @override
+  Future<Product> updateProduct(Product product) async {
+    final index = products.indexWhere((p) => p.id == product.id);
+    if (index == -1) throw Exception('not found');
+    products[index] = product;
+    return product;
+  }
+
+  @override
+  Future<void> deleteProduct(int id) async {
+    products.removeWhere((p) => p.id == id);
+  }
 }
 
 Product _product(int id, {int categoryId = 1, String name = 'Product'}) =>
@@ -144,6 +177,41 @@ void main() {
 
       final notFound = await notifier.findByBarcode('nope');
       expect(notFound, isNull);
+    });
+
+    test('createProduct adds the item and refreshes state', () async {
+      final service = _FakeProductService(products: [], categories: []);
+      final notifier = ProductNotifier(service);
+      await notifier.loadProducts();
+
+      final created = await notifier.createProduct(_product(1));
+      expect(created.id, isNot(1)); // service assigns the real id
+      expect(notifier.state.products, hasLength(1));
+    });
+
+    test('updateProduct modifies the item and refreshes state', () async {
+      final service = _FakeProductService(
+        products: [_product(1, name: 'Old')],
+        categories: [],
+      );
+      final notifier = ProductNotifier(service);
+      await notifier.loadProducts();
+
+      await notifier.updateProduct(_product(1, name: 'New'));
+      expect(notifier.state.products.single.nameEn, 'New 1');
+    });
+
+    test('deleteProduct removes the item and refreshes state', () async {
+      final service = _FakeProductService(
+        products: [_product(1), _product(2)],
+        categories: [],
+      );
+      final notifier = ProductNotifier(service);
+      await notifier.loadProducts();
+      expect(notifier.state.products, hasLength(2));
+
+      await notifier.deleteProduct(1);
+      expect(notifier.state.products.map((p) => p.id), [2]);
     });
   });
 

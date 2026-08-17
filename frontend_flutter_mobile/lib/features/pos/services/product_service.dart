@@ -14,6 +14,19 @@ abstract class ProductService {
 
   Future<List<Category>> getCategories();
 
+  /// Admin CRUD — ported from `frontend-flutter-pos/lib/features/pos/
+  /// services/product_service.dart`. Default bodies throw so read-only
+  /// implementations (e.g. [DemoProductService]) don't have to stub these
+  /// out; [ApiProductService] overrides all three with real HTTP calls.
+  Future<Product> createProduct(Product product) =>
+      throw UnimplementedError('createProduct is not supported here');
+
+  Future<Product> updateProduct(Product product) =>
+      throw UnimplementedError('updateProduct is not supported here');
+
+  Future<void> deleteProduct(int id) =>
+      throw UnimplementedError('deleteProduct is not supported here');
+
   /// Looks up a product through the existing product-search flow, then
   /// requires an exact barcode match.
   Future<Product?> findByBarcode(String barcode) async {
@@ -84,6 +97,29 @@ class ApiProductService extends ProductService {
         .cast<Map<String, dynamic>>()
         .map((e) => Category.fromJson(e))
         .toList();
+  }
+
+  @override
+  Future<Product> createProduct(Product product) async {
+    final resp = await _api.post<Map<String, dynamic>>(
+      '/api/products',
+      data: product.toJson(),
+    );
+    return Product.fromJson(resp);
+  }
+
+  @override
+  Future<Product> updateProduct(Product product) async {
+    final resp = await _api.put<Map<String, dynamic>>(
+      '/api/products/${product.id}',
+      data: product.toJson(),
+    );
+    return Product.fromJson(resp);
+  }
+
+  @override
+  Future<void> deleteProduct(int id) async {
+    await _api.delete<dynamic>('/api/products/$id');
   }
 }
 
@@ -254,4 +290,16 @@ class _FallbackProductService extends ProductService {
   Future<List<Category>> getCategories() {
     return _tryApi(() => _api.getCategories(), () => _demo.getCategories());
   }
+
+  // Writes always go straight to the real API and surface errors as-is —
+  // falling back to mutating in-memory demo data would silently "succeed"
+  // without persisting anything, which is misleading for an admin screen.
+  @override
+  Future<Product> createProduct(Product product) => _api.createProduct(product);
+
+  @override
+  Future<Product> updateProduct(Product product) => _api.updateProduct(product);
+
+  @override
+  Future<void> deleteProduct(int id) => _api.deleteProduct(id);
 }

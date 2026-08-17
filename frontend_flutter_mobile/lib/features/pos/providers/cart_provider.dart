@@ -23,6 +23,22 @@ import '../services/waiting_number_service.dart';
 /// `applyLoyalty`/`clearLoyalty` are ported despite `loyalty` being
 /// otherwise unused — two-line field setters with zero dependencies,
 /// needed for `finalTotal`'s formula to be exercisable at all.
+///
+/// FIXED (this session): `CartState` used to carry a single flat `taxRate`
+/// field (default 0.08) applied to the whole cart, and `PaymentScreen` sent
+/// that flat rate to the backend as `'taxRate'` in the sale-create payload.
+/// Source has since moved tax to be per-product (`Product.taxRate`, added
+/// alongside the admin Item Management screen) — the backend now derives
+/// tax entirely from each line's own product (`SaleService.computeLineTaxes`)
+/// and no longer reads a cart-wide rate at all. Mobile's cart never followed
+/// that migration, so it kept charging every product the same flat 8%
+/// regardless of its actual configured rate, and kept sending a `taxRate`
+/// the backend either ignored or (worse) treated as an override. `taxRate`/
+/// `withTaxRate`/`setTaxRate` are removed; `taxAmount` now sums each item's
+/// own `product.taxRate` against its cart-discount-prorated taxable amount,
+/// and a new `blendedTaxRate` getter (display-only, e.g. the "Tax (X%)"
+/// label) mirrors the backend's own blended-rate derivation — both exact
+/// ports of source's post-fix `CartState`.
 class CartState {
   Map<String, dynamic> toJson() => {
         'items': items.map((e) => e.toJson()).toList(),
@@ -30,7 +46,6 @@ class CartState {
         'discountType': discountType.index,
         'loyalty': loyalty,
         'orderMode': orderMode.index,
-        'taxRate': taxRate,
         'customerId': customerId,
         'tableId': tableId,
         'waitingNumber': waitingNumber,
@@ -49,7 +64,6 @@ class CartState {
       loyalty: (json['loyalty'] as num?)?.toDouble() ?? 0,
       loading: false,
       orderMode: OrderMode.values[json['orderMode'] ?? 0],
-      taxRate: (json['taxRate'] as num?)?.toDouble() ?? 0.08,
       customerId: json['customerId'] as int?,
       tableId: json['tableId'] as int?,
       waitingNumber: (json['waitingNumber'] as num?)?.toInt(),
@@ -64,7 +78,6 @@ class CartState {
     this.loyalty = 0,
     this.loading = false,
     this.orderMode = OrderMode.dineIn,
-    this.taxRate = 0.08,
     this.customerId,
     this.tableId,
     this.waitingNumber,
@@ -80,7 +93,6 @@ class CartState {
   final double loyalty;
   final bool loading;
   final OrderMode orderMode;
-  final double taxRate;
   final int? customerId;
   final int? tableId;
   final int? waitingNumber;
@@ -93,7 +105,6 @@ class CartState {
     double? loyalty,
     bool? loading,
     OrderMode? orderMode,
-    double? taxRate,
     int? customerId,
     int? tableId,
     int? waitingNumber,
@@ -110,7 +121,6 @@ class CartState {
       loyalty: loyalty ?? this.loyalty,
       loading: loading ?? this.loading,
       orderMode: orderMode ?? this.orderMode,
-      taxRate: taxRate ?? this.taxRate,
       customerId: clearCustomer ? null : customerId ?? this.customerId,
       tableId: clearTable ? null : tableId ?? this.tableId,
       waitingNumber:
@@ -144,8 +154,33 @@ class CartState {
 
   double get discountAmount => Money.toMajor(_discountMinor);
 
-  /// Tax amount calculated on the discounted subtotal.
-  double get taxAmount => total * taxRate;
+  /// Tax is per-product (see `Product.taxRate`) — summed per item at each
+  /// item's own rate, not one flat rate applied to the whole cart. The
+  /// cart-level discount is prorated across items by each item's share of
+  /// [total] before taxing, mirroring the backend's `computeLineTaxes`
+  /// exactly (see `SaleService.java`) so the on-screen total during
+  /// checkout matches what actually gets charged, not a flat blended guess.
+  double get taxAmount {
+    if (total <= 0) return 0;
+    double sum = 0;
+    for (final item in items) {
+      final netItemTotal =
+          item.lineTotal - (item.discountAmount ?? 0) * item.qty;
+      final share = netItemTotal / total;
+      final itemCartDiscount = discountAmount * share;
+      final taxable = netItemTotal - itemCartDiscount;
+      sum += taxable * item.product.taxRate;
+    }
+    return sum;
+  }
+
+  /// Blended effective rate across all items, for display only (e.g. the
+  /// "Tax (X%)" label) — mirrors the backend's `blendedTaxRate` derivation.
+  double get blendedTaxRate {
+    final taxable = total - discountAmount;
+    if (taxable <= 0) return 0;
+    return taxAmount / taxable;
+  }
 
   /// Grand total: subtotal - cart discount + tax - loyalty
   double get finalTotal {
@@ -156,8 +191,6 @@ class CartState {
     final double netMajor = Money.toMajor(net);
     return netMajor + taxAmount;
   }
-
-  CartState withTaxRate(double rate) => copyWith(taxRate: rate.clamp(0, 1.0));
 }
 
 /// User-facing result of attempting to add a barcode to the active cart.
@@ -643,11 +676,6 @@ class CartNotifier extends StateNotifier<CartState> {
   }
 
   void clearLoyalty() => state = state.copyWith(loyalty: 0);
-
-  void setTaxRate(double rate) {
-    state = state.withTaxRate(rate);
-    persistCart();
-  }
 }
 
 /// Added Day 9 — `[OLD/SOURCE]` declares this at the top of its own

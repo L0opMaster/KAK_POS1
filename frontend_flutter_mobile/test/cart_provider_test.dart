@@ -51,7 +51,7 @@ class _FakeCartService extends CartService {
       saved = saved.where((i) => i.id != id).toList();
 }
 
-Product _product(int id, {double price = 5.0}) => Product(
+Product _product(int id, {double price = 5.0, double taxRate = 0}) => Product(
       id: id,
       sku: 'SKU$id',
       barcode: 'BAR$id',
@@ -59,6 +59,7 @@ Product _product(int id, {double price = 5.0}) => Product(
       nameKm: 'Product $id',
       cost: 1,
       price: price,
+      taxRate: taxRate,
       active: true,
       categoryId: 1,
     );
@@ -115,9 +116,11 @@ void main() {
       final state = CartState(
         items: [
           CartItem(
-              id: '1', product: _product(1, price: 10), qty: 2, addedAt: 0),
+              id: '1',
+              product: _product(1, price: 10, taxRate: 0.10),
+              qty: 2,
+              addedAt: 0),
         ],
-        taxRate: 0.10,
       );
 
       expect(state.total, 20.0);
@@ -125,20 +128,23 @@ void main() {
       expect(state.finalTotal, 22.0);
     });
 
-    test('fixed cart-level discount reduces finalTotal but not tax base',
-        () {
+    test('fixed cart-level discount is prorated into the tax base', () {
       final state = CartState(
         items: [
           CartItem(
-              id: '1', product: _product(1, price: 10), qty: 1, addedAt: 0),
+              id: '1',
+              product: _product(1, price: 10, taxRate: 0.10),
+              qty: 1,
+              addedAt: 0),
         ],
-        taxRate: 0.10,
         discount: 3,
       );
 
       expect(state.discountAmount, 3.0);
-      // finalTotal = (subtotal - discount) + tax(on pre-discount subtotal)
-      expect(state.finalTotal, 7.0 + 1.0);
+      // taxable = (10 - discount's full share, 3) = 7; tax = 7 * 0.10 = 0.7
+      expect(state.taxAmount, closeTo(0.7, 0.0001));
+      // finalTotal = (subtotal - discount) + tax(on POST-discount taxable)
+      expect(state.finalTotal, closeTo(7.0 + 0.7, 0.0001));
     });
 
     test('percent cart-level discount is clamped to the subtotal', () {
@@ -181,7 +187,6 @@ void main() {
         discountType: DiscountType.percent,
         loyalty: 1.5,
         orderMode: OrderMode.takeaway,
-        taxRate: 0.07,
         customerId: 42,
         tableId: 9,
         waitingNumber: 3,
@@ -195,7 +200,6 @@ void main() {
       expect(restored.discountType, DiscountType.percent);
       expect(restored.loyalty, 1.5);
       expect(restored.orderMode, OrderMode.takeaway);
-      expect(restored.taxRate, 0.07);
       expect(restored.customerId, 42);
       expect(restored.tableId, 9);
       expect(restored.waitingNumber, 3);
@@ -588,12 +592,78 @@ void main() {
       expect(notifier.state.orderMode, OrderMode.delivery);
     });
 
-    test('setTaxRate clamps to [0, 1]', () async {
-      final notifier = await _readyNotifier(_FakeCartService());
-      notifier.setTaxRate(1.5);
-      expect(notifier.state.taxRate, 1.0);
-      notifier.setTaxRate(-0.5);
-      expect(notifier.state.taxRate, 0.0);
+    test('taxAmount sums each item at its own product tax rate', () {
+      final state = CartState(
+        items: [
+          CartItem(
+            id: '1',
+            product: _product(1, price: 10, taxRate: 0.10),
+            qty: 1,
+            addedAt: 0,
+          ),
+          CartItem(
+            id: '2',
+            product: _product(2, price: 20, taxRate: 0.05),
+            qty: 1,
+            addedAt: 0,
+          ),
+        ],
+      );
+      // item 1: 10 * 0.10 = 1.0; item 2: 20 * 0.05 = 1.0
+      expect(state.taxAmount, closeTo(2.0, 0.0001));
+    });
+
+    test('taxAmount prorates the cart-level discount per item before taxing',
+        () {
+      final state = CartState(
+        items: [
+          CartItem(
+            id: '1',
+            product: _product(1, price: 10, taxRate: 0.10),
+            qty: 1,
+            addedAt: 0,
+          ),
+          CartItem(
+            id: '2',
+            product: _product(2, price: 30, taxRate: 0),
+            qty: 1,
+            addedAt: 0,
+          ),
+        ],
+        discount: 4,
+        discountType: DiscountType.fixed,
+      );
+      // total = 40; discount 4 is split by share: item1 gets 4*(10/40)=1,
+      // item2 gets 4*(30/40)=3. Taxable item1 = 10-1 = 9, taxed at 10% = 0.9.
+      // item2 has a 0% rate so its share of the discount doesn't matter.
+      expect(state.taxAmount, closeTo(0.9, 0.0001));
+    });
+
+    test('blendedTaxRate is the effective rate across all items', () {
+      final state = CartState(
+        items: [
+          CartItem(
+            id: '1',
+            product: _product(1, price: 10, taxRate: 0.10),
+            qty: 1,
+            addedAt: 0,
+          ),
+          CartItem(
+            id: '2',
+            product: _product(2, price: 10, taxRate: 0.20),
+            qty: 1,
+            addedAt: 0,
+          ),
+        ],
+      );
+      // taxAmount = 1 + 2 = 3, taxable = 20 -> blended rate 15%.
+      expect(state.blendedTaxRate, closeTo(0.15, 0.0001));
+    });
+
+    test('taxAmount and blendedTaxRate are zero for an empty cart', () {
+      final state = CartState(items: const []);
+      expect(state.taxAmount, 0);
+      expect(state.blendedTaxRate, 0);
     });
 
     test('applyLoyalty/clearLoyalty', () async {

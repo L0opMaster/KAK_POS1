@@ -234,7 +234,16 @@ class PosTheme {
       chipTheme: ChipThemeData(
         backgroundColor: backgroundPage,
         selectedColor: primaryGreenLight,
-        labelStyle: const TextStyle(fontSize: fontSizeSm),
+        // Explicit color — without one, Chip/FilterChip/ChoiceChip/ActionChip
+        // fall back to Material 3's default label color, which reads as
+        // low-contrast/washed-out against this app's light backgrounds
+        // (confirmed: Receipts' status filter chips, User Accounts' role
+        // badges, and the cart Discount dialog's preset chips were all
+        // affected — every one of them is a Chip-family widget, so this one
+        // theme-level fix covers all of them instead of patching each call
+        // site). Dark theme's `chipTheme` already sets an explicit color for
+        // the same reason.
+        labelStyle: const TextStyle(color: textPrimary, fontSize: fontSizeSm),
         padding: const EdgeInsets.symmetric(
           horizontal: spacingSm,
           vertical: spacingXs,

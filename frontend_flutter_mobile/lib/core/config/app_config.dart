@@ -17,7 +17,7 @@ class AppConfig {
   static String get baseUrl {
     if (kIsWeb) return 'http://localhost:8081';
     if (defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://192.168.1.13:8081';
+      return 'http://192.168.1.101:8081';
     }
     return 'http://localhost:8081';
   }

@@ -10,8 +10,9 @@ import 'mobile_report_list_screen.dart';
 
 /// Ported from `frontend-flutter-pos/lib/features/reports/screens/
 /// sales_summary_report_screen.dart` via the shared
-/// `MobileReportListScreen` (see `report_list_config.dart`). Dropped: the
-/// per-cashier breakdown section and the net-sales/day line chart — both
+/// `MobileReportListScreen` (see `report_list_config.dart`). The
+/// net-sales/day line chart and the cashier filter are both wired in via
+/// the shared config. Still dropped: the per-cashier breakdown section —
 /// genuinely secondary to the daily table itself, which carries every
 /// column and the PDF export. `reports_hub_screen.dart`'s subtitle key
 /// (`reportsHubSalesSummarySubtitle`) is reused here rather than
@@ -29,7 +30,10 @@ class MobileSalesSummaryScreen extends ConsumerWidget {
       config: ReportListConfig<SalesSummaryRow>(
         title: l10n.reportsSalesSummary,
         columns: [
-          ReportColumn(header: l10n.salesSummaryPdfColDate, cell: (r) => r.date),
+          ReportColumn(
+            header: l10n.salesSummaryPdfColDate,
+            cell: (r) => r.date,
+          ),
           ReportColumn(
             header: l10n.salesSummaryPdfColOrders,
             cell: (r) => '${r.orders}',
@@ -67,6 +71,7 @@ class MobileSalesSummaryScreen extends ConsumerWidget {
               required to,
               fromHour,
               toHour,
+              employeeId,
               required page,
               required size,
             }) async {
@@ -75,6 +80,7 @@ class MobileSalesSummaryScreen extends ConsumerWidget {
                 to: to,
                 fromHour: fromHour,
                 toHour: toHour,
+                employeeId: employeeId,
                 page: page,
                 size: size,
               );
@@ -87,12 +93,24 @@ class MobileSalesSummaryScreen extends ConsumerWidget {
           final orders = rows.fold<int>(0, (s, r) => s + r.orders);
           return [
             MapEntry(l10n.salesSummaryPdfTransactionsLabel, '$orders'),
-            MapEntry(l10n.salesSummaryPdfGrossSalesLabel, formatAmount(gross, cur)),
-            MapEntry(l10n.salesSummaryPdfDiscountsLabel, formatAmount(discount, cur)),
+            MapEntry(
+              l10n.salesSummaryPdfGrossSalesLabel,
+              formatAmount(gross, cur),
+            ),
+            MapEntry(
+              l10n.salesSummaryPdfDiscountsLabel,
+              formatAmount(discount, cur),
+            ),
             MapEntry(l10n.salesSummaryPdfNetSalesLabel, formatAmount(net, cur)),
           ];
         },
         pdfExport: ReportPdfConfig(pdfTitle: l10n.salesSummaryPdfTitle),
+        showEmployeeFilter: true,
+        chartKind: ChartKind.line,
+        chartValueFormatter: (v) => formatAmount(v, cur),
+        chartBuilder: (rows) => [
+          for (final r in rows) (label: r.date, value: r.net),
+        ],
       ),
     );
   }

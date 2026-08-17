@@ -1,8 +1,10 @@
 /// Ported from `frontend-flutter-pos/lib/features/pos/models/
-/// table_models.dart` — PARTIAL PORT. `TablePage`/`RestaurantTable` only
-/// (needed to search/select a table for a sale). `TableStats`,
-/// `TableCreateRequest`, `TableUpdateRequest` (admin CRUD/dashboard, out
-/// of scope) are not ported.
+/// table_models.dart`. Originally a PARTIAL PORT (`TablePage`/
+/// `RestaurantTable` only, needed to search/select a table for a sale).
+/// `TableStats`/`TableCreateRequest`/`TableUpdateRequest` were added later
+/// to support the admin table-management CRUD screens
+/// (`mobile_table_management_screen.dart` / `mobile_create_table_screen.dart`)
+/// without touching the classes the table *picker* already depends on.
 class TablePage {
   final List<RestaurantTable> content;
   final int number;
@@ -141,4 +143,104 @@ class RestaurantTable {
         updatedAt: DateTime.now(),
         section: 'Main',
       );
+}
+
+/// Statistics for tables in the restaurant. Fetched via
+/// `TableService.getStats()` for the admin table-management screen's
+/// optional summary row.
+class TableStats {
+  final int totalTables;
+  final int activeTables;
+  final int availableTables;
+  final int occupiedTables;
+  final int reservedTables;
+
+  const TableStats({
+    required this.totalTables,
+    required this.activeTables,
+    required this.availableTables,
+    required this.occupiedTables,
+    required this.reservedTables,
+  });
+
+  factory TableStats.fromJson(Map<String, dynamic> json) => TableStats(
+        totalTables: json['totalTables'] as int,
+        activeTables: json['activeTables'] as int,
+        availableTables: json['availableTables'] as int,
+        occupiedTables: json['occupiedTables'] as int,
+        reservedTables: json['reservedTables'] as int,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'totalTables': totalTables,
+        'activeTables': activeTables,
+        'availableTables': availableTables,
+        'occupiedTables': occupiedTables,
+        'reservedTables': reservedTables,
+      };
+
+  static TableStats sample() => const TableStats(
+        totalTables: 10,
+        activeTables: 8,
+        availableTables: 5,
+        occupiedTables: 3,
+        reservedTables: 2,
+      );
+}
+
+/// Request payload to create a new restaurant table. No `status` field —
+/// new tables always start `AVAILABLE` + active server-side.
+class TableCreateRequest {
+  final String tableNumber;
+  final String? displayName;
+  final int capacity;
+  final String? section;
+  final String? notes;
+
+  TableCreateRequest({
+    required this.tableNumber,
+    this.displayName,
+    required this.capacity,
+    this.section,
+    this.notes,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'tableNumber': tableNumber,
+        if (displayName != null) 'displayName': displayName,
+        'capacity': capacity,
+        if (section != null) 'section': section,
+        if (notes != null) 'notes': notes,
+      };
+}
+
+/// Request payload to update an existing restaurant table.
+/// The table number itself cannot be changed after creation (backend
+/// constraint — `TableUpdateRequest` has no `tableNumber` field), which is
+/// why the edit form locks the Table Number field.
+class TableUpdateRequest {
+  final String? displayName;
+  final int capacity;
+  final String? section;
+  final String? notes;
+  final String? status;
+  final bool? isActive;
+
+  TableUpdateRequest({
+    this.displayName,
+    required this.capacity,
+    this.section,
+    this.notes,
+    this.status,
+    this.isActive,
+  });
+
+  Map<String, dynamic> toJson() => {
+        if (displayName != null) 'displayName': displayName,
+        'capacity': capacity,
+        if (section != null) 'section': section,
+        if (notes != null) 'notes': notes,
+        if (status != null) 'status': status,
+        if (isActive != null) 'isActive': isActive,
+      };
 }

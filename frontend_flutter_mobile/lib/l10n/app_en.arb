@@ -55,6 +55,7 @@
   "navItems": "Items",
   "navCategories": "Categories",
   "navTables": "Tables",
+  "navCatalogManagement": "Catalog Management",
   "navShifts": "Shifts",
   "navReceipts": "Receipts",
   "navMore": "More",
@@ -324,6 +325,7 @@
   "categoryManagementUpdatedSuffix": "updated",
   "categoryManagementCreatedSuffix": "created",
   "categoryManagementSaveFailedPrefix": "Failed to save",
+  "categoryManagementSaving": "Saving...",
   "unitManagementUpdateFailedPrefix": "Failed to update",
   "unitManagementSaveFailedPrefix": "Failed to save",
   "unitManagementEmptyTitle": "No units yet",
@@ -390,6 +392,43 @@
   "customerManagementNoPurchaseHistory": "No purchase history",
   "customerManagementPurchaseHistoryTitle": "Purchase History",
   "customerManagementSalePrefix": "Sale #",
+  "customerManagementCreditSalesTitle": "Credit Sales",
+  "customerManagementPaymentHistoryTitle": "Payment History",
+  "customerManagementNoCreditSales": "No credit sales",
+  "customerManagementNoPaymentHistory": "No payments recorded yet",
+  "customerManagementRecordPaymentButton": "Record Payment",
+  "paymentScreenCreditDueLabel": "Due",
+  "creditStatusOpen": "Open",
+  "creditStatusPartiallyPaid": "Partially Paid",
+  "creditStatusPaid": "Paid",
+  "creditStatusOverdue": "Overdue",
+  "creditStatusExpired": "Expired",
+  "creditStatusCancelled": "Cancelled",
+  "creditRepaymentDialogTitle": "Record Payment",
+  "creditRepaymentRemainingLabel": "Remaining Balance",
+  "creditRepaymentAmountLabel": "Payment Amount",
+  "creditRepaymentPayFullButton": "Pay Full Balance",
+  "creditRepaymentMethodLabel": "Payment Method",
+  "creditRepaymentNotesLabel": "Notes (optional)",
+  "creditRepaymentConfirmButton": "Pay {amount}",
+  "@creditRepaymentConfirmButton": {
+    "placeholders": {
+      "amount": {
+        "type": "Object"
+      }
+    }
+  },
+  "creditRepaymentAmountInvalid": "Enter a valid amount",
+  "creditRepaymentExceedsBalance": "Amount exceeds remaining balance",
+  "creditRepaymentSuccess": "Payment recorded",
+  "creditRepaymentFailed": "Payment failed: {error}",
+  "@creditRepaymentFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
   "debugSettingsUpdatedMessage": "Settings updated",
   "debugSettingsUnavailableMessage": "Unavailable in release mode",
   "debugSettingsTitle": "Debug Settings",
@@ -1009,6 +1048,23 @@
   },
   "paymentScreenSaleFailed": "Sale failed: {error}",
   "@paymentScreenSaleFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "paymentScreenPayLater": "Pay Later / Credit",
+  "paymentScreenCreditRequiresCustomer": "Select a customer first to sell on credit",
+  "paymentScreenCreditDialogTitle": "Credit Sale",
+  "paymentScreenCreditDueDateLabel": "Due Date",
+  "paymentScreenCreditExpiresLabel": "Expiration Date (optional)",
+  "paymentScreenCreditNotesLabel": "Notes (optional)",
+  "paymentScreenCreditConfirm": "Create Credit Sale",
+  "paymentScreenCreditSaleCreated": "Credit Sale Created",
+  "paymentScreenCreditStatusLabel": "Status",
+  "paymentScreenCreditSaleFailed": "Credit sale failed: {error}",
+  "@paymentScreenCreditSaleFailed": {
     "placeholders": {
       "error": {
         "type": "Object"
@@ -2265,6 +2321,8 @@
   },
   "waitingTicketsReady": "Ready",
   "waitingTicketsCollected": "Collected",
+  "waitingTicketsPrintYourNumber": "Your Number",
+  "waitingTicketsPrintInstruction": "Please come to the counter when your number is called",
   "cashierPerformanceTitle": "Sales by Cashier",
   "reportsNoDataForPeriod": "No data for this period",
   "reportsTxCount": "{count} tx",

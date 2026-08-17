@@ -87,10 +87,11 @@ void main() {
 
   testWidgets('shows item count and total when the cart has items',
       (tester) async {
-    // taxRate: 0 keeps finalTotal == subtotal, so the assertion below
-    // isolates the FAB's own formatting from CartState's tax calculation.
+    // _product() defaults to taxRate 0, keeping finalTotal == subtotal, so
+    // the assertion below isolates the FAB's own formatting from
+    // CartState's tax calculation.
     final state = CartState.initial().copyWith(
-        items: [_item(1, qty: 2), _item(2)], taxRate: 0);
+        items: [_item(1, qty: 2), _item(2)]);
     await tester.pumpWidget(_wrap(state));
     await tester.pumpAndSettle();
 

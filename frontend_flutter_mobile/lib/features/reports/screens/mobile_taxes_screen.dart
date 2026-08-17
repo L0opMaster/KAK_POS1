@@ -12,7 +12,8 @@ import 'mobile_report_list_screen.dart';
 /// taxes_screen.dart` via `MobileReportListScreen`. `pdfExport: null` —
 /// matching source exactly, this is one of the 3 report screens that
 /// never had a print/PDF action (see `report_list_config.dart`'s doc
-/// comment). Line chart (taxCollected/day) dropped.
+/// comment). Line chart (taxCollected/day) and the cashier filter are
+/// both wired in via the shared config.
 class MobileTaxesScreen extends ConsumerWidget {
   const MobileTaxesScreen({super.key});
 
@@ -49,6 +50,7 @@ class MobileTaxesScreen extends ConsumerWidget {
               required to,
               fromHour,
               toHour,
+              employeeId,
               required page,
               required size,
             }) async {
@@ -57,11 +59,18 @@ class MobileTaxesScreen extends ConsumerWidget {
                 to: to,
                 fromHour: fromHour,
                 toHour: toHour,
+                employeeId: employeeId,
                 page: page,
                 size: size,
               );
               return PagedResult(content: resp.rows, meta: resp.meta);
             },
+        showEmployeeFilter: true,
+        chartKind: ChartKind.line,
+        chartValueFormatter: (v) => formatAmount(v, cur),
+        chartBuilder: (rows) => [
+          for (final r in rows) (label: r.date, value: r.taxCollected),
+        ],
       ),
     );
   }

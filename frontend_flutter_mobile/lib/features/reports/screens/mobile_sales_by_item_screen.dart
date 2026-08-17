@@ -16,7 +16,9 @@ import 'mobile_report_list_screen.dart';
 /// not client sort) is kept — it's the one report-specific control this
 /// screen adds on top of the shared config, via a Riverpod-free local
 /// `ValueNotifier` swapped into `fetchPage`'s closure. Top-10 bar chart
-/// dropped (see `report_list_config.dart`'s doc comment).
+/// and the cashier filter are both wired in via the shared config; the
+/// chart's value (and its formatter) switches with the active sort, same
+/// as source.
 class MobileSalesByItemScreen extends ConsumerStatefulWidget {
   const MobileSalesByItemScreen({super.key});
 
@@ -35,6 +37,9 @@ class _MobileSalesByItemScreenState
     final language = ref.watch(appLanguageProvider);
     final cur = watchCurrency(ref);
     final service = ref.read(reportServiceProvider);
+
+    String itemLabel(SalesByItemRow r) =>
+        resolveBilingual(en: r.nameEn, km: r.nameKm, language: language);
 
     return Column(
       children: [
@@ -62,15 +67,8 @@ class _MobileSalesByItemScreenState
             config: ReportListConfig<SalesByItemRow>(
               title: l10n.reportsSalesByItem,
               columns: [
-                ReportColumn(
-                  header: l10n.formSku,
-                  cell: (r) => r.sku ?? '',
-                ),
-                ReportColumn(
-                  header: l10n.reportsSalesByItem,
-                  cell: (r) =>
-                      resolveBilingual(en: r.nameEn, km: r.nameKm, language: language),
-                ),
+                ReportColumn(header: l10n.formSku, cell: (r) => r.sku ?? ''),
+                ReportColumn(header: l10n.reportsSalesByItem, cell: itemLabel),
                 ReportColumn(
                   header: l10n.cartQty,
                   cell: (r) => r.quantitySold.toStringAsFixed(0),
@@ -98,6 +96,7 @@ class _MobileSalesByItemScreenState
                     required to,
                     fromHour,
                     toHour,
+                    employeeId,
                     required page,
                     required size,
                   }) async {
@@ -106,6 +105,7 @@ class _MobileSalesByItemScreenState
                       to: to,
                       fromHour: fromHour,
                       toHour: toHour,
+                      employeeId: employeeId,
                       page: page,
                       size: size,
                       sort: _sort,
@@ -116,6 +116,18 @@ class _MobileSalesByItemScreenState
                 pdfTitle: l10n.salesByItemTopItems,
                 landscape: true,
               ),
+              showEmployeeFilter: true,
+              chartKind: ChartKind.bar,
+              chartValueFormatter: _sort == 'revenue'
+                  ? (v) => formatAmount(v, cur)
+                  : (v) => v.toStringAsFixed(2),
+              chartBuilder: (rows) => [
+                for (final r in rows.take(10))
+                  (
+                    label: itemLabel(r),
+                    value: _sort == 'revenue' ? r.netSales : r.quantitySold,
+                  ),
+              ],
             ),
           ),
         ),

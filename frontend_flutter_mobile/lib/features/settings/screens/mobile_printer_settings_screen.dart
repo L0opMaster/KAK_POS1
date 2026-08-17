@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
@@ -12,6 +13,7 @@ import '../../pos/services/printing/printer_permission.dart';
 import '../../pos/services/printing/printer_profile.dart';
 import '../../pos/services/printing/receipt_view_model.dart';
 import '../../pos/services/printing/thermal_printer_service.dart';
+import 'mobile_print_test_screen.dart';
 
 /// Ported from `_thermalPrinterSection` in `frontend-flutter-pos/lib/
 /// features/pos/screens/settings_modules_screen.dart` — COPY/ADAPT NEARLY
@@ -311,6 +313,18 @@ class _MobilePrinterSettingsScreenState
               ),
             ],
           ),
+          if (kDebugMode) ...[
+            const SizedBox(height: PosTheme.spacingMd),
+            OutlinedButton.icon(
+              icon: const Icon(Icons.bug_report_outlined),
+              label: const Text('Print test suite (debug)'),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const MobilePrintTestScreen(),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

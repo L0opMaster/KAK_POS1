@@ -71,9 +71,13 @@ class _TablePickerScreenState extends ConsumerState<TablePickerScreen> {
   @override
   void initState() {
     super.initState();
-    // Refetch every time this screen opens — tableProvider is a shared,
-    // app-wide singleton, so relying on "only fetch while loading" would
-    // replay a stale AVAILABLE/OCCUPIED snapshot on every later open.
+    // First-load fetch only — this screen is a permanent `IndexedStack` tab
+    // body (see `mobile_shell_screen.dart`), so `initState()` fires exactly
+    // once for the app's lifetime, not every time the user switches back to
+    // the Tables tab. Refetching on EVERY subsequent visit (so a table
+    // another cashier just occupied doesn't show a stale AVAILABLE snapshot)
+    // is handled centrally by the shell's `ref.listen(shellTabIndexProvider,
+    // ...)`, not here.
     Future.microtask(() => ref.read(tableProvider.notifier).search());
     _searchCtl.addListener(() => setState(() {}));
   }

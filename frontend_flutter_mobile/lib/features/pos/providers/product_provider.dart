@@ -145,4 +145,26 @@ class ProductNotifier extends StateNotifier<ProductState> {
   Future<void> refresh() async {
     await loadProducts(query: _currentQuery, categoryId: _currentCategoryId);
   }
+
+  /// Admin CRUD — added for the mobile Item Management screens (no desktop
+  /// equivalent method names to mirror since desktop's `addProduct`/
+  /// `updateProduct`/`deleteProduct` live on the same-named notifier
+  /// methods; kept here rather than dropped, unlike the rest of this file's
+  /// original "out of scope" note).
+  Future<Product> createProduct(Product product) async {
+    final created = await _service.createProduct(product);
+    await refresh();
+    return created;
+  }
+
+  Future<Product> updateProduct(Product product) async {
+    final updated = await _service.updateProduct(product);
+    await refresh();
+    return updated;
+  }
+
+  Future<void> deleteProduct(int id) async {
+    await _service.deleteProduct(id);
+    await refresh();
+  }
 }

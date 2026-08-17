@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/config/pos_theme.dart';
 import '../models/product_models.dart';
+import '../services/settings_service.dart';
 import 'product_card.dart';
 
 /// Ported from `frontend-flutter-pos/lib/features/pos/widgets/
@@ -10,12 +11,25 @@ import 'product_card.dart';
 /// differences from source, both explained here and in DAY_06.md section
 /// 10:
 ///
-/// 1. **Column count**: source hardcodes `_fixedColumns = 5` for a desktop
-///    viewport. A phone in portrait can't fit 5 usable product cards
-///    per row, so this uses `SliverGridDelegateWithMaxCrossAxisExtent`
-///    (≈160px max card width) instead of a fixed count — 2 columns on a
-///    typical phone width, more on a tablet/landscape, without a
-///    per-device special case.
+/// 1. **Column count**: source reads `productGridColumns` from
+///    `posSettingsProvider` and uses it AS a literal
+///    `SliverGridDelegateWithFixedCrossAxisCount.crossAxisCount` — fine for
+///    a desktop viewport, but a phone in portrait can't fit anywhere near
+///    the typical 4-6 columns an admin configures with a wide screen in
+///    mind. CONNECTED (this session): still reads the same setting via the
+///    same `posSettingsProvider`, but treats `productGridColumns` as a
+///    DENSITY knob rather than a literal count — it scales
+///    `SliverGridDelegateWithMaxCrossAxisExtent`'s target card width, so
+///    raising the setting still shrinks cards / fits more per row and
+///    lowering it still grows cards, on every device, without reintroducing
+///    the "5 tiny unusable cards on a phone" problem a literal column count
+///    would. `saleScreenLayout` is honored too: `LIST` switches to a real
+///    single-column list (wide, short rows); `COMPACT` keeps the responsive
+///    grid but with shorter cards; `GRID` (default) is unchanged from
+///    before this connection — at the settings screen's own default of 5
+///    columns, the resulting extent is exactly today's previous hardcoded
+///    160px, so nothing visually changes until an admin actually adjusts
+///    the setting.
 /// 2. **Tap wiring**: source's `ProductGrid` calls
 ///    `ref.read(cartProvider.notifier).addItemFromProduct(p)` DIRECTLY
 ///    inside its own `onTap`/`onQuickAdd` — `cartProvider` doesn't exist
@@ -83,10 +97,67 @@ class _ProductGridState extends ConsumerState<ProductGrid> {
     }
   }
 
+  /// Matches `mobile_pos_settings_screen.dart`'s own default so the grid
+  /// looks identical to before this setting was connected until an admin
+  /// actually changes it.
+  static const int _defaultColumns = 5;
+
+  SliverGridDelegate _gridDelegateFor(String layout, int configuredColumns) {
+    if (layout == 'LIST') {
+      // NOT source's 3.2 (a very wide, short row) — source's `ProductCard`
+      // is laid out as a horizontal `Row` (thumbnail beside details), so an
+      // extreme wide/short cell works there. Mobile's `ProductCard` is a
+      // vertical `Column` (image on top, then a fixed-height name/price
+      // block below, ~90-110px on its own) — forcing that same layout into
+      // a ~3.2-ratio cell would leave less height than the card's own
+      // non-flexible content needs and overflow. 1.5 keeps LIST a single
+      // full-width column (still visually distinct from GRID/COMPACT — one
+      // large card per row instead of several small ones) while staying
+      // tall enough for the existing vertical card to render safely.
+      return const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 1,
+        mainAxisSpacing: 8,
+        childAspectRatio: 1.5,
+      );
+    }
+    // `productGridColumns` as a density knob, not a literal column count —
+    // see this file's header doc comment for why. 800/5 == 160, today's
+    // previous hardcoded default, so the setting's own default (5) is a
+    // visual no-op. COMPACT shrinks the target card width further (denser
+    // grid, more cards per row) rather than changing the aspect ratio —
+    // 0.78 is the one ratio already proven not to overflow `ProductCard`'s
+    // fixed-height text block, so it's reused as-is instead of introducing
+    // a second, untested ratio for a "more compact" card shape.
+    final columns = configuredColumns.clamp(1, 12);
+    final density = layout == 'COMPACT' ? 1.25 : 1.0;
+    final maxExtent = (800 / (columns * density)).clamp(90.0, 220.0);
+    return SliverGridDelegateWithMaxCrossAxisExtent(
+      maxCrossAxisExtent: maxExtent,
+      crossAxisSpacing: 10,
+      mainAxisSpacing: 10,
+      childAspectRatio: 0.78,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final itemCount = widget.products.length;
     final totalCount = widget.hasMore ? itemCount + 1 : itemCount;
+
+    // Defensive, never-throwing parsing: a bad/missing/differently-typed
+    // value from the backend must fall back to the previous hardcoded
+    // layout, never break the grid's render. `as String?`/`as num?` would
+    // THROW (not just return null) if the field came back as some other
+    // type, taking the whole product grid down with it.
+    final posSettings = ref.watch(posSettingsProvider).valueOrNull;
+    final rawLayout = posSettings?['saleScreenLayout'];
+    final layout = rawLayout is String ? rawLayout : 'GRID';
+    final rawColumns = posSettings?['productGridColumns'];
+    final configuredColumns = switch (rawColumns) {
+      num n => n.toInt(),
+      String s => int.tryParse(s) ?? _defaultColumns,
+      _ => _defaultColumns,
+    };
 
     return Container(
       color: PosTheme.backgroundPageOf(context),
@@ -95,12 +166,7 @@ class _ProductGridState extends ConsumerState<ProductGrid> {
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
         cacheExtent: 500,
         addAutomaticKeepAlives: true,
-        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-          maxCrossAxisExtent: 160,
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
-          childAspectRatio: 0.78,
-        ),
+        gridDelegate: _gridDelegateFor(layout, configuredColumns),
         itemCount: totalCount,
         itemBuilder: (context, index) {
           if (index >= itemCount) {

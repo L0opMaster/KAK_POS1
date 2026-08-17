@@ -10,7 +10,8 @@ import 'mobile_report_list_screen.dart';
 
 /// Ported from `frontend-flutter-pos/lib/features/reports/screens/
 /// cashier_performance_screen.dart` via `MobileReportListScreen`. Bar
-/// chart dropped (see `report_list_config.dart`'s doc comment).
+/// chart (sales total per cashier) and the cashier filter are both wired
+/// in via the shared config.
 class MobileCashierPerformanceScreen extends ConsumerWidget {
   const MobileCashierPerformanceScreen({super.key});
 
@@ -42,6 +43,7 @@ class MobileCashierPerformanceScreen extends ConsumerWidget {
               required to,
               fromHour,
               toHour,
+              employeeId,
               required page,
               required size,
             }) => service.cashierPerformance(
@@ -49,6 +51,7 @@ class MobileCashierPerformanceScreen extends ConsumerWidget {
               to: to,
               fromHour: fromHour,
               toHour: toHour,
+              employeeId: employeeId,
               page: page,
               size: size,
             ),
@@ -63,6 +66,12 @@ class MobileCashierPerformanceScreen extends ConsumerWidget {
           ),
         ],
         pdfExport: ReportPdfConfig(pdfTitle: l10n.cashierPerformanceTitle),
+        showEmployeeFilter: true,
+        chartKind: ChartKind.bar,
+        chartValueFormatter: (v) => formatAmount(v, cur),
+        chartBuilder: (rows) => [
+          for (final r in rows) (label: r.cashierName, value: r.salesTotal),
+        ],
       ),
     );
   }

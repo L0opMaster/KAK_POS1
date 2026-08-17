@@ -4,11 +4,11 @@ import 'product_models.dart';
 import 'table_models.dart';
 
 /// Ported from `frontend-flutter-pos/lib/features/pos/models/
-/// cart_models.dart` — PARTIAL PORT. `SelectedModifier`, `DiscountType`,
-/// `OrderMode`(+label), `CartItem`, `HeldOrder` are COPY/ADAPT NEARLY
-/// EXACTLY (`HeldOrder` added Day 9). `WaitingTicketStatus` (and the
-/// `WaitingTicket` model, and the queue-board feature they back) are NOT
-/// ported — see waiting_number_service.dart's file header for the exact
+/// cart_models.dart` — `SelectedModifier`, `DiscountType`, `OrderMode`
+/// (+label), `CartItem`, `HeldOrder` are COPY/ADAPT NEARLY EXACTLY
+/// (`HeldOrder` added Day 9). `WaitingTicketStatus`/`WaitingTicket` (the
+/// queue-board feature) are COPY/ADAPT NEARLY EXACTLY too — see
+/// waiting_number_service.dart's file header for the queue-board method
 /// boundary.
 ///
 /// A single modifier option selected for a [CartItem] at checkout.
@@ -203,6 +203,134 @@ class CartItem {
         if (discountAmount != null && discountAmount! > 0)
           'lineDiscount': discountAmount,
       };
+}
+
+/// Status of a [WaitingTicket] on the queue board.
+enum WaitingTicketStatus {
+  held,
+  paid,
+  ready,
+}
+
+extension WaitingTicketStatusExtension on WaitingTicketStatus {
+  String get label {
+    switch (this) {
+      case WaitingTicketStatus.held:
+        return 'Pay Later';
+      case WaitingTicketStatus.paid:
+        return 'Paid';
+      case WaitingTicketStatus.ready:
+        return 'Ready';
+    }
+  }
+
+  static WaitingTicketStatus fromString(String? value) {
+    switch (value) {
+      case 'paid':
+        return WaitingTicketStatus.paid;
+      case 'ready':
+        return WaitingTicketStatus.ready;
+      case 'held':
+      default:
+        return WaitingTicketStatus.held;
+    }
+  }
+}
+
+/// A local queue ticket because the backend currently has no waiting
+/// numbers. Backs the "queue board" feature (see
+/// `mobile_waiting_tickets_screen.dart`) — distinct from [HeldOrder], which
+/// backs the hold/resume-a-cart flow.
+class WaitingTicket {
+  const WaitingTicket({
+    required this.id,
+    required this.waitingNumber,
+    required this.items,
+    required this.orderMode,
+    required this.status,
+    required this.total,
+    required this.createdAt,
+    this.orderId,
+  });
+
+  /// Local unique ticket ID.
+  final String id;
+
+  /// Backend held/sale order ID when available.
+  final int? orderId;
+
+  /// Queue number from 1 to 100.
+  final int waitingNumber;
+
+  final List<CartItem> items;
+  final OrderMode orderMode;
+  final WaitingTicketStatus status;
+  final double total;
+  final String createdAt;
+
+  WaitingTicket copyWith({
+    String? id,
+    int? orderId,
+    int? waitingNumber,
+    List<CartItem>? items,
+    OrderMode? orderMode,
+    WaitingTicketStatus? status,
+    double? total,
+    String? createdAt,
+  }) {
+    return WaitingTicket(
+      id: id ?? this.id,
+      orderId: orderId ?? this.orderId,
+      waitingNumber: waitingNumber ?? this.waitingNumber,
+      items: items ?? this.items,
+      orderMode: orderMode ?? this.orderMode,
+      status: status ?? this.status,
+      total: total ?? this.total,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  factory WaitingTicket.fromJson(Map<String, dynamic> json) {
+    final dynamic rawOrderId = json['orderId'];
+
+    return WaitingTicket(
+      id: json['id']?.toString() ?? '',
+      orderId: rawOrderId == null
+          ? null
+          : rawOrderId is int
+              ? rawOrderId
+              : int.tryParse(rawOrderId.toString()),
+      waitingNumber: (json['waitingNumber'] as num?)?.toInt() ??
+          int.tryParse(json['waitingNumber']?.toString() ?? '') ??
+          0,
+      items: (json['items'] as List<dynamic>? ?? <dynamic>[])
+          .map(
+            (dynamic item) => CartItem.fromJson(item as Map<String, dynamic>),
+          )
+          .toList(),
+      orderMode: OrderMode.values[
+          (json['orderMode'] as num?)?.toInt() ?? OrderMode.dineIn.index],
+      status: WaitingTicketStatusExtension.fromString(
+        json['status']?.toString(),
+      ),
+      total: (json['total'] as num?)?.toDouble() ?? 0,
+      createdAt:
+          json['createdAt']?.toString() ?? DateTime.now().toIso8601String(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'id': id,
+      if (orderId != null) 'orderId': orderId,
+      'waitingNumber': waitingNumber,
+      'items': items.map((CartItem item) => item.toJson()).toList(),
+      'orderMode': orderMode.index,
+      'status': status.name,
+      'total': total,
+      'createdAt': createdAt,
+    };
+  }
 }
 
 /// Model for a held order in the cart. Added Day 9.

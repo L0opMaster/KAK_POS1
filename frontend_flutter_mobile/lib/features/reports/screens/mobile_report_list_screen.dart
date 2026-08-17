@@ -6,8 +6,10 @@ import '../../../core/config/pos_theme.dart';
 import '../../../core/providers/company_provider.dart';
 import '../../../core/services/printing/a4_report_pdf.dart';
 import '../../../core/utils/l10n_extensions.dart';
+import '../../pos/providers/user_account_provider.dart';
 import '../models/report_models.dart';
 import '../services/report_service.dart';
+import '../widgets/report_charts.dart';
 import '../widgets/report_list_config.dart';
 
 const _pageSize = 20;
@@ -38,6 +40,7 @@ class _MobileReportListScreenState<T>
   bool _customHours = false;
   int _fromHour = 0;
   int _toHour = 23;
+  int? _employeeId;
   int _page = 0;
 
   PagedResult<T>? _result;
@@ -53,6 +56,9 @@ class _MobileReportListScreenState<T>
     final today = DateTime.now();
     _to = DateTime(today.year, today.month, today.day);
     _from = _to.subtract(Duration(days: widget.config.initialFromDaysAgo));
+    if (widget.config.showEmployeeFilter) {
+      Future.microtask(() => ref.read(userAccountProvider.notifier).load());
+    }
     _load();
   }
 
@@ -67,6 +73,7 @@ class _MobileReportListScreenState<T>
         to: _iso(_to),
         fromHour: _customHours ? _fromHour : null,
         toHour: _customHours ? _toHour : null,
+        employeeId: _employeeId,
         page: _page,
         size: _pageSize,
       );
@@ -80,8 +87,11 @@ class _MobileReportListScreenState<T>
 
   void _applyPreset(int fromDaysAgo, int toDaysAgo) {
     final today = DateTime.now();
-    final to = DateTime(today.year, today.month, today.day)
-        .subtract(Duration(days: toDaysAgo));
+    final to = DateTime(
+      today.year,
+      today.month,
+      today.day,
+    ).subtract(Duration(days: toDaysAgo));
     setState(() {
       _to = to;
       _from = to.subtract(Duration(days: fromDaysAgo - toDaysAgo));
@@ -189,6 +199,50 @@ class _MobileReportListScreenState<T>
     }
   }
 
+  Future<void> _pickEmployee() async {
+    final l10n = context.l10n;
+    final users = ref.read(userAccountProvider).users;
+    int? selected = _employeeId;
+    final applied = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => AlertDialog(
+          title: Text(l10n.receiptCashier),
+          content: DropdownButtonFormField<int?>(
+            initialValue: selected,
+            decoration: InputDecoration(labelText: l10n.receiptCashier),
+            items: [
+              DropdownMenuItem<int?>(
+                value: null,
+                child: Text(l10n.reportFilterAllCashiers),
+              ),
+              for (final u in users)
+                DropdownMenuItem<int?>(value: u.id, child: Text(u.fullName)),
+            ],
+            onChanged: (v) => setState(() => selected = v),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: Text(l10n.commonCancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: Text(l10n.commonSave),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (applied == true) {
+      setState(() {
+        _employeeId = selected;
+        _page = 0;
+      });
+      _load();
+    }
+  }
+
   Future<void> _exportPdf() async {
     final l10n = context.l10n;
     final pdfConfig = widget.config.pdfExport;
@@ -202,6 +256,7 @@ class _MobileReportListScreenState<T>
             to: _iso(_to),
             fromHour: _customHours ? _fromHour : null,
             toHour: _customHours ? _toHour : null,
+            employeeId: _employeeId,
             page: page,
             size: reportPrintPageSize,
           );
@@ -262,6 +317,14 @@ class _MobileReportListScreenState<T>
             icon: const Icon(Icons.date_range_outlined),
             onPressed: _pickCustomRange,
           ),
+          if (widget.config.showEmployeeFilter)
+            IconButton(
+              tooltip: l10n.receiptCashier,
+              icon: Icon(
+                _employeeId != null ? Icons.person : Icons.person_outline,
+              ),
+              onPressed: _pickEmployee,
+            ),
           if (widget.config.pdfExport != null)
             IconButton(
               tooltip: l10n.commonPrint,
@@ -369,28 +432,66 @@ class _MobileReportListScreenState<T>
     return RefreshIndicator(
       onRefresh: _load,
       child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: SingleChildScrollView(
-          child: DataTable(
-            columns: [
-              for (final c in widget.config.columns)
-                DataColumn(
-                  label: Text(c.header),
-                  numeric: c.numeric,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (widget.config.chartBuilder != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  PosTheme.spacingMd,
+                  PosTheme.spacingSm,
+                  PosTheme.spacingMd,
+                  PosTheme.spacingSm,
                 ),
-            ],
-            rows: [
-              for (final row in rows)
-                DataRow(
-                  cells: [
-                    for (final c in widget.config.columns)
-                      DataCell(Text(c.cell(row))),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.config.title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: PosTheme.textPrimary,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(height: PosTheme.spacingSm),
+                    _buildChart(widget.config.chartBuilder!(rows)),
                   ],
                 ),
-            ],
-          ),
+              ),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: DataTable(
+                columns: [
+                  for (final c in widget.config.columns)
+                    DataColumn(label: Text(c.header), numeric: c.numeric),
+                ],
+                rows: [
+                  for (final row in rows)
+                    DataRow(
+                      cells: [
+                        for (final c in widget.config.columns)
+                          DataCell(Text(c.cell(row))),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  Widget _buildChart(List<ChartRow> data) {
+    final formatter = widget.config.chartValueFormatter;
+    switch (widget.config.chartKind) {
+      case ChartKind.bar:
+        return ReportBarChart(data: data, valueFormatter: formatter);
+      case ChartKind.line:
+        return ReportLineChart(data: data, valueFormatter: formatter);
+      case ChartKind.pie:
+        return ReportPieChart(data: data);
+    }
   }
 }

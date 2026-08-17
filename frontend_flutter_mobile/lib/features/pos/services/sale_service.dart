@@ -46,11 +46,20 @@ class SaleResponse {
   final String status;
   final double grandTotal;
   final double paidAmount;
+  final int? customerId;
   final String? customerName;
   final String? cashierName;
   final String? createdAt;
   final String? currency;
   final List<PaymentSummary> payments;
+
+  /// Credit/pay-later fields — null when this sale was never a credit sale.
+  /// `creditStatus` (OPEN/PARTIALLY_PAID/PAID/OVERDUE/EXPIRED/CANCELLED) is
+  /// computed server-side; see the backend's `SaleService.computeCreditStatus`
+  /// — the client never derives this itself for an authoritative view.
+  final String? creditDueAt;
+  final String? creditExpiresAt;
+  final String? creditStatus;
 
   SaleResponse({
     required this.id,
@@ -58,12 +67,25 @@ class SaleResponse {
     required this.status,
     required this.grandTotal,
     required this.paidAmount,
+    this.customerId,
     this.customerName,
     this.cashierName,
     this.createdAt,
     this.currency,
     this.payments = const [],
+    this.creditDueAt,
+    this.creditExpiresAt,
+    this.creditStatus,
   });
+
+  /// What's still owed on this sale. Rounded to cents to avoid floating-point
+  /// residue (e.g. 2.9999999999999996) causing a full-balance repayment to
+  /// be rejected as "exceeds balance" — matches source's defensive rounding.
+  double get remainingBalance {
+    final raw = grandTotal - paidAmount;
+    final rounded = (raw * 100).round() / 100;
+    return rounded < 0 ? 0 : rounded;
+  }
 
   factory SaleResponse.fromJson(Map<String, dynamic> json) {
     return SaleResponse(
@@ -72,6 +94,7 @@ class SaleResponse {
       status: json['status'] as String? ?? '',
       grandTotal: (json['grandTotal'] as num?)?.toDouble() ?? 0,
       paidAmount: (json['paidAmount'] as num?)?.toDouble() ?? 0,
+      customerId: (json['customerId'] as num?)?.toInt(),
       customerName: json['customerName'] as String?,
       cashierName: json['cashierName'] as String?,
       createdAt: json['createdAt'] as String?,
@@ -81,6 +104,9 @@ class SaleResponse {
               ?.map((e) => PaymentSummary.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
+      creditDueAt: json['creditDueAt'] as String?,
+      creditExpiresAt: json['creditExpiresAt'] as String?,
+      creditStatus: json['creditStatus'] as String?,
     );
   }
 }
@@ -190,6 +216,59 @@ class SaleService {
                   'managerEmail': managerEmail,
                 if (managerPassword != null && managerPassword.isNotEmpty)
                   'managerPassword': managerPassword,
+              },
+            )
+            as Map<String, dynamic>;
+    return SaleResponse.fromJson(data);
+  }
+
+  /// Converts an existing (unpaid/partially-paid) sale into a credit/
+  /// "pay later" sale — the checkout-time counterpart to
+  /// [repayCreditSale] below (which pays one down later). `dueDate`/
+  /// `expiresAt` are sent as plain `YYYY-MM-DD` local calendar dates (not
+  /// UTC instants) via [_isoDate] — if omitted, the backend falls back to
+  /// its own term-days-from-payment-terms default.
+  Future<SaleResponse> creditSale(
+    int saleId, {
+    DateTime? dueDate,
+    DateTime? expiresAt,
+    String? notes,
+  }) async {
+    final data =
+        await _api.post(
+              '/api/pos/sales/$saleId/credit',
+              data: {
+                if (dueDate != null) 'dueDate': _isoDate(dueDate),
+                if (expiresAt != null) 'expiresAt': _isoDate(expiresAt),
+                if (notes != null && notes.isNotEmpty) 'notes': notes,
+              },
+            )
+            as Map<String, dynamic>;
+    return SaleResponse.fromJson(data);
+  }
+
+  String _isoDate(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  /// Records a payment against an existing credit/pay-later sale. The
+  /// backend rejects `amount` greater than the remaining balance and locks
+  /// the row for the request's duration, so concurrent repayments can never
+  /// together overpay — the client does not re-derive or double-check that
+  /// invariant itself, matching source's "don't duplicate payment
+  /// calculations" intent.
+  Future<SaleResponse> repayCreditSale(
+    int saleId, {
+    required double amount,
+    required String method,
+    String? notes,
+  }) async {
+    final data =
+        await _api.post(
+              '/api/pos/sales/$saleId/repayments',
+              data: {
+                'amount': amount,
+                'method': method,
+                if (notes != null && notes.isNotEmpty) 'notes': notes,
               },
             )
             as Map<String, dynamic>;

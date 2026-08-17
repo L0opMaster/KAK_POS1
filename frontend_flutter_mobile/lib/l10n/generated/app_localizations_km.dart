@@ -174,6 +174,9 @@ class AppLocalizationsKm extends AppLocalizations {
   String get navTables => 'តុ';
 
   @override
+  String get navCatalogManagement => 'គ្រប់គ្រងកាតាឡុក';
+
+  @override
   String get navShifts => 'វេន';
 
   @override
@@ -981,6 +984,9 @@ class AppLocalizationsKm extends AppLocalizations {
   String get categoryManagementSaveFailedPrefix => 'រក្សាទុកមិនជោគជ័យ';
 
   @override
+  String get categoryManagementSaving => 'កំពុងរក្សាទុក...';
+
+  @override
   String get unitManagementUpdateFailedPrefix => 'ធ្វើបច្ចុប្បន្នភាពមិនជោគជ័យ';
 
   @override
@@ -1165,6 +1171,81 @@ class AppLocalizationsKm extends AppLocalizations {
 
   @override
   String get customerManagementSalePrefix => 'ការលក់ #';
+
+  @override
+  String get customerManagementCreditSalesTitle => 'ការលក់ជាឥណទាន';
+
+  @override
+  String get customerManagementPaymentHistoryTitle => 'ប្រវត្តិការបង់ប្រាក់';
+
+  @override
+  String get customerManagementNoCreditSales => 'មិនមានការលក់ជាឥណទានទេ';
+
+  @override
+  String get customerManagementNoPaymentHistory =>
+      'មិនទាន់មានការបង់ប្រាក់នៅឡើយទេ';
+
+  @override
+  String get customerManagementRecordPaymentButton => 'កត់ត្រាការបង់ប្រាក់';
+
+  @override
+  String get paymentScreenCreditDueLabel => 'ត្រូវបង់';
+
+  @override
+  String get creditStatusOpen => 'នៅសល់';
+
+  @override
+  String get creditStatusPartiallyPaid => 'បង់ខ្លះហើយ';
+
+  @override
+  String get creditStatusPaid => 'បានបង់';
+
+  @override
+  String get creditStatusOverdue => 'ហួសកំណត់';
+
+  @override
+  String get creditStatusExpired => 'ផុតកំណត់';
+
+  @override
+  String get creditStatusCancelled => 'បានលុបចោល';
+
+  @override
+  String get creditRepaymentDialogTitle => 'កត់ត្រាការបង់ប្រាក់';
+
+  @override
+  String get creditRepaymentRemainingLabel => 'សមតុល្យនៅសល់';
+
+  @override
+  String get creditRepaymentAmountLabel => 'ចំនួនទឹកប្រាក់បង់';
+
+  @override
+  String get creditRepaymentPayFullButton => 'បង់សមតុល្យទាំងអស់';
+
+  @override
+  String get creditRepaymentMethodLabel => 'វិធីបង់ប្រាក់';
+
+  @override
+  String get creditRepaymentNotesLabel => 'កំណត់ចំណាំ (ស្រេចចិត្ត)';
+
+  @override
+  String creditRepaymentConfirmButton(Object amount) {
+    return 'បង់ $amount';
+  }
+
+  @override
+  String get creditRepaymentAmountInvalid =>
+      'សូមបញ្ចូលចំនួនទឹកប្រាក់ត្រឹមត្រូវ';
+
+  @override
+  String get creditRepaymentExceedsBalance => 'ចំនួនទឹកប្រាក់លើសសមតុល្យនៅសល់';
+
+  @override
+  String get creditRepaymentSuccess => 'បានកត់ត្រាការបង់ប្រាក់';
+
+  @override
+  String creditRepaymentFailed(Object error) {
+    return 'ការបង់ប្រាក់បរាជ័យ៖ $error';
+  }
 
   @override
   String get debugSettingsUpdatedMessage =>
@@ -2021,6 +2102,40 @@ class AppLocalizationsKm extends AppLocalizations {
   @override
   String paymentScreenSaleFailed(Object error) {
     return 'ការលក់បរាជ័យ៖ $error';
+  }
+
+  @override
+  String get paymentScreenPayLater => 'បង់ក្រោយ / ឥណទាន';
+
+  @override
+  String get paymentScreenCreditRequiresCustomer =>
+      'សូមជ្រើសរើសអតិថិជនមុននឹងលក់ជាឥណទាន';
+
+  @override
+  String get paymentScreenCreditDialogTitle => 'ការលក់ជាឥណទាន';
+
+  @override
+  String get paymentScreenCreditDueDateLabel => 'កាលបរិច្ឆេទត្រូវបង់';
+
+  @override
+  String get paymentScreenCreditExpiresLabel =>
+      'កាលបរិច្ឆេទផុតកំណត់ (ស្រេចចិត្ត)';
+
+  @override
+  String get paymentScreenCreditNotesLabel => 'កំណត់ចំណាំ (ស្រេចចិត្ត)';
+
+  @override
+  String get paymentScreenCreditConfirm => 'បង្កើតការលក់ជាឥណទាន';
+
+  @override
+  String get paymentScreenCreditSaleCreated => 'បានបង្កើតការលក់ជាឥណទាន';
+
+  @override
+  String get paymentScreenCreditStatusLabel => 'ស្ថានភាព';
+
+  @override
+  String paymentScreenCreditSaleFailed(Object error) {
+    return 'ការលក់ជាឥណទានបរាជ័យ៖ $error';
   }
 
   @override
@@ -3604,6 +3719,13 @@ class AppLocalizationsKm extends AppLocalizations {
 
   @override
   String get waitingTicketsCollected => 'បានទទួល';
+
+  @override
+  String get waitingTicketsPrintYourNumber => 'លេខរបស់អ្នក';
+
+  @override
+  String get waitingTicketsPrintInstruction =>
+      'សូមមកកាន់ខោនធ័រនៅពេលហៅលេខរបស់អ្នក';
 
   @override
   String get cashierPerformanceTitle => 'ការលក់តាមអ្នកគិតលុយ';

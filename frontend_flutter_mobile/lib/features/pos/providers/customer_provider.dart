@@ -4,10 +4,12 @@ import '../models/customer_models.dart';
 import '../services/customer_service.dart';
 
 /// Ported from `frontend-flutter-pos/lib/features/pos/providers/
-/// customer_provider.dart` — PARTIAL PORT. `load()` only — `create()`/
-/// `update()` (admin CRUD) dropped along with the service methods they
-/// call. `customerByIdProvider` (resolve a single customer by id, e.g. to
-/// show the name already attached to the cart) is a full port.
+/// customer_provider.dart`. `load()` is unchanged — `customer_picker_
+/// screen.dart` depends on its exact signature/behavior. `create()`/
+/// `update()`/`delete()` (admin CRUD) call the service then reload the
+/// current query, matching source. `customerByIdProvider` (resolve a
+/// single customer by id, e.g. to show the name already attached to the
+/// cart) is unchanged.
 class CustomerState {
   const CustomerState({
     required this.loading,
@@ -57,6 +59,23 @@ class CustomerNotifier extends StateNotifier<CustomerState> {
     } catch (e) {
       state = state.copyWith(loading: false, error: e.toString());
     }
+  }
+
+  Future<Customer> create(CreateCustomerRequest request) async {
+    final created = await _service.createCustomer(request);
+    await load(query: state.query);
+    return created;
+  }
+
+  Future<Customer> update(int id, CreateCustomerRequest request) async {
+    final updated = await _service.updateCustomer(id, request);
+    await load(query: state.query);
+    return updated;
+  }
+
+  Future<void> delete(int id) async {
+    await _service.deleteCustomer(id);
+    await load(query: state.query);
   }
 }
 
