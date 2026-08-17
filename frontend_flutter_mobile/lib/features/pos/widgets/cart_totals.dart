@@ -137,7 +137,8 @@ class CartTotals extends ConsumerWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  onPressed: () => _showDiscountDialog(context, notifier, cart),
+                  onPressed: () =>
+                      _showDiscountDialog(context, notifier, cart, cur),
                 ),
               ),
               const SizedBox(width: PosTheme.spacingSm),
@@ -365,6 +366,7 @@ void _showDiscountDialog(
   BuildContext context,
   CartNotifier notifier,
   CartState cart,
+  String currency,
 ) {
   final amountCtl = TextEditingController(
     text: cart.discount > 0 ? cart.discount.toStringAsFixed(2) : '',
@@ -388,7 +390,8 @@ void _showDiscountDialog(
                   children: [
                     Expanded(
                       child: ChoiceChip(
-                        label: Text(l10n.cartTotalsFixedAmount),
+                        label: Text(
+                            l10n.cartTotalsFixedAmount(currencySymbol(currency))),
                         selected: type == DiscountType.fixed,
                         onSelected: (_) =>
                             setDialogState(() => type = DiscountType.fixed),
@@ -413,7 +416,7 @@ void _showDiscountDialog(
                   ),
                   decoration: InputDecoration(
                     labelText: type == DiscountType.fixed
-                        ? l10n.cartTotalsAmountLabel
+                        ? l10n.cartTotalsAmountLabel(currencySymbol(currency))
                         : l10n.cartTotalsPercentLabel,
                   ),
                 ),
@@ -440,20 +443,6 @@ void _showDiscountDialog(
                       onPressed: () => setDialogState(() {
                         type = DiscountType.percent;
                         amountCtl.text = '20';
-                      }),
-                    ),
-                    ActionChip(
-                      label: const Text(r'$1'),
-                      onPressed: () => setDialogState(() {
-                        type = DiscountType.fixed;
-                        amountCtl.text = '1';
-                      }),
-                    ),
-                    ActionChip(
-                      label: const Text(r'$5'),
-                      onPressed: () => setDialogState(() {
-                        type = DiscountType.fixed;
-                        amountCtl.text = '5';
                       }),
                     ),
                   ],

@@ -3523,13 +3523,17 @@ class AppLocalizationsKm extends AppLocalizations {
   String get cartTotalsAddDiscount => 'បន្ថែមការបញ្ចុះតម្លៃ';
 
   @override
-  String get cartTotalsFixedAmount => 'ចំនួនថេរ \$';
+  String cartTotalsFixedAmount(String symbol) {
+    return 'ចំនួនថេរ $symbol';
+  }
 
   @override
   String get cartTotalsPercentAmount => 'ភាគរយ %';
 
   @override
-  String get cartTotalsAmountLabel => 'ចំនួនទឹកប្រាក់ (\$)';
+  String cartTotalsAmountLabel(String symbol) {
+    return 'ចំនួនទឹកប្រាក់ ($symbol)';
+  }
 
   @override
   String get cartTotalsPercentLabel => 'ភាគរយ (%)';

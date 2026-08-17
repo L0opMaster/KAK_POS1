@@ -6341,8 +6341,8 @@ abstract class AppLocalizations {
   /// No description provided for @cartTotalsFixedAmount.
   ///
   /// In en, this message translates to:
-  /// **'Fixed \$'**
-  String get cartTotalsFixedAmount;
+  /// **'Fixed {symbol}'**
+  String cartTotalsFixedAmount(String symbol);
 
   /// No description provided for @cartTotalsPercentAmount.
   ///
@@ -6353,8 +6353,8 @@ abstract class AppLocalizations {
   /// No description provided for @cartTotalsAmountLabel.
   ///
   /// In en, this message translates to:
-  /// **'Amount (\$)'**
-  String get cartTotalsAmountLabel;
+  /// **'Amount ({symbol})'**
+  String cartTotalsAmountLabel(String symbol);
 
   /// No description provided for @cartTotalsPercentLabel.
   ///

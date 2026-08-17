@@ -874,9 +874,7 @@ public class SettingsService {
             discountPreset("10% Off", 10.0, 0.0),
             discountPreset("15% Off", 15.0, 0.0),
             discountPreset("20% Off", 20.0, 0.0),
-            discountPreset("50% Off", 50.0, 0.0),
-            discountPreset("$1 Off", 0.0, 1.0),
-            discountPreset("$5 Off", 0.0, 5.0)
+            discountPreset("50% Off", 50.0, 0.0)
         );
     }
 

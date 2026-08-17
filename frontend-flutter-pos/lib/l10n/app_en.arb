@@ -2224,9 +2224,23 @@
   },
   "cartTotalsHold": "Hold",
   "cartTotalsAddDiscount": "Add Discount",
-  "cartTotalsFixedAmount": "Fixed $",
+  "cartTotalsFixedAmount": "Fixed {symbol}",
+  "@cartTotalsFixedAmount": {
+    "placeholders": {
+      "symbol": {
+        "type": "String"
+      }
+    }
+  },
   "cartTotalsPercentAmount": "Percent %",
-  "cartTotalsAmountLabel": "Amount ($)",
+  "cartTotalsAmountLabel": "Amount ({symbol})",
+  "@cartTotalsAmountLabel": {
+    "placeholders": {
+      "symbol": {
+        "type": "String"
+      }
+    }
+  },
   "cartTotalsPercentLabel": "Percent (%)",
   "cartTotalsQuickSelect": "Quick select:",
   "cartTotalsRemoveDiscount": "Remove",

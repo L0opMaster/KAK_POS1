@@ -102,7 +102,9 @@ class CartTotals extends ConsumerWidget {
                   ),
                   const Spacer(),
                   Text(
-                    '-${formatAmount(discount, cur)}',
+                    cart.discountType == DiscountType.percent
+                        ? '-${discount.toStringAsFixed(0)}%'
+                        : '-${formatAmount(cart.discountAmount, cur)}',
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -471,20 +473,10 @@ class CartTotals extends ConsumerWidget {
 /// Fallback quick-select discount presets, used both as the dialog's
 /// initial content (before the backend fetch below resolves) and if that
 /// fetch fails outright.
-List<Map<String, dynamic>> _fallbackDiscountPresets(String currency) => [
+List<Map<String, dynamic>> _fallbackDiscountPresets() => [
       {'label': '10% Off', 'percent': 10, 'amount': 0},
       {'label': '15% Off', 'percent': 15, 'amount': 0},
       {'label': '20% Off', 'percent': 20, 'amount': 0},
-      {
-        'label': '${formatAmount(1.0, currency)} Off',
-        'percent': 0,
-        'amount': 1.0
-      },
-      {
-        'label': '${formatAmount(5.0, currency)} Off',
-        'percent': 0,
-        'amount': 5.0
-      },
     ];
 
 /// A preset's display label — falls back to building one from its
@@ -512,7 +504,7 @@ void _showDiscountDialog(
   DiscountType type = cart.discountType;
   bool hasDiscount = cart.discount > 0;
   final cur = readCurrency(ref);
-  List<Map<String, dynamic>> presets = _fallbackDiscountPresets(cur);
+  List<Map<String, dynamic>> presets = _fallbackDiscountPresets();
   bool presetsFetchStarted = false;
 
   showDialog<void>(
@@ -575,7 +567,7 @@ void _showDiscountDialog(
                     Row(
                       children: [
                         _typeChip(
-                            ctx.l10n.cartTotalsFixedAmount,
+                            ctx.l10n.cartTotalsFixedAmount(currencySymbol(cur)),
                             DiscountType.fixed,
                             type,
                             (t) => setDialogState(() => type = t)),
@@ -594,14 +586,21 @@ void _showDiscountDialog(
                           const TextInputType.numberWithOptions(decimal: true),
                       decoration: InputDecoration(
                         labelText: type == DiscountType.fixed
-                            ? ctx.l10n.cartTotalsAmountLabel
+                            ? ctx.l10n.cartTotalsAmountLabel(currencySymbol(cur))
                             : ctx.l10n.cartTotalsPercentLabel,
-                        prefixIcon: Icon(
-                          type == DiscountType.fixed
-                              ? Icons.attach_money
-                              : Icons.percent,
-                          size: 20,
-                        ),
+                        prefixIcon: type == DiscountType.fixed
+                            ? SizedBox(
+                                width: 20,
+                                child: Center(
+                                  child: Text(
+                                    currencySymbol(cur),
+                                    style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600),
+                                  ),
+                                ),
+                              )
+                            : const Icon(Icons.percent, size: 20),
                         border: OutlineInputBorder(
                           borderRadius:
                               BorderRadius.circular(PosTheme.radiusMedium),

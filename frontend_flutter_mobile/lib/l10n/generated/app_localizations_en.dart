@@ -3513,13 +3513,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cartTotalsAddDiscount => 'Add Discount';
 
   @override
-  String get cartTotalsFixedAmount => 'Fixed \$';
+  String cartTotalsFixedAmount(String symbol) {
+    return 'Fixed $symbol';
+  }
 
   @override
   String get cartTotalsPercentAmount => 'Percent %';
 
   @override
-  String get cartTotalsAmountLabel => 'Amount (\$)';
+  String cartTotalsAmountLabel(String symbol) {
+    return 'Amount ($symbol)';
+  }
 
   @override
   String get cartTotalsPercentLabel => 'Percent (%)';
