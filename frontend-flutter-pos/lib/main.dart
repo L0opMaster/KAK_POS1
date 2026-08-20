@@ -114,7 +114,7 @@ class PosApp extends ConsumerWidget {
     final isKhmer = ref.watch(appLanguageProvider).isKhmer;
 
     return MaterialApp(
-      title: AppConfig.appName,
+      title: 'KAKNNEA POS',
       debugShowCheckedModeBanner: false,
       theme: PosTheme.lightTheme,
       darkTheme: PosTheme.darkTheme,

@@ -10,10 +10,12 @@ import '../../../core/utils/l10n_extensions.dart';
 import '../../../core/utils/receipt_date_format.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../models/cart_models.dart';
+import '../providers/bill_print_status_provider.dart';
 import '../providers/cart_provider.dart';
 import '../providers/held_ticket_provider.dart';
-import '../services/print_service.dart';
 import '../services/printing/receipt_view_model.dart';
+import '../utils/held_order_totals.dart';
+import 'bill_preview_screen.dart';
 
 /// Loyverse-inspired dialog for viewing and restoring held/saved tickets.
 class HeldTicketsDialog extends ConsumerStatefulWidget {
@@ -87,17 +89,17 @@ class _HeldTicketsDialogState extends ConsumerState<HeldTicketsDialog> {
     );
   }
 
-  /// Prints this held ticket's bill so the customer can carry it to the
-  /// cashier — no sale exists for a held ticket yet (see
-  /// `held_ticket_provider.dart`'s `holdCurrentCart`), so this builds the
-  /// receipt straight from the ticket's saved cart items/company profile
-  /// instead of a backend `ReceiptResponse`. `paidAmount: 0` since nothing
-  /// has been charged. Tax is per-product now (see `Product.taxRate`),
-  /// summed per item exactly like `CartState.taxAmount` — a held ticket has
-  /// no cart-level discount to prorate (see [HeldOrder], which carries no
-  /// discount field), so this is that same formula with the discount term
-  /// dropped rather than a separate calculation drifting out of sync with it.
-  Future<void> _printTicket(
+  /// Builds this held ticket's pre-payment bill (`isBill: true`) so the
+  /// customer can carry it to the cashier — no sale exists for a held
+  /// ticket yet (see `held_ticket_provider.dart`'s `holdCurrentCart`), so
+  /// this builds the receipt straight from the ticket's saved cart
+  /// items/company profile instead of a backend `ReceiptResponse`.
+  /// `paidAmount: 0` since nothing has been charged — [ReceiptViewModel
+  /// .isBill] is what actually makes every renderer print "UNPAID" instead
+  /// of "Paid: ₀", not the zero amount itself. Returns null (after
+  /// showing an error snackbar) if the company profile / waiting-number
+  /// lookups fail unexpectedly.
+  Future<ReceiptViewModel?> _buildBillReceipt(
     BuildContext context,
     WidgetRef ref,
     HeldOrder ticket,
@@ -124,13 +126,13 @@ class _HeldTicketsDialogState extends ConsumerState<HeldTicketsDialog> {
           .read(waitingNumberServiceProvider)
           .getNumberForOrder(ticket.id);
 
-      if (!context.mounted) return;
+      if (!context.mounted) return null;
       final language = ref.read(appLanguageProvider);
       final l10n = AppLocalizations.of(context);
       final cashierName = ref.read(currentUserProvider)?.fullName ?? '';
       final now = DateTime.now();
 
-      final receipt = ReceiptViewModel.fromCart(
+      return ReceiptViewModel.fromCart(
         language: language,
         l10n: l10n,
         total: subtotal + taxAmount,
@@ -149,38 +151,47 @@ class _HeldTicketsDialogState extends ConsumerState<HeldTicketsDialog> {
         saleDate: formatReceiptDate(now),
         saleTime: formatReceiptTime(now),
         tableNumber: ticket.table?.displayText,
+        isBill: true,
+        isDineIn: ticket.table != null,
       );
-
-      if (!context.mounted) return;
-      final ok = await ref.read(printServiceProvider).printReceiptViewModel(
-            context,
-            receipt,
-            jobName: 'bill_${ticket.id}',
-          );
-      if (!context.mounted) return;
-      if (!ok) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.printerPrintFailed),
-            backgroundColor: PosTheme.errorRed,
-          ),
-        );
-      }
     } catch (e) {
-      debugPrint('Held ticket bill print failed: $e');
-      if (!context.mounted) return;
+      debugPrint('Held ticket bill build failed: $e');
+      if (!context.mounted) return null;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(context.l10n.printerPrintFailed),
           backgroundColor: PosTheme.errorRed,
         ),
       );
+      return null;
     }
+  }
+
+  /// "Print Bill" action: builds the current-state bill (always recomputed
+  /// from `ticket.cartItems`/`.table`, never a stale cached total — see
+  /// req. "order changed after bill printed") and pushes [BillPreviewScreen]
+  /// to preview/print it, mirroring the paid-receipt flow's existing
+  /// preview-before-print step ([ReceiptPreviewScreen]).
+  Future<void> _openBillPreview(
+    BuildContext context,
+    WidgetRef ref,
+    HeldOrder ticket,
+  ) async {
+    final receipt = await _buildBillReceipt(context, ref, ticket);
+    if (receipt == null || !context.mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            BillPreviewScreen(receipt: receipt, ticketId: ticket.id),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(heldTicketProvider);
+    final printedIds = ref.watch(billPrintStatusProvider);
+    final currency = readCurrency(ref);
     final tickets = state.tickets.where((t) {
       if (_search.isEmpty) return true;
       final lower = _search.toLowerCase();
@@ -219,7 +230,7 @@ class _HeldTicketsDialogState extends ConsumerState<HeldTicketsDialog> {
         ],
       ),
       content: SizedBox(
-        width: 400,
+        width: 420,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -277,87 +288,189 @@ class _HeldTicketsDialogState extends ConsumerState<HeldTicketsDialog> {
             else
               SizedBox(
                 width: double.maxFinite,
-                height: 300,
+                height: 380,
                 child: ListView.builder(
                   shrinkWrap: true,
                   itemCount: tickets.length,
                   itemBuilder: (ctx, i) {
                     final ticket = tickets[i];
+                    final billPrinted = printedIds.contains(ticket.id);
                     return Card(
                       elevation: 0,
-                      margin: const EdgeInsets.only(bottom: 8),
+                      margin: const EdgeInsets.only(bottom: 10),
                       shape: RoundedRectangleBorder(
                         borderRadius:
                             BorderRadius.circular(PosTheme.radiusMedium),
                         side: BorderSide(color: PosTheme.borderColorOf(ctx)),
                       ),
-                      child: ListTile(
-                        leading: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: PosTheme.backgroundPageOf(ctx),
-                            borderRadius:
-                                BorderRadius.circular(PosTheme.radiusSmall),
-                          ),
-                          child: Icon(Icons.receipt_long,
-                              color: PosTheme.primaryGreen, size: 20),
-                        ),
-                        title: FutureBuilder<int?>(
-                          // Prefer the stable local waiting number bound to
-                          // this ticket (survives resume/re-hold) over the
-                          // backend row id, which changes every time a
-                          // ticket is resumed and held again.
-                          future: ref
-                              .read(waitingNumberServiceProvider)
-                              .getNumberForOrder(ticket.id),
-                          builder: (context, snapshot) {
-                            final label = snapshot.data != null
-                                ? context.l10n.heldTicketsTicketLabel(
-                                    snapshot.data.toString().padLeft(3, '0'))
-                                : context.l10n
-                                    .heldTicketsTicketLabel(ticket.id.toString());
-                            return Text(label,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14));
-                          },
-                        ),
-                        subtitle: Text(
-                            ticket.table != null
-                                ? '${ticket.table!.displayText} • ${ctx.l10n.heldTicketsTapToRestore}'
-                                : ctx.l10n.heldTicketsTapToRestore,
-                            style: TextStyle(
-                                fontSize: 12,
-                                color: PosTheme.textSecondaryOf(ctx))),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            IconButton(
-                              tooltip: ctx.l10n.receiptPrint,
-                              icon: const Icon(Icons.print_outlined,
-                                  size: 20, color: PosTheme.accentBlue),
-                              onPressed: () => _printTicket(context, ref, ticket),
+                            // ── Ticket # / table / item count ──
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: PosTheme.backgroundPageOf(ctx),
+                                    borderRadius: BorderRadius.circular(
+                                        PosTheme.radiusSmall),
+                                  ),
+                                  child: Icon(Icons.receipt_long,
+                                      color: PosTheme.primaryGreen, size: 20),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      FutureBuilder<int?>(
+                                        // Prefer the stable local waiting
+                                        // number bound to this ticket
+                                        // (survives resume/re-hold) over the
+                                        // backend row id, which changes
+                                        // every time a ticket is resumed and
+                                        // held again.
+                                        future: ref
+                                            .read(waitingNumberServiceProvider)
+                                            .getNumberForOrder(ticket.id),
+                                        builder: (context, snapshot) {
+                                          final label = snapshot.data != null
+                                              ? context.l10n
+                                                  .heldTicketsTicketLabel(
+                                                      snapshot.data
+                                                          .toString()
+                                                          .padLeft(3, '0'))
+                                              : context.l10n
+                                                  .heldTicketsTicketLabel(
+                                                      ticket.id.toString());
+                                          return Text(label,
+                                              style: const TextStyle(
+                                                  fontWeight: FontWeight.w700,
+                                                  fontSize: 15));
+                                        },
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        [
+                                          if (ticket.table != null)
+                                            ticket.table!.displayText,
+                                          context.l10n.heldTicketsItemsCount(
+                                              heldOrderItemCount(ticket)
+                                                  .toString()),
+                                        ].join(' • '),
+                                        style: TextStyle(
+                                            fontSize: 12,
+                                            color:
+                                                PosTheme.textSecondaryOf(ctx)),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                IconButton(
+                                  tooltip: ctx.l10n.heldTicketsCancelTitle,
+                                  icon: const Icon(Icons.delete_outline,
+                                      size: 20, color: PosTheme.errorRed),
+                                  onPressed: () =>
+                                      _confirmDelete(context, ref, ticket),
+                                  visualDensity: VisualDensity.compact,
+                                ),
+                              ],
                             ),
-                            IconButton(
-                              tooltip: ctx.l10n.heldTicketsCancelTitle,
-                              icon: const Icon(Icons.delete_outline,
-                                  size: 20, color: PosTheme.errorRed),
-                              onPressed: () => _confirmDelete(context, ref, ticket),
+                            const SizedBox(height: 10),
+
+                            // ── Total ──
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(context.l10n.receiptTotal,
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        color: PosTheme.textSecondaryOf(ctx))),
+                                Text(
+                                  formatAmount(heldOrderTotal(ticket), currency),
+                                  style: const TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w800),
+                                ),
+                              ],
                             ),
-                            const Icon(Icons.restore,
-                                size: 20, color: PosTheme.accentBlue),
+                            const SizedBox(height: 8),
+
+                            // ── Status badges — a bill printed once is
+                            // still fully unpaid; never imply otherwise. ──
+                            Row(
+                              children: [
+                                _StatusChip(
+                                  label: context.l10n.heldTicketsUnpaidBadge,
+                                  color: PosTheme.warningAmber,
+                                ),
+                                if (billPrinted) ...[
+                                  const SizedBox(width: 6),
+                                  _StatusChip(
+                                    label: context
+                                        .l10n.heldTicketsBillPrintedBadge,
+                                    color: Colors.amber.shade700,
+                                  ),
+                                ],
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+
+                            // ── Actions ──
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: FilledButton.icon(
+                                    onPressed: () {
+                                      ref
+                                          .read(heldTicketProvider.notifier)
+                                          .restoreTicket(ticket);
+                                      Navigator.of(context).pop();
+                                    },
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: PosTheme.primaryGreen,
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 10),
+                                    ),
+                                    icon: const Icon(Icons.restore, size: 18),
+                                    label: Text(
+                                        context.l10n.heldTicketsResumeOrder,
+                                        style: const TextStyle(fontSize: 13)),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: () => _openBillPreview(
+                                        context, ref, ticket),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: PosTheme.accentBlue,
+                                      side: const BorderSide(
+                                          color: PosTheme.accentBlue),
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 10),
+                                    ),
+                                    icon: const Icon(Icons.print_outlined,
+                                        size: 18),
+                                    label: Text(
+                                        billPrinted
+                                            ? context.l10n
+                                                .heldTicketsPrintBillAgain
+                                            : context
+                                                .l10n.heldTicketsPrintBill,
+                                        style: const TextStyle(fontSize: 13)),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(PosTheme.radiusMedium),
-                        ),
-                        onTap: () {
-                          ref
-                              .read(heldTicketProvider.notifier)
-                              .restoreTicket(ticket);
-                          Navigator.of(context).pop();
-                        },
                       ),
                     );
                   },
@@ -379,6 +492,48 @@ class _HeldTicketsDialogState extends ConsumerState<HeldTicketsDialog> {
           child: Text(context.l10n.commonClose),
         ),
       ],
+    );
+  }
+}
+
+/// Small pill used for a ticket card's status row — e.g. "UNPAID" or "BILL
+/// PRINTED" (see [_HeldTicketsDialogState.build]). Deliberately never
+/// implies payment: printing a bill only ever adds a second chip alongside
+/// UNPAID, it never replaces it.
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(PosTheme.radiusPill),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: color,
+              letterSpacing: 0.3,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

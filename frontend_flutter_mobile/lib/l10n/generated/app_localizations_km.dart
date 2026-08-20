@@ -278,6 +278,23 @@ class AppLocalizationsKm extends AppLocalizations {
   String get settingsSavePrinters => 'រក្សាទុកម៉ាស៊ីនបោះពុម្ព';
 
   @override
+  String get settingsPairing => 'ការភ្ជាប់';
+
+  @override
+  String get settingsPairingServerAddress => 'អាសយដ្ឋានម៉ាស៊ីនមេ (LAN)';
+
+  @override
+  String get settingsPairingServerAddressHint =>
+      'ឧទាហរណ៍ http://192.168.1.10:8081 — ទុកទទេដើម្បីរកឃើញដោយស្វ័យប្រវត្តិ';
+
+  @override
+  String get settingsPairingServerAddressHelp =>
+      'បដិសេធអាសយដ្ឋាន LAN ដែលបានរកឃើញដោយស្វ័យប្រវត្តិសម្រាប់កូដ QR ភ្ជាប់ម៉ាស៊ីនស្កេនទូរស័ព្ទ និងអេក្រង់បង្ហាញអតិថិជន។ ទុកទទេដើម្បីរកឃើញដោយស្វ័យប្រវត្តិ។';
+
+  @override
+  String get settingsSavePairing => 'រក្សាទុកការភ្ជាប់';
+
+  @override
   String get settingsTaxRateLabel => 'អត្រាពន្ធ';
 
   @override
@@ -526,6 +543,28 @@ class AppLocalizationsKm extends AppLocalizations {
 
   @override
   String get receiptExchangeRate => 'អត្រាប្តូរប្រាក់';
+
+  @override
+  String get receiptTicketNumber => 'សំបុត្រ';
+
+  @override
+  String get receiptBillHeaderTitle => 'វិក្កយបត្រ';
+
+  @override
+  String get receiptPaymentStatus => 'ស្ថានភាពទូទាត់';
+
+  @override
+  String get receiptUnpaid => 'មិនទាន់បង់ប្រាក់';
+
+  @override
+  String get receiptBillDisclaimer =>
+      'នេះជាវិក្កយបត្រសម្រាប់ការទូទាត់ប្រាក់។ វាមិនមែនជាបង្កាន់ដៃទូទាត់ទេ។';
+
+  @override
+  String get receiptBillCashierNotice => 'សូមយកវិក្កយបត្រនេះទៅកន្លែងគិតលុយ។';
+
+  @override
+  String get receiptDineIn => 'បរិភោគនៅហាង';
 
   @override
   String get dialogConfirmTitle => 'បញ្ជាក់';
@@ -3599,6 +3638,21 @@ class AppLocalizationsKm extends AppLocalizations {
   String get heldTicketsPrintNumber => 'បោះពុម្ពលេខសម្គាល់';
 
   @override
+  String get heldTicketsBillPreviewTitle => 'មើលវិក្កយបត្រជាមុន';
+
+  @override
+  String get heldTicketsPrintBillAgain => 'បោះពុម្ពវិក្កយបត្រម្តងទៀត';
+
+  @override
+  String get heldTicketsBillPrintedBadge => 'បានបោះពុម្ពវិក្កយបត្រ';
+
+  @override
+  String get heldTicketsUnpaidBadge => 'មិនទាន់បង់ប្រាក់';
+
+  @override
+  String get heldTicketsResumeOrder => 'បន្តការកម្ម៉ង់';
+
+  @override
   String get modifierSheetQuantity => 'បរិមាណ';
 
   @override
@@ -3668,6 +3722,21 @@ class AppLocalizationsKm extends AppLocalizations {
 
   @override
   String get phoneScannerSessionStoppedStatus => 'សម័យស្កេនឈប់ដំណើរការ';
+
+  @override
+  String get phoneScannerScanQrLabel => 'ស្កេនកូដ QR នេះ';
+
+  @override
+  String get phoneScannerOrManualLabel => 'ឬបញ្ចូលដោយដៃ';
+
+  @override
+  String phoneScannerServerLabel(Object server) {
+    return 'ម៉ាស៊ីនមេ៖ $server';
+  }
+
+  @override
+  String get phoneScannerQrUnavailable =>
+      'មិនអាចរកអាសយដ្ឋាន LAN ដោយស្វ័យប្រវត្តិបានទេ។ សូមភ្ជាប់កុំព្យូទ័រនេះទៅ Wi-Fi/LAN ឬបញ្ចូលអាសយដ្ឋានដោយដៃនៅលើទូរស័ព្ទ។';
 
   @override
   String get productCardOutOfStock => 'អស់ពីស្តុក';
@@ -4129,6 +4198,48 @@ class AppLocalizationsKm extends AppLocalizations {
   @override
   String get customerDisplayStatusWaiting =>
       'កំពុងរង់ចាំម៉ាស៊ីនបង្ហាញអតិថិជនតភ្ជាប់...';
+
+  @override
+  String get customerDisplayScanQrLabel => 'ស្កេនកូដ QR នេះ';
+
+  @override
+  String get customerDisplayOrManualLabel => 'ឬបញ្ចូលដោយដៃ';
+
+  @override
+  String customerDisplayServerLabel(Object server) {
+    return 'ម៉ាស៊ីនមេ៖ $server';
+  }
+
+  @override
+  String get customerDisplayQrUnavailable =>
+      'មិនអាចរកអាសយដ្ឋាន LAN ដោយស្វ័យប្រវត្តិបានទេ។ សូមភ្ជាប់កុំព្យូទ័រនេះទៅ Wi-Fi/LAN ឬបញ្ចូលអាសយដ្ឋានដោយដៃនៅលើម៉ាស៊ីនបង្ហាញ។';
+
+  @override
+  String get pairingQrScanTitle => 'ស្កេនកូដ QR ដើម្បីភ្ជាប់';
+
+  @override
+  String get pairingQrScanInstructions =>
+      'ដាក់កាមេរ៉ាឆ្ពោះទៅកូដ QR ដែលបង្ហាញនៅលើអេក្រង់ POS';
+
+  @override
+  String get pairingQrScanInvalid => 'កូដ QR មិនត្រឹមត្រូវសម្រាប់ការភ្ជាប់។';
+
+  @override
+  String pairingQrScanWrongType(Object actual, Object expected) {
+    return 'កូដ QR នេះសម្រាប់ $actual មិនមែន $expected ទេ។';
+  }
+
+  @override
+  String get pairingQrTypePhoneScanner => 'ម៉ាស៊ីនស្កេនទូរស័ព្ទ';
+
+  @override
+  String get pairingQrTypeCustomerDisplay => 'អេក្រង់បង្ហាញអតិថិជន';
+
+  @override
+  String get phoneScanScreenScanQrButton => 'ស្កេនកូដ QR';
+
+  @override
+  String get phoneScanScreenOrDivider => 'ឬ';
 
   @override
   String get reportPdfGeneratedLabel => 'បង្កើតនៅ';

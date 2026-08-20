@@ -50,6 +50,13 @@ class ReceiptLabels {
     required this.dueDate,
     required this.remaining,
     required this.creditStatus,
+    required this.ticket,
+    required this.billHeaderTitle,
+    required this.paymentStatus,
+    required this.unpaid,
+    required this.billDisclaimer,
+    required this.billCashierNotice,
+    required this.dineIn,
   });
 
   factory ReceiptLabels.fromL10n(AppLocalizations l10n) => ReceiptLabels(
@@ -81,6 +88,13 @@ class ReceiptLabels {
         dueDate: l10n.paymentScreenCreditDueLabel,
         remaining: l10n.creditRepaymentRemainingLabel,
         creditStatus: l10n.paymentScreenCreditStatusLabel,
+        ticket: l10n.receiptTicketNumber,
+        billHeaderTitle: l10n.receiptBillHeaderTitle,
+        paymentStatus: l10n.receiptPaymentStatus,
+        unpaid: l10n.receiptUnpaid,
+        billDisclaimer: l10n.receiptBillDisclaimer,
+        billCashierNotice: l10n.receiptBillCashierNotice,
+        dineIn: l10n.receiptDineIn,
       );
 
   final String invoiceNumber;
@@ -120,6 +134,35 @@ class ReceiptLabels {
   final String remaining;
   final String creditStatus;
 
+  /// "Ticket" — used in place of [invoiceNumber] on a pre-payment bill
+  /// (see [ReceiptViewModel.isBill]), since a held ticket isn't an invoice
+  /// yet.
+  final String ticket;
+
+  /// "BILL / CHECK" — the document-type banner shown at the very top of a
+  /// pre-payment bill, above the business name, so it can never be mistaken
+  /// for a paid receipt at a glance.
+  final String billHeaderTitle;
+
+  /// "Payment Status" — label above [unpaid] on a pre-payment bill.
+  final String paymentStatus;
+
+  /// "UNPAID" — replaces the Paid/Cash Received/Change section entirely on
+  /// a pre-payment bill (see [ReceiptViewModel.isBill]).
+  final String unpaid;
+
+  /// "This is a bill for payment. It is NOT a payment receipt." — printed
+  /// under [unpaid] on a pre-payment bill.
+  final String billDisclaimer;
+
+  /// "Please present this bill at the cashier." — printed under
+  /// [billDisclaimer] on a pre-payment bill.
+  final String billCashierNotice;
+
+  /// "Dine In" — shown alongside the table number on a pre-payment bill
+  /// when [ReceiptViewModel.orderModeLabel] is set.
+  final String dineIn;
+
   /// English fallback — used only where no [AppLocalizations] is available
   /// at all (there is currently no such call site in production code; this
   /// exists so a future test fixture or offline code path never crashes
@@ -153,6 +196,13 @@ class ReceiptLabels {
     exchangeRateValueFormat: _fallbackRate,
     dueDate: 'Due',
     remaining: 'Remaining Balance',
+    ticket: 'Ticket',
+    billHeaderTitle: 'BILL / CHECK',
+    paymentStatus: 'Payment Status',
+    unpaid: 'UNPAID',
+    billDisclaimer: 'This is a bill for payment. It is NOT a payment receipt.',
+    billCashierNotice: 'Please present this bill at the cashier.',
+    dineIn: 'Dine In',
     creditStatus: 'Status',
   );
 

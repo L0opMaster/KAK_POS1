@@ -11,11 +11,13 @@ import '../../../core/utils/receipt_date_format.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../shell/mobile_shell_screen.dart';
 import '../models/cart_models.dart';
+import '../providers/bill_print_status_provider.dart';
 import '../providers/cart_provider.dart';
 import '../providers/held_ticket_provider.dart';
 import '../services/print_service.dart';
 import '../services/printing/receipt_view_model.dart';
 import '../services/settings_service.dart';
+import 'bill_preview_screen.dart';
 
 /// ADAPTED from `frontend-flutter-pos/lib/features/pos/widgets/
 /// held_tickets_dialog.dart`'s `HeldTicketsDialog` — same waiting-number-
@@ -85,15 +87,19 @@ class _HeldTicketsScreenState extends ConsumerState<HeldTicketsScreen> {
     }
   }
 
-  /// Prints this held ticket's bill so the customer can carry it to the
-  /// cashier — no sale exists for a held ticket yet (see
-  /// `held_ticket_provider.dart`'s `holdCurrentCart`), so this builds the
-  /// receipt straight from the ticket's saved cart items/company profile
-  /// instead of a backend `ReceiptResponse`. `paidAmount: 0` since nothing
-  /// has been charged. Tax is recomputed from the store's *current* tax
-  /// rate — a held ticket only stores its cart items (see [HeldOrder]), not
-  /// the tax rate active when it was held.
-  Future<void> _printBill(HeldOrder ticket) async {
+  /// Builds this held ticket's pre-payment bill (`isBill: true`) so the
+  /// customer can carry it to the cashier — no sale exists for a held
+  /// ticket yet (see `held_ticket_provider.dart`'s `holdCurrentCart`), so
+  /// this builds the receipt straight from the ticket's saved cart
+  /// items/company profile instead of a backend `ReceiptResponse`.
+  /// `paidAmount: 0` since nothing has been charged —
+  /// [ReceiptViewModel.isBill] is what actually makes every renderer print
+  /// "UNPAID" instead of "Paid: $0", not the zero amount itself. Tax is
+  /// recomputed from the store's *current* tax rate — a held ticket only
+  /// stores its cart items (see [HeldOrder]), not the tax rate active when
+  /// it was held. Returns null (after showing an error snackbar) if the
+  /// build fails unexpectedly.
+  Future<ReceiptViewModel?> _buildBillReceipt(HeldOrder ticket) async {
     final items = ticket.cartItems ?? const <CartItem>[];
     try {
       final subtotal = items.fold(0.0, (sum, i) => sum + i.lineTotal);
@@ -120,13 +126,13 @@ class _HeldTicketsScreenState extends ConsumerState<HeldTicketsScreen> {
           .read(waitingNumberServiceProvider)
           .getNumberForOrder(ticket.id);
 
-      if (!mounted) return;
+      if (!mounted) return null;
       final language = ref.read(appLanguageProvider);
       final l10n = AppLocalizations.of(context);
       final cashierName = ref.read(currentUserProvider)?.fullName ?? '';
       final now = DateTime.now();
 
-      final receipt = ReceiptViewModel.fromCart(
+      return ReceiptViewModel.fromCart(
         language: language,
         l10n: l10n,
         total: subtotal + taxAmount,
@@ -145,21 +151,30 @@ class _HeldTicketsScreenState extends ConsumerState<HeldTicketsScreen> {
         saleDate: formatReceiptDate(now),
         saleTime: formatReceiptTime(now),
         tableNumber: ticket.table?.displayText,
+        isBill: true,
+        isDineIn: ticket.table != null,
       );
-
-      if (!mounted) return;
-      final ok = await ref.read(printServiceProvider).printReceiptViewModel(
-            context,
-            receipt,
-            jobName: 'bill_${ticket.id}',
-          );
-      if (!mounted) return;
-      if (!ok) _showPrintFailed();
     } catch (e) {
-      debugPrint('Held ticket bill print failed: $e');
-      if (!mounted) return;
+      debugPrint('Held ticket bill build failed: $e');
+      if (!mounted) return null;
       _showPrintFailed();
+      return null;
     }
+  }
+
+  /// "Print Bill" action: builds the current-state bill (always recomputed
+  /// from `ticket.cartItems`/`.table`, never a stale cached total) and
+  /// pushes [BillPreviewScreen] to preview/print it, mirroring the
+  /// paid-receipt flow's existing preview-before-print step
+  /// ([ReceiptPreviewScreen]).
+  Future<void> _openBillPreview(HeldOrder ticket) async {
+    final receipt = await _buildBillReceipt(ticket);
+    if (receipt == null || !mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => BillPreviewScreen(receipt: receipt, ticketId: ticket.id),
+      ),
+    );
   }
 
   /// Prints just this ticket's queue number (see `waiting_number_service
@@ -264,7 +279,7 @@ class _HeldTicketsScreenState extends ConsumerState<HeldTicketsScreen> {
                   return _HeldTicketCard(
                     ticket: ticket,
                     onDelete: () => _confirmDelete(ticket),
-                    onPrintBill: () => _printBill(ticket),
+                    onPrintBill: () => _openBillPreview(ticket),
                     onPrintNumber: () => _printWaitingNumber(ticket),
                     onRestore: () {
                       ref
@@ -388,15 +403,28 @@ class _HeldTicketCard extends ConsumerWidget {
                             ),
                             onPressed: onPrintNumber,
                           ),
-                          IconButton(
-                            visualDensity: VisualDensity.compact,
-                            tooltip: l10n.heldTicketsPrintBill,
-                            icon: const Icon(
-                              Icons.print_outlined,
-                              color: PosTheme.accentBlue,
-                              size: 20,
-                            ),
-                            onPressed: onPrintBill,
+                          Builder(
+                            builder: (context) {
+                              final billPrinted = ref
+                                  .watch(billPrintStatusProvider)
+                                  .contains(ticket.id);
+                              return IconButton(
+                                visualDensity: VisualDensity.compact,
+                                tooltip: billPrinted
+                                    ? l10n.heldTicketsPrintBillAgain
+                                    : l10n.heldTicketsPrintBill,
+                                icon: Icon(
+                                  billPrinted
+                                      ? Icons.print
+                                      : Icons.print_outlined,
+                                  color: billPrinted
+                                      ? Colors.amber.shade700
+                                      : PosTheme.accentBlue,
+                                  size: 20,
+                                ),
+                                onPressed: onPrintBill,
+                              );
+                            },
                           ),
                           IconButton(
                             visualDensity: VisualDensity.compact,

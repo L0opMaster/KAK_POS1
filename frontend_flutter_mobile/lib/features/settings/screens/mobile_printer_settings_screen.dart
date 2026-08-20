@@ -7,6 +7,7 @@ import 'package:printing/printing.dart';
 import '../../../core/config/pos_theme.dart';
 import '../../../core/providers/language_provider.dart';
 import '../../../core/utils/l10n_extensions.dart';
+import '../../../core/utils/lan_address.dart';
 import '../../pos/services/print_service.dart';
 import '../../pos/services/printing/bluetooth_printer_transport.dart';
 import '../../pos/services/printing/printer_permission.dart';
@@ -57,10 +58,16 @@ class _MobilePrinterSettingsScreenState
   bool _saving = false;
   bool _testing = false;
 
+  // ── Pairing server address override (device-local, separate from
+  // everything above — see lan_address.dart's PairingServerOverride) ──
+  final _pairingServerCtl = TextEditingController();
+  bool _savingPairingServer = false;
+
   @override
   void initState() {
     super.initState();
     _loadConfig();
+    _loadPairingServer();
   }
 
   @override
@@ -69,7 +76,29 @@ class _MobilePrinterSettingsScreenState
     _usbProductCtl.dispose();
     _hostCtl.dispose();
     _portCtl.dispose();
+    _pairingServerCtl.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadPairingServer() async {
+    final saved = await PairingServerOverride.load();
+    if (!mounted) return;
+    setState(() => _pairingServerCtl.text = saved ?? '');
+  }
+
+  Future<void> _savePairingServer() async {
+    final l10n = context.l10n;
+    setState(() => _savingPairingServer = true);
+    try {
+      await PairingServerOverride.save(_pairingServerCtl.text);
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.settingsSavePairing)));
+      }
+    } finally {
+      if (mounted) setState(() => _savingPairingServer = false);
+    }
   }
 
   Future<void> _loadConfig() async {
@@ -147,7 +176,10 @@ class _MobilePrinterSettingsScreenState
         final bytes = await ref
             .read(printServiceProvider)
             .buildReceiptPdf(sample, config.paperSize, context: context);
-        await Printing.layoutPdf(onLayout: (_) => bytes, name: 'test_print.pdf');
+        await Printing.layoutPdf(
+          onLayout: (_) => bytes,
+          name: 'test_print.pdf',
+        );
       } else {
         if (!mounted) return;
         await ref
@@ -312,6 +344,37 @@ class _MobilePrinterSettingsScreenState
                 ),
               ),
             ],
+          ),
+          const Divider(height: PosTheme.spacingXl * 2),
+          Text(
+            l10n.settingsPairing,
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+          ),
+          const SizedBox(height: PosTheme.spacingSm),
+          Text(
+            l10n.settingsPairingServerAddressHelp,
+            style: TextStyle(
+              fontSize: 12,
+              color: PosTheme.textSecondaryOf(context),
+            ),
+          ),
+          const SizedBox(height: PosTheme.spacingMd),
+          TextField(
+            controller: _pairingServerCtl,
+            keyboardType: TextInputType.url,
+            decoration: InputDecoration(
+              labelText: l10n.settingsPairingServerAddress,
+              hintText: l10n.settingsPairingServerAddressHint,
+              border: const OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: PosTheme.spacingMd),
+          Align(
+            alignment: Alignment.centerRight,
+            child: FilledButton(
+              onPressed: _savingPairingServer ? null : _savePairingServer,
+              child: Text(l10n.settingsSavePairing),
+            ),
           ),
           if (kDebugMode) ...[
             const SizedBox(height: PosTheme.spacingMd),

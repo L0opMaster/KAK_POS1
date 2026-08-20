@@ -13,6 +13,7 @@ import '../../../core/providers/main_color_provider.dart';
 import '../../../core/providers/theme_provider.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/utils/l10n_extensions.dart';
+import '../../../core/utils/lan_address.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import 'print_test_screen.dart';
 import '../services/print_service.dart';
@@ -93,6 +94,11 @@ class _SettingsModulesScreenState extends ConsumerState<SettingsModulesScreen> {
   bool _savingThermalConfig = false;
   bool _testPrinting = false;
 
+  // ── Pairing server address override (device-local, separate from
+  // everything above — see lan_address.dart's PairingServerOverride) ──
+  late final TextEditingController _pairingServerCtl;
+  bool _savingPairingServer = false;
+
   @override
   void initState() {
     super.initState();
@@ -110,8 +116,10 @@ class _SettingsModulesScreenState extends ConsumerState<SettingsModulesScreen> {
     _networkPortCtl = TextEditingController(text: '9100');
     _usbVendorCtl = TextEditingController();
     _usbProductCtl = TextEditingController();
+    _pairingServerCtl = TextEditingController();
     Future.microtask(_load);
     Future.microtask(_loadThermalConfig);
+    Future.microtask(_loadPairingServer);
   }
 
   @override
@@ -130,6 +138,7 @@ class _SettingsModulesScreenState extends ConsumerState<SettingsModulesScreen> {
     _networkPortCtl.dispose();
     _usbVendorCtl.dispose();
     _usbProductCtl.dispose();
+    _pairingServerCtl.dispose();
     super.dispose();
   }
 
@@ -166,6 +175,23 @@ class _SettingsModulesScreenState extends ConsumerState<SettingsModulesScreen> {
       _toast(l10n.settingsPrinters);
     } finally {
       if (mounted) setState(() => _savingThermalConfig = false);
+    }
+  }
+
+  Future<void> _loadPairingServer() async {
+    final saved = await PairingServerOverride.load();
+    if (!mounted) return;
+    setState(() => _pairingServerCtl.text = saved ?? '');
+  }
+
+  Future<void> _savePairingServer() async {
+    final l10n = context.l10n;
+    setState(() => _savingPairingServer = true);
+    try {
+      await PairingServerOverride.save(_pairingServerCtl.text);
+      if (mounted) _toast(l10n.settingsSavePairing);
+    } finally {
+      if (mounted) setState(() => _savingPairingServer = false);
     }
   }
 
@@ -713,6 +739,31 @@ class _SettingsModulesScreenState extends ConsumerState<SettingsModulesScreen> {
                         ],
                       ),
                       _SectionCard(
+                        title: l10n.settingsPairing,
+                        icon: Icons.wifi_tethering,
+                        children: [
+                          Text(
+                            l10n.settingsPairingServerAddressHelp,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: PosTheme.textSecondaryOf(context),
+                            ),
+                          ),
+                          const SizedBox(height: PosTheme.spacingMd),
+                          _textField(
+                            _pairingServerCtl,
+                            l10n.settingsPairingServerAddress,
+                            keyboardType: TextInputType.url,
+                            hintText: l10n.settingsPairingServerAddressHint,
+                          ),
+                          _saveButton(
+                            l10n.settingsSavePairing,
+                            _savingPairingServer,
+                            _savePairingServer,
+                          ),
+                        ],
+                      ),
+                      _SectionCard(
                         title: l10n.settingsPaymentMethods,
                         icon: Icons.payments_outlined,
                         children: _paymentMethods.isEmpty
@@ -826,6 +877,7 @@ class _SettingsModulesScreenState extends ConsumerState<SettingsModulesScreen> {
     TextInputType? keyboardType,
     List<TextInputFormatter>? inputFormatters,
     String? suffixText,
+    String? hintText,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: PosTheme.spacingMd),
@@ -836,6 +888,7 @@ class _SettingsModulesScreenState extends ConsumerState<SettingsModulesScreen> {
         decoration: InputDecoration(
           labelText: label,
           suffixText: suffixText,
+          hintText: hintText,
         ),
       ),
     );

@@ -40,6 +40,10 @@ dependencies:
   shared_preferences: ^2.2.2
   intl: ^0.20.2
 
+  # Camera-based QR scanning for pairing — same package/version
+  # frontend-flutter-pos and frontend_flutter_mobile already depend on.
+  mobile_scanner: ^7.4.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -50,6 +54,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -61,6 +66,9 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  assets:
+    - assets/icons/
 
   # To add assets to your application, add an assets section, like this:
   # assets:
@@ -92,3 +100,16 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+flutter_launcher_icons:
+  image_path: "assets/icons/app_icon.png"
+  android: true
+  ios: true
+  web:
+    generate: true
+    background_color: "#009CBD"
+    theme_color: "#009CBD"
+  windows:
+    generate: true
+  macos:
+    generate: true

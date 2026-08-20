@@ -204,7 +204,8 @@ class _WaitingTicketTile extends ConsumerWidget {
 /// it and come back to the counter when their order/number is called. See
 /// [PrintService.printWaitingNumberTicket] for the itemized-bill vs.
 /// bare-number distinction (that's `held_tickets_dialog.dart`'s
-/// `_printTicket`, for the *held ticket* bill, a different flow).
+/// `_buildBillReceipt`/`_openBillPreview`, for the *held ticket* bill, a
+/// different flow).
 Future<void> _printWaitingTicket(
   BuildContext context,
   WidgetRef ref,

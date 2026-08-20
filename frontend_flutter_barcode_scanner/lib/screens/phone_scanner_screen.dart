@@ -1,17 +1,24 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import '../core/l10n/app_strings.dart';
+import '../core/providers/language_provider.dart';
+import '../core/providers/main_color_provider.dart';
+import '../core/widgets/app_bar_actions.dart';
+import '../models/pairing_qr_data.dart';
 import '../services/scanner_relay_role.dart';
+import 'pairing_qr_scan_screen.dart';
 
-class PhoneScannerScreen extends StatefulWidget {
+class PhoneScannerScreen extends ConsumerStatefulWidget {
   const PhoneScannerScreen({super.key});
 
   @override
-  State<PhoneScannerScreen> createState() => _PhoneScannerScreenState();
+  ConsumerState<PhoneScannerScreen> createState() => _PhoneScannerScreenState();
 }
 
-class _PhoneScannerScreenState extends State<PhoneScannerScreen> {
+class _PhoneScannerScreenState extends ConsumerState<PhoneScannerScreen> {
   final TextEditingController _serverController = TextEditingController(
     text: 'http://192.168.1.101:8081',
   );
@@ -73,12 +80,13 @@ class _PhoneScannerScreenState extends State<PhoneScannerScreen> {
   }
 
   Future<void> _connect() async {
+    final AppStrings strings = AppStrings(ref.read(appLanguageProvider));
     final String serverUrl = _serverController.text.trim();
     final String sessionCode = _sessionController.text.trim().toUpperCase();
 
     if (!RegExp(r'^[A-Z2-9]{8}$').hasMatch(sessionCode)) {
       setState(() {
-        _statusMessage = 'Enter the 8-character code shown on the POS';
+        _statusMessage = strings.enterSessionCode;
       });
       return;
     }
@@ -96,18 +104,34 @@ class _PhoneScannerScreenState extends State<PhoneScannerScreen> {
     } catch (error) {
       if (mounted) {
         setState(() {
-          _statusMessage =
-              'Could not connect. Check the server URL, Wi-Fi and code.';
+          _statusMessage = strings.connectFailed;
         });
       }
     }
   }
 
+  Future<void> _scanQrToConnect() async {
+    final PairingQrData? data = await Navigator.of(context).push<PairingQrData>(
+      MaterialPageRoute<PairingQrData>(
+        builder: (_) =>
+            const PairingQrScanScreen(expectedType: PairingQrType.phoneScanner),
+      ),
+    );
+    if (data == null || !mounted) {
+      return;
+    }
+
+    _serverController.text = data.server;
+    _sessionController.text = data.sessionCode;
+    await _connect();
+  }
+
   Future<void> _disconnect() async {
+    final AppStrings strings = AppStrings(ref.read(appLanguageProvider));
     await _relay.disconnect();
     if (mounted) {
       setState(() {
-        _statusMessage = 'Disconnected';
+        _statusMessage = strings.disconnectedStatus;
       });
     }
   }
@@ -117,20 +141,21 @@ class _PhoneScannerScreenState extends State<PhoneScannerScreen> {
       return;
     }
 
+    final AppStrings strings = AppStrings(ref.read(appLanguageProvider));
     setState(() {
       switch (message.type) {
         case 'ready':
-          _statusMessage = 'Connected — point the camera at a 1D barcode';
+          _statusMessage = strings.readyToScan;
           break;
         case 'barcode_ack':
           _lastBarcode = message.value;
-          _statusMessage = '${message.value ?? ''} sent to POS';
+          _statusMessage = '${strings.lastBarcodePrefix}${message.value ?? ''}';
           break;
         case 'pos_disconnected':
-          _statusMessage = 'The POS ended this scanner session';
+          _statusMessage = strings.posEndedSession;
           break;
         case 'error':
-          _statusMessage = message.message ?? 'Scanner relay error';
+          _statusMessage = message.message ?? strings.scannerRelayError;
           break;
       }
     });
@@ -177,30 +202,32 @@ class _PhoneScannerScreenState extends State<PhoneScannerScreen> {
   Widget build(BuildContext context) {
     final bool connected =
         _connectionState == ScannerRelayConnectionState.connected;
+    final AppStrings strings = AppStrings(ref.watch(appLanguageProvider));
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Phone 1D Scanner'),
+        backgroundColor: ref.watch(mainColorProvider),
+        foregroundColor: Colors.white,
+        title: Text(strings.scannerTitle),
         actions: [
           if (connected)
             IconButton(
-              tooltip: 'Flashlight',
+              tooltip: strings.flashlightTooltip,
               icon: const Icon(Icons.flashlight_on_outlined),
               onPressed: _cameraController.toggleTorch,
             ),
-          if (connected)
-            IconButton(
-              tooltip: 'Disconnect',
-              icon: const Icon(Icons.link_off),
-              onPressed: _disconnect,
-            ),
+          ...buildAppBarActions(
+            context: context,
+            ref: ref,
+            onDisconnect: connected ? _disconnect : null,
+          ),
         ],
       ),
-      body: connected ? _buildScanner() : _buildConnectionForm(),
+      body: connected ? _buildScanner(strings) : _buildConnectionForm(strings),
     );
   }
 
-  Widget _buildConnectionForm() {
+  Widget _buildConnectionForm(AppStrings strings) {
     final bool connecting =
         _connectionState == ScannerRelayConnectionState.connecting;
 
@@ -214,28 +241,48 @@ class _PhoneScannerScreenState extends State<PhoneScannerScreen> {
             color: Colors.green,
           ),
           const SizedBox(height: 16),
-          const Text(
-            'Connect this phone to the active POS',
+          Text(
+            strings.connectPrompt,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'The phone and POS must use the same Wi-Fi and backend server.',
+          Text(
+            strings.connectHint,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
+          OutlinedButton.icon(
+            onPressed: connecting ? null : _scanQrToConnect,
+            icon: const Icon(Icons.qr_code_scanner),
+            label: Text(strings.scanQrCode),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(child: Divider(color: Colors.grey.shade300)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Text(
+                  strings.orDivider,
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                ),
+              ),
+              Expanded(child: Divider(color: Colors.grey.shade300)),
+            ],
+          ),
+          const SizedBox(height: 16),
           TextField(
             controller: _serverController,
             keyboardType: TextInputType.url,
             autocorrect: false,
-            decoration: const InputDecoration(
-              labelText: 'POS server URL',
+            decoration: InputDecoration(
+              labelText: strings.serverUrlLabel,
               hintText: 'http://192.168.1.10:8081',
-              border: OutlineInputBorder(),
+              border: const OutlineInputBorder(),
             ),
           ),
           const SizedBox(height: 16),
@@ -249,10 +296,10 @@ class _PhoneScannerScreenState extends State<PhoneScannerScreen> {
                 RegExp(r'[A-Za-z2-9]'),
               ),
             ],
-            decoration: const InputDecoration(
-              labelText: 'POS session code',
+            decoration: InputDecoration(
+              labelText: strings.sessionCodeLabel,
               hintText: 'Example: 7KMX4P2R',
-              border: OutlineInputBorder(),
+              border: const OutlineInputBorder(),
             ),
           ),
           if (_statusMessage != null) ...[
@@ -273,14 +320,14 @@ class _PhoneScannerScreenState extends State<PhoneScannerScreen> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Icon(Icons.link),
-            label: Text(connecting ? 'Connecting...' : 'Connect to POS'),
+            label: Text(connecting ? strings.connecting : strings.connectToPos),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildScanner() {
+  Widget _buildScanner(AppStrings strings) {
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -312,14 +359,14 @@ class _PhoneScannerScreenState extends State<PhoneScannerScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    _statusMessage ?? 'Ready to scan',
+                    _statusMessage ?? strings.readyToScan,
                     textAlign: TextAlign.center,
                     style: const TextStyle(color: Colors.white),
                   ),
                   if (_lastBarcode != null) ...[
                     const SizedBox(height: 8),
                     Text(
-                      'Last barcode: $_lastBarcode',
+                      '${strings.lastBarcodePrefix}$_lastBarcode',
                       style: const TextStyle(
                         color: Colors.greenAccent,
                         fontWeight: FontWeight.w700,

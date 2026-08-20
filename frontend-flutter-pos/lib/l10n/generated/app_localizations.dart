@@ -608,6 +608,36 @@ abstract class AppLocalizations {
   /// **'Save Printers'**
   String get settingsSavePrinters;
 
+  /// No description provided for @settingsPairing.
+  ///
+  /// In en, this message translates to:
+  /// **'Pairing'**
+  String get settingsPairing;
+
+  /// No description provided for @settingsPairingServerAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Server Address (LAN)'**
+  String get settingsPairingServerAddress;
+
+  /// No description provided for @settingsPairingServerAddressHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. http://192.168.1.10:8081 — leave blank to auto-detect'**
+  String get settingsPairingServerAddressHint;
+
+  /// No description provided for @settingsPairingServerAddressHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Overrides the auto-detected LAN address used in the Phone Scanner and Customer Display pairing QR codes. Leave blank to auto-detect.'**
+  String get settingsPairingServerAddressHelp;
+
+  /// No description provided for @settingsSavePairing.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Pairing'**
+  String get settingsSavePairing;
+
   /// No description provided for @settingsTaxRateLabel.
   ///
   /// In en, this message translates to:
@@ -1105,6 +1135,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Exchange rate'**
   String get receiptExchangeRate;
+
+  /// No description provided for @receiptTicketNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Ticket'**
+  String get receiptTicketNumber;
+
+  /// No description provided for @receiptBillHeaderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'BILL / CHECK'**
+  String get receiptBillHeaderTitle;
+
+  /// No description provided for @receiptPaymentStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment Status'**
+  String get receiptPaymentStatus;
+
+  /// No description provided for @receiptUnpaid.
+  ///
+  /// In en, this message translates to:
+  /// **'UNPAID'**
+  String get receiptUnpaid;
+
+  /// No description provided for @receiptBillDisclaimer.
+  ///
+  /// In en, this message translates to:
+  /// **'This is a bill for payment. It is NOT a payment receipt.'**
+  String get receiptBillDisclaimer;
+
+  /// No description provided for @receiptBillCashierNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Please present this bill at the cashier.'**
+  String get receiptBillCashierNotice;
+
+  /// No description provided for @receiptDineIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Dine In'**
+  String get receiptDineIn;
 
   /// No description provided for @dialogConfirmTitle.
   ///
@@ -4059,6 +4131,12 @@ abstract class AppLocalizations {
   /// **'Payment succeeded, but waiting ticket was not saved: {error}'**
   String paymentScreenWaitingTicketSaveFailed(Object error);
 
+  /// No description provided for @paymentScreenHeldTicketReleaseFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment succeeded, but held ticket #{ticketId} could not be closed automatically — please delete it manually from Held Tickets.'**
+  String paymentScreenHeldTicketReleaseFailed(Object ticketId);
+
   /// No description provided for @paymentScreenSaleFailed.
   ///
   /// In en, this message translates to:
@@ -4996,6 +5074,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Held Tickets'**
   String get posDrawerHeldTickets;
+
+  /// No description provided for @posDrawerHeldTicketsColumnTicket.
+  ///
+  /// In en, this message translates to:
+  /// **'Ticket #'**
+  String get posDrawerHeldTicketsColumnTicket;
 
   /// No description provided for @posDrawerInventoryCounts.
   ///
@@ -6473,6 +6557,48 @@ abstract class AppLocalizations {
   /// **'Tap to restore'**
   String get heldTicketsTapToRestore;
 
+  /// No description provided for @heldTicketsItemsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} items'**
+  String heldTicketsItemsCount(Object count);
+
+  /// No description provided for @heldTicketsResumeOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume Order'**
+  String get heldTicketsResumeOrder;
+
+  /// No description provided for @heldTicketsPrintBill.
+  ///
+  /// In en, this message translates to:
+  /// **'Print Bill'**
+  String get heldTicketsPrintBill;
+
+  /// No description provided for @heldTicketsPrintBillAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Print Bill Again'**
+  String get heldTicketsPrintBillAgain;
+
+  /// No description provided for @heldTicketsUnpaidBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'UNPAID'**
+  String get heldTicketsUnpaidBadge;
+
+  /// No description provided for @heldTicketsBillPrintedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'BILL PRINTED'**
+  String get heldTicketsBillPrintedBadge;
+
+  /// No description provided for @heldTicketsBillPreviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bill Preview'**
+  String get heldTicketsBillPreviewTitle;
+
   /// No description provided for @modifierSheetQuantity.
   ///
   /// In en, this message translates to:
@@ -6605,6 +6731,30 @@ abstract class AppLocalizations {
   /// **'Scanner session is stopped'**
   String get phoneScannerSessionStoppedStatus;
 
+  /// No description provided for @phoneScannerScanQrLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan this QR code'**
+  String get phoneScannerScanQrLabel;
+
+  /// No description provided for @phoneScannerOrManualLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Or enter manually'**
+  String get phoneScannerOrManualLabel;
+
+  /// No description provided for @phoneScannerServerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Server: {server}'**
+  String phoneScannerServerLabel(Object server);
+
+  /// No description provided for @phoneScannerQrUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t detect a LAN address automatically. Connect this computer to Wi-Fi/LAN, or enter the address manually on the phone.'**
+  String get phoneScannerQrUnavailable;
+
   /// No description provided for @productCardOutOfStock.
   ///
   /// In en, this message translates to:
@@ -6676,6 +6826,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No Table'**
   String get tableSelectorNoTable;
+
+  /// No description provided for @tableSelectorSelectedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected: {table}'**
+  String tableSelectorSelectedLabel(Object table);
+
+  /// No description provided for @tableSelectorNoneSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'No table selected'**
+  String get tableSelectorNoneSelected;
 
   /// No description provided for @waitingTicketsTitle.
   ///
@@ -7432,6 +7594,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Waiting for the customer display to connect...'**
   String get customerDisplayStatusWaiting;
+
+  /// No description provided for @customerDisplayScanQrLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan this QR code'**
+  String get customerDisplayScanQrLabel;
+
+  /// No description provided for @customerDisplayOrManualLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Or enter manually'**
+  String get customerDisplayOrManualLabel;
+
+  /// No description provided for @customerDisplayServerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Server: {server}'**
+  String customerDisplayServerLabel(Object server);
+
+  /// No description provided for @customerDisplayQrUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t detect a LAN address automatically. Connect this computer to Wi-Fi/LAN, or enter the address manually on the display.'**
+  String get customerDisplayQrUnavailable;
+
+  /// No description provided for @pairingQrScanTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan Pairing QR Code'**
+  String get pairingQrScanTitle;
+
+  /// No description provided for @pairingQrScanInstructions.
+  ///
+  /// In en, this message translates to:
+  /// **'Point the camera at the QR code shown on the POS screen'**
+  String get pairingQrScanInstructions;
+
+  /// No description provided for @pairingQrScanInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid pairing QR code.'**
+  String get pairingQrScanInvalid;
+
+  /// No description provided for @pairingQrScanWrongType.
+  ///
+  /// In en, this message translates to:
+  /// **'This QR code is for {actual}, not {expected}.'**
+  String pairingQrScanWrongType(Object actual, Object expected);
+
+  /// No description provided for @pairingQrTypePhoneScanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone Scanner'**
+  String get pairingQrTypePhoneScanner;
+
+  /// No description provided for @pairingQrTypeCustomerDisplay.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer Display'**
+  String get pairingQrTypeCustomerDisplay;
+
+  /// No description provided for @phoneScanScreenScanQrButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan QR Code'**
+  String get phoneScanScreenScanQrButton;
+
+  /// No description provided for @phoneScanScreenOrDivider.
+  ///
+  /// In en, this message translates to:
+  /// **'OR'**
+  String get phoneScanScreenOrDivider;
 
   /// No description provided for @reportPdfGeneratedLabel.
   ///

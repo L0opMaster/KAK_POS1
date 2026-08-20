@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/cart_models.dart';
 import '../models/table_models.dart';
+import 'bill_print_status_provider.dart';
 import 'cart_provider.dart';
 import '../services/held_ticket_service.dart';
 import 'table_selection_provider.dart';
@@ -205,6 +207,7 @@ class HeldTicketNotifier extends StateNotifier<HeldTicketState> {
   Future<void> deleteTicket(HeldOrder ticket) async {
     try {
       await service.releaseTicket(ticketId: ticket.id.toString());
+      await ref.read(billPrintStatusProvider.notifier).clear(ticket.id);
       await loadHeldTickets();
     } catch (e) {
       state = state.copyWith(error: e.toString());
@@ -214,12 +217,22 @@ class HeldTicketNotifier extends StateNotifier<HeldTicketState> {
   /// Releases a held ticket by id once it's been converted into a paid
   /// sale (see `payment_screen.dart`), so it doesn't linger as a phantom
   /// in-progress entry that can never be resumed again.
-  Future<void> releaseTicketById(int ticketId) async {
+  ///
+  /// Returns `true` on success, `false` (after logging) if the backend
+  /// call failed. The sale itself already succeeded either way — a failure
+  /// here is non-fatal to payment — but it used to be swallowed completely
+  /// silently (no log, no return value, fire-and-forget from the caller),
+  /// which meant a paid ticket could linger forever in the held list with
+  /// zero indication to staff or in logs of why. Callers should await this
+  /// and warn on `false` instead of treating it as fire-and-forget.
+  Future<bool> releaseTicketById(int ticketId) async {
     try {
       await service.releaseTicket(ticketId: ticketId.toString());
+      await ref.read(billPrintStatusProvider.notifier).clear(ticketId);
+      return true;
     } catch (e) {
-      // Non-fatal: the sale already succeeded — a leftover held-ticket row
-      // is just clutter, not a lost order.
+      debugPrint('Failed to release held ticket #$ticketId after payment: $e');
+      return false;
     }
   }
 

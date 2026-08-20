@@ -96,6 +96,8 @@ class ReceiptViewModel {
     required this.footer,
     this.paymentMethodLabel,
     this.labels = ReceiptLabels.fallback,
+    this.isBill = false,
+    this.isDineIn = false,
   });
 
   final AppLanguage language;
@@ -128,6 +130,22 @@ class ReceiptViewModel {
   final String footer;
   final String? paymentMethodLabel;
   final ReceiptLabels labels;
+
+  /// True for a pre-payment "bill/check" printed from a held ticket before
+  /// any payment exists (see `held_tickets_screen.dart`'s `_buildBillReceipt`)
+  /// — false (the default) for every other receipt, including the actual
+  /// paid receipt for the same sale once it's charged. Every renderer
+  /// (on-screen preview, PDF, ESC/POS, Khmer bitmap) reads this to replace
+  /// the Paid/Cash Received/Change section with an explicit "UNPAID" notice
+  /// instead of printing e.g. "Paid: $0", which reads as if $0 was already
+  /// settled rather than nothing having been paid at all.
+  final bool isBill;
+
+  /// True when this order has a table (dine-in) — used on a pre-payment
+  /// bill ([isBill]) to show a prominent "TABLE T05 / DINE IN" block so the
+  /// cashier can identify the order at a glance. Not rendered on a normal
+  /// paid receipt, whose existing (smaller) table row is unchanged.
+  final bool isDineIn;
 
   /// Whether this receipt has any Khmer text in it (Khmer UI language, or a
   /// Khmer-only line/customer/business name) — used by Day 14's printing
@@ -271,6 +289,8 @@ class ReceiptViewModel {
     String? qrImageData,
     double? exchangeRateKhr,
     String? paymentMethodLabel,
+    bool isBill = false,
+    bool isDineIn = false,
   }) {
     final computedSubtotal = subtotal > 0
         ? subtotal
@@ -282,6 +302,8 @@ class ReceiptViewModel {
       phone: businessPhone,
       website: website,
       invoiceNumber: invoiceNumber ?? 'N/A',
+      isBill: isBill,
+      isDineIn: isDineIn,
       date: saleDate ?? '',
       time: saleTime ?? '',
       cashierName: cashierName.isNotEmpty ? cashierName : null,

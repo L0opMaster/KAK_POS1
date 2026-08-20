@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/l10n/app_strings.dart';
+import '../../../core/providers/language_provider.dart';
+import '../../../core/providers/main_color_provider.dart';
+import '../../../core/widgets/app_bar_actions.dart';
 import '../providers/display_provider.dart';
 import '../services/customer_display_relay.dart';
 import '../widgets/cart_view.dart';
@@ -32,8 +36,19 @@ class DisplayScreen extends ConsumerWidget {
       });
     }
 
+    final AppStrings strings = AppStrings(ref.watch(appLanguageProvider));
+
     return Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(
+        backgroundColor: ref.watch(mainColorProvider),
+        foregroundColor: Colors.white,
+        title: Text(strings.displayTitle),
+        actions: buildAppBarActions(
+          context: context,
+          ref: ref,
+          onDisconnect: () => ref.read(displayProvider.notifier).disconnect(),
+        ),
+      ),
       body: Stack(
         children: [
           Positioned.fill(
@@ -67,10 +82,10 @@ class DisplayScreen extends ConsumerWidget {
               child: Container(
                 color: Colors.orange.shade700,
                 padding: const EdgeInsets.symmetric(vertical: 8),
-                child: const Text(
-                  'Waiting for the register to connect...',
+                child: Text(
+                  strings.waitingForRegister,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
                   ),

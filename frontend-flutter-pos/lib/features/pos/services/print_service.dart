@@ -35,6 +35,7 @@ import 'printing/khmer_pdf_font.dart';
 import 'printing/printer_pdf_format.dart';
 import 'printing/printer_profile.dart';
 import 'printing/receipt_bitmap_renderer.dart';
+import 'printing/receipt_labels.dart';
 import 'printing/receipt_layout_spec.dart';
 import 'printing/receipt_view_model.dart';
 import 'printing/thermal_printer_service.dart';
@@ -43,6 +44,10 @@ import 'printing/ticket_line_widgets.dart';
 const _grey = PdfColor.fromInt(0xFF999999);
 const _greyDark = PdfColor.fromInt(0xFF666666);
 const _green = PdfColor.fromInt(0xFF4CAF50);
+
+/// Warning/pending color for a pre-payment bill's "UNPAID" status — matches
+/// receipt_paper_view.dart's `_amber`, never used on a paid receipt.
+const _amber = PdfColor.fromInt(0xFFE08900);
 
 class PrintService {
   PrintService(this._api, this._ref,
@@ -784,6 +789,19 @@ class PrintService {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.stretch,
       children: [
+        // ── Bill banner (pre-payment bill only) ──
+        if (r.isBill) ...[
+          _clipped(
+            labels.billHeaderTitle,
+            pw.TextStyle(
+                fontSize: t.metadataValue + 1,
+                fontWeight: pw.FontWeight.bold,
+                color: _amber),
+            textAlign: pw.TextAlign.center,
+          ),
+          pw.SizedBox(height: ReceiptSpacing.sectionGap),
+        ],
+
         // ── Header ──
         _clipped(
           r.businessName,
@@ -805,8 +823,15 @@ class PrintService {
         _dashedDivider(),
         pw.SizedBox(height: ReceiptSpacing.sectionGap),
 
+        // ── Table / order type (pre-payment bill only) ──
+        if (r.isBill && r.tableNumber != null) ...[
+          _billTableBanner(r, labels, t),
+          pw.SizedBox(height: ReceiptSpacing.sectionGap),
+        ],
+
         // ── Invoice metadata ──
-        _metadataRow(labels.invoiceNumber, r.invoiceNumber, t),
+        _metadataRow(r.isBill ? labels.ticket : labels.invoiceNumber,
+            r.invoiceNumber, t),
         _metadataRow(labels.date, r.date, t),
         _metadataRow(labels.time, r.time, t),
         if (r.cashierName != null)
@@ -880,21 +905,55 @@ class PrintService {
         _dashedDivider(),
         pw.SizedBox(height: ReceiptSpacing.sectionGap),
 
-        // ── Payment ──
-        _summaryRow(labels.paid, r.fmt(r.paidAmount), t, bold: true),
-        if (r.changeAmount > 0) ...[
-          // Cash Received (= paidAmount + changeAmount, what the customer
-          // actually handed over) makes Change legible — Paid alone is the
-          // amount APPLIED to the sale (never more than the total), so
-          // Change would otherwise look like it appeared from nowhere.
+        // ── Payment (or UNPAID status, for a pre-payment bill) ──
+        if (r.isBill) ...[
+          _clipped(
+              labels.paymentStatus,
+              pw.TextStyle(
+                  fontSize: t.summaryLabel,
+                  fontWeight: pw.FontWeight.bold,
+                  color: _greyDark),
+              textAlign: pw.TextAlign.center),
           pw.SizedBox(height: ReceiptSpacing.smallGap),
-          _summaryRow(
-              labels.cashReceived, r.fmt(r.paidAmount + r.changeAmount), t),
+          _clipped(
+              labels.unpaid,
+              pw.TextStyle(
+                  fontSize: t.totalValue - 2,
+                  fontWeight: pw.FontWeight.bold,
+                  color: _amber),
+              textAlign: pw.TextAlign.center),
+          pw.SizedBox(height: ReceiptSpacing.dividerGap),
+          _clipped(labels.billDisclaimer,
+              pw.TextStyle(fontSize: t.itemNote, color: _grey),
+              textAlign: pw.TextAlign.center),
           pw.SizedBox(height: ReceiptSpacing.smallGap),
-          _summaryRow(labels.change, r.fmt(r.changeAmount), t, color: _green),
+          _clipped(
+              labels.billCashierNotice,
+              pw.TextStyle(
+                  fontSize: t.summaryLabel,
+                  fontWeight: pw.FontWeight.bold,
+                  color: _amber),
+              textAlign: pw.TextAlign.center),
           pw.SizedBox(height: ReceiptSpacing.sectionGap),
           _dashedDivider(),
           pw.SizedBox(height: ReceiptSpacing.sectionGap),
+        ] else ...[
+          _summaryRow(labels.paid, r.fmt(r.paidAmount), t, bold: true),
+          if (r.changeAmount > 0) ...[
+            // Cash Received (= paidAmount + changeAmount, what the customer
+            // actually handed over) makes Change legible — Paid alone is the
+            // amount APPLIED to the sale (never more than the total), so
+            // Change would otherwise look like it appeared from nowhere.
+            pw.SizedBox(height: ReceiptSpacing.smallGap),
+            _summaryRow(
+                labels.cashReceived, r.fmt(r.paidAmount + r.changeAmount), t),
+            pw.SizedBox(height: ReceiptSpacing.smallGap),
+            _summaryRow(labels.change, r.fmt(r.changeAmount), t,
+                color: _green),
+            pw.SizedBox(height: ReceiptSpacing.sectionGap),
+            _dashedDivider(),
+            pw.SizedBox(height: ReceiptSpacing.sectionGap),
+          ],
         ],
 
         // ── Credit ── (only for a sale that is/was a credit sale)
@@ -963,6 +1022,35 @@ class PrintService {
             pw.TextStyle(fontSize: t.footerSmall, color: _grey),
             textAlign: pw.TextAlign.center),
       ],
+    );
+  }
+
+  /// PDF counterpart of receipt_paper_view.dart's `_billTableBanner` —
+  /// bordered "TABLE T05 / DINE IN" block for a pre-payment bill.
+  pw.Widget _billTableBanner(
+      ReceiptViewModel r, ReceiptLabels labels, ReceiptTypography t) {
+    return pw.Container(
+      width: double.infinity,
+      padding: const pw.EdgeInsets.symmetric(vertical: 6),
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: PdfColors.grey300),
+        borderRadius: pw.BorderRadius.circular(4),
+      ),
+      child: pw.Column(
+        children: [
+          _clipped(
+              r.tableNumber!.toUpperCase(),
+              pw.TextStyle(
+                  fontSize: t.metadataValue + 3, fontWeight: pw.FontWeight.bold),
+              textAlign: pw.TextAlign.center),
+          if (r.isDineIn) ...[
+            pw.SizedBox(height: 2),
+            _clipped(labels.dineIn.toUpperCase(),
+                pw.TextStyle(fontSize: t.metadataLabel, color: _greyDark),
+                textAlign: pw.TextAlign.center),
+          ],
+        ],
+      ),
     );
   }
 

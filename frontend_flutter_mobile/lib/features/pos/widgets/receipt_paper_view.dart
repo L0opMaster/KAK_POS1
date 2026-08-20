@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../services/printing/receipt_labels.dart';
 import '../services/printing/receipt_view_model.dart';
 
 /// Ported from `frontend-flutter-pos/lib/features/pos/widgets/
@@ -64,9 +65,26 @@ class ReceiptContent extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // ═══════════════════════════════════════════
+        //  BILL BANNER (pre-payment bill only)
+        // ═══════════════════════════════════════════
+        if (receipt.isBill) ...[
+          const _Spacer(16),
+          Center(
+            child: _Text(
+              labels.billHeaderTitle,
+              13,
+              bold: true,
+              color: _amber,
+              letterSpacing: 2.0,
+            ),
+          ),
+          const _Spacer(10),
+        ],
+
+        // ═══════════════════════════════════════════
         //  HEADER
         // ═══════════════════════════════════════════
-        const _Spacer(20),
+        if (!receipt.isBill) const _Spacer(20),
         Center(
           child: _Text(
             receipt.businessName,
@@ -87,9 +105,22 @@ class ReceiptContent extends StatelessWidget {
         const _Spacer(10),
 
         // ═══════════════════════════════════════════
+        //  TABLE / ORDER TYPE (pre-payment bill only) — prominent, so the
+        //  cashier can identify the order at a glance, separate from the
+        //  smaller plain metadata row every receipt already has.
+        // ═══════════════════════════════════════════
+        if (receipt.isBill && receipt.tableNumber != null) ...[
+          _billTableBanner(receipt, labels),
+          const _Spacer(10),
+        ],
+
+        // ═══════════════════════════════════════════
         //  INFO
         // ═══════════════════════════════════════════
-        _info(labels.invoiceNumber, receipt.invoiceNumber),
+        _info(
+          receipt.isBill ? labels.ticket : labels.invoiceNumber,
+          receipt.invoiceNumber,
+        ),
         _info(labels.date, receipt.date),
         _info(labels.time, receipt.time),
         if (receipt.cashierName != null)
@@ -175,29 +206,51 @@ class ReceiptContent extends StatelessWidget {
         const _Spacer(10),
 
         // ═══════════════════════════════════════════
-        //  PAYMENT
+        //  PAYMENT  (or UNPAID status, for a pre-payment bill)
         // ═══════════════════════════════════════════
-        _total(labels.paid, receipt.fmt(receipt.paidAmount), bold: true),
-        const _Spacer(3),
-        // Cash Received/Change only make sense together — showing Change
-        // alone next to a Paid amount that already equals the Total reads
-        // as if change appeared from nowhere. Cash Received (= paidAmount
-        // + changeAmount) makes the arithmetic legible: Cash Received -
-        // Change = Paid.
-        if (receipt.changeAmount > 0) ...[
-          _total(
-            labels.cashReceived,
-            receipt.fmt(receipt.paidAmount + receipt.changeAmount),
+        if (receipt.isBill) ...[
+          Center(
+            child: _Text(labels.paymentStatus, 9, bold: true, color: _greyDark),
           ),
-          const _Spacer(3),
-          _total(
-            labels.change,
-            receipt.fmt(receipt.changeAmount),
-            color: _green,
+          const _Spacer(4),
+          Center(child: _Text(labels.unpaid, 15, bold: true, color: _amber)),
+          const _Spacer(8),
+          Center(child: _Text(labels.billDisclaimer, 8, color: _grey)),
+          const _Spacer(4),
+          Center(
+            child: _Text(
+              labels.billCashierNotice,
+              9,
+              bold: true,
+              color: _amber,
+            ),
           ),
           const _Spacer(10),
           _dashed,
           const _Spacer(10),
+        ] else ...[
+          _total(labels.paid, receipt.fmt(receipt.paidAmount), bold: true),
+          const _Spacer(3),
+          // Cash Received/Change only make sense together — showing Change
+          // alone next to a Paid amount that already equals the Total reads
+          // as if change appeared from nowhere. Cash Received (= paidAmount
+          // + changeAmount) makes the arithmetic legible: Cash Received -
+          // Change = Paid.
+          if (receipt.changeAmount > 0) ...[
+            _total(
+              labels.cashReceived,
+              receipt.fmt(receipt.paidAmount + receipt.changeAmount),
+            ),
+            const _Spacer(3),
+            _total(
+              labels.change,
+              receipt.fmt(receipt.changeAmount),
+              color: _green,
+            ),
+            const _Spacer(10),
+            _dashed,
+            const _Spacer(10),
+          ],
         ],
 
         // ═══════════════════════════════════════════
@@ -296,6 +349,42 @@ class ReceiptContent extends StatelessWidget {
     );
   }
 
+  /// Bordered "TABLE T05 / DINE IN" block for a pre-payment bill — bigger
+  /// and more prominent than the plain [_info] row every receipt already
+  /// has for the table, so the cashier can spot which table an order
+  /// belongs to at a glance.
+  Widget _billTableBanner(ReceiptViewModel receipt, ReceiptLabels labels) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey[300]!),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Column(
+        children: [
+          _Text(
+            receipt.tableNumber!.toUpperCase(),
+            14,
+            bold: true,
+            align: TextAlign.center,
+            letterSpacing: 1.0,
+          ),
+          if (receipt.isDineIn) ...[
+            const _Spacer(2),
+            _Text(
+              labels.dineIn.toUpperCase(),
+              8,
+              color: _greyDark,
+              align: TextAlign.center,
+              letterSpacing: 1.0,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _info(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 1),
@@ -353,6 +442,10 @@ class ReceiptContent extends StatelessWidget {
 const _grey = Color(0xFF999999);
 const _greyDark = Color(0xFF666666);
 const _green = Color(0xFF4CAF50);
+
+/// Warning/pending color for a pre-payment bill's "UNPAID" status — never
+/// used on a paid receipt, whose payment section stays exactly as before.
+const _amber = Color(0xFFE08900);
 
 class _Text extends StatelessWidget {
   final String data;

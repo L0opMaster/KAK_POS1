@@ -1,6 +1,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- For scanning the POS's pairing QR code (see PairingQrScanScreen).
+         Not required: this device may have no camera and pairing still
+         works via manual server/code entry in ConnectScreen. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
     <application
-        android:label="frontend_flutter_customer_screen"
+        android:label="CUSTOMER DISPLAY"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

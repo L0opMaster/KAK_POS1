@@ -53,6 +53,11 @@ dependencies:
   # depend on. Added Day 8.
   mobile_scanner: ^7.4.0
 
+  # QR code generation for pairing dialogs (Phone Scanner / Customer
+  # Display) — same package/version frontend-flutter-pos already depends
+  # on, kept in sync so both apps' pairing screens use one QR library.
+  qr_flutter: ^4.1.0
+
   # Pinned explicitly (matches frontend-flutter-pos) to avoid version drift
   # with the flutter_localizations-generated code.
   intl: ^0.20.2
@@ -110,6 +115,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -139,6 +145,7 @@ flutter:
 
   assets:
     - assets/fonts/
+    - assets/icons/
 
   # Ported from frontend-flutter-pos/pubspec.yaml — same two font families,
   # same fallback-only Khmer usage pattern (see Day 3 doc for why NotoSansKhmer
@@ -157,3 +164,16 @@ flutter:
 
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+flutter_launcher_icons:
+  image_path: "assets/icons/app_icon.png"
+  android: true
+  ios: true
+  web:
+    generate: true
+    background_color: "#009CBD"
+    theme_color: "#009CBD"
+  windows:
+    generate: true
+  macos:
+    generate: true

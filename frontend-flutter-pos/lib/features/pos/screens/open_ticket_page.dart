@@ -3,11 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/config/currency_utils.dart';
 import '../../../core/config/pos_theme.dart';
+import '../../../core/providers/auth_provider.dart';
+import '../../../core/providers/company_provider.dart';
+import '../../../core/providers/language_provider.dart';
 import '../../../core/utils/l10n_extensions.dart';
+import '../../../core/utils/receipt_date_format.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../models/cart_models.dart';
 import '../providers/cart_provider.dart';
 import '../providers/held_ticket_provider.dart';
-import 'pos_screen.dart';
+import '../services/printing/receipt_view_model.dart';
+import '../widgets/bill_preview_screen.dart';
 
 class OpenTicketPage extends ConsumerStatefulWidget {
   const OpenTicketPage({super.key});
@@ -22,6 +28,94 @@ class _OpenTicketPageState extends ConsumerState<OpenTicketPage> {
     super.initState();
     Future.microtask(
       () => ref.read(heldTicketProvider.notifier).loadHeldTickets(),
+    );
+  }
+
+  /// Builds this held ticket's pre-payment bill (`isBill: true`) so the
+  /// customer can carry it to the cashier — no sale exists for a held
+  /// ticket yet (see `held_ticket_provider.dart`'s `holdCurrentCart`), so
+  /// this builds the receipt straight from the ticket's saved cart
+  /// items/company profile instead of a backend `ReceiptResponse`.
+  /// `paidAmount: 0` since nothing has been charged — [ReceiptViewModel
+  /// .isBill] is what actually makes every renderer print "UNPAID" instead
+  /// of "Paid: ៛0", not the zero amount itself. Mirrors
+  /// `held_tickets_dialog.dart`'s `_buildBillReceipt` exactly, so the same
+  /// ticket's bill looks identical whichever screen printed it from.
+  Future<ReceiptViewModel?> _buildBillReceipt(HeldOrder ticket) async {
+    final items = ticket.cartItems ?? const <CartItem>[];
+    try {
+      final subtotal = items.fold(0.0, (sum, i) => sum + i.lineTotal);
+      final taxAmount = items.fold(
+          0.0,
+          (sum, i) =>
+              sum +
+              (i.lineTotal - (i.discountAmount ?? 0) * i.qty) *
+                  i.product.taxRate);
+
+      Map<String, dynamic>? company;
+      try {
+        company = await ref.read(companyProfileProvider.future);
+      } catch (_) {
+        // No company profile yet — fromCart falls back to the app name and
+        // omits address/phone/website.
+      }
+
+      final waitingNumber = await ref
+          .read(waitingNumberServiceProvider)
+          .getNumberForOrder(ticket.id);
+
+      if (!mounted) return null;
+      final language = ref.read(appLanguageProvider);
+      final l10n = AppLocalizations.of(context);
+      final cashierName = ref.read(currentUserProvider)?.fullName ?? '';
+      final now = DateTime.now();
+
+      return ReceiptViewModel.fromCart(
+        language: language,
+        l10n: l10n,
+        total: subtotal + taxAmount,
+        subtotal: subtotal,
+        taxAmount: taxAmount,
+        items: items,
+        paidAmount: 0,
+        invoiceNumber:
+            '#${(waitingNumber ?? ticket.id).toString().padLeft(3, '0')}',
+        cashierName: cashierName,
+        businessName: company?['businessName'] as String?,
+        businessAddress: company?['address'] as String?,
+        businessPhone: company?['phone'] as String?,
+        website: company?['website'] as String?,
+        currency: readCurrency(ref),
+        saleDate: formatReceiptDate(now),
+        saleTime: formatReceiptTime(now),
+        tableNumber: ticket.table?.displayText,
+        isBill: true,
+        isDineIn: ticket.table != null,
+      );
+    } catch (e) {
+      debugPrint('Held ticket bill build failed: $e');
+      if (!mounted) return null;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.printerPrintFailed),
+          backgroundColor: PosTheme.errorRed,
+        ),
+      );
+      return null;
+    }
+  }
+
+  /// "Print" action on a ticket card: builds the current-state bill and
+  /// pushes [BillPreviewScreen] to preview/print it — same preview-before-
+  /// print step `held_tickets_dialog.dart`'s "Print Bill" already uses.
+  Future<void> _openBillPreview(HeldOrder ticket) async {
+    final receipt = await _buildBillReceipt(ticket);
+    if (receipt == null || !mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            BillPreviewScreen(receipt: receipt, ticketId: ticket.id),
+      ),
     );
   }
 
@@ -95,20 +189,36 @@ class _OpenTicketPageState extends ConsumerState<OpenTicketPage> {
                     return _TicketCard(
                       ticket: ticket,
                       onRestore: () async {
+                        // Captured BEFORE the await, not checked via
+                        // `context.mounted` after it: `context` here is
+                        // this specific list item's BuildContext, and
+                        // `restoreTicket` ends by calling
+                        // `loadHeldTickets()`, which removes this now-
+                        // in-progress ticket from the list and rebuilds
+                        // it — disposing this exact item's context in the
+                        // process. A `mounted` check after the await was
+                        // therefore always false, so the pop below never
+                        // ran (only the restore itself did). The
+                        // NavigatorState captured here stays valid
+                        // regardless, since it belongs to the ambient
+                        // Navigator, not to this disposable list item.
+                        final navigator = Navigator.of(context);
                         final notifier = ref.read(heldTicketProvider.notifier);
                         await notifier.restoreTicket(ticket);
-                        // Navigate to POS after restoring items to cart
-                        if (context.mounted) {
-                          Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute(
-                                builder: (_) => const PosScreen()),
-                            (route) => false,
-                          );
-                        }
+                        // Pop back up to the register (PosScreen, the
+                        // app's `home:` route — see main.dart) so the
+                        // resumed cart is immediately visible, no matter
+                        // how many screens deep the drawer was opened
+                        // from. `popUntil(isFirst)` reveals the *existing*
+                        // PosScreen instance already at the bottom of the
+                        // stack instead of `pushAndRemoveUntil` tearing
+                        // down the whole stack and building a brand new one.
+                        navigator.popUntil((route) => route.isFirst);
                       },
                       onDelete: () => ref
                           .read(heldTicketProvider.notifier)
                           .deleteTicket(ticket),
+                      onPrint: () => _openBillPreview(ticket),
                     );
                   },
                 ),
@@ -122,11 +232,13 @@ class _TicketCard extends ConsumerWidget {
     required this.ticket,
     required this.onRestore,
     required this.onDelete,
+    required this.onPrint,
   });
 
   final HeldOrder ticket;
   final VoidCallback onRestore;
   final VoidCallback onDelete;
+  final VoidCallback onPrint;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -242,6 +354,19 @@ class _TicketCard extends ConsumerWidget {
                 icon: Icon(Icons.restore,
                     size: 20, color: PosTheme.primaryGreen),
                 tooltip: context.l10n.openTicketPageRestore,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Container(
+              decoration: BoxDecoration(
+                color: PosTheme.accentBlue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(PosTheme.radiusSmall),
+              ),
+              child: IconButton(
+                onPressed: onPrint,
+                icon: Icon(Icons.print_outlined,
+                    size: 20, color: PosTheme.accentBlue),
+                tooltip: context.l10n.heldTicketsPrintBill,
               ),
             ),
             const SizedBox(width: 4),

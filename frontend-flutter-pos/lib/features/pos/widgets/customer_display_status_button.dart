@@ -1,10 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/config/app_config.dart';
 import '../../../core/utils/l10n_extensions.dart';
+import '../../../core/utils/lan_address.dart';
+import '../../../core/utils/pairing_qr_data.dart';
 import '../providers/customer_display_provider.dart';
 import '../services/customer_display_relay.dart';
+import 'pairing_qr_section.dart';
 
 /// App-bar icon that starts/stops a customer-display pairing session and
 /// shows the session code the customer-screen device should be connected
@@ -39,6 +45,16 @@ class CustomerDisplayStatusButton extends ConsumerWidget {
       return;
     }
 
+    // Scoped to this dialog's lifetime rather than a State field, since
+    // this widget is a stateless ConsumerWidget — mirrors the live-update
+    // pattern PhoneScannerReceiverButton uses via an instance field, just
+    // local here because there's no longer-lived State to own it.
+    final ValueNotifier<String?> lanServerUrl = ValueNotifier<String?>(null);
+    unawaited(
+      resolvePairingServerUrl(AppConfig.apiBaseUrl)
+          .then((String? url) => lanServerUrl.value = url),
+    );
+
     await showDialog<void>(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -53,44 +69,77 @@ class CustomerDisplayStatusButton extends ConsumerWidget {
               Text(context.l10n.customerDisplayDialogTitle),
             ],
           ),
+          // QR section can push content past the screen height on shorter
+          // Android phones. AlertDialog's own `scrollable: true` also
+          // wraps content in an IntrinsicWidth alongside the actions row,
+          // which crashes ("LayoutBuilder does not support returning
+          // intrinsic dimensions") because QrImageView uses a LayoutBuilder
+          // internally — so the content scrolls itself here instead.
           content: SizedBox(
             width: 440,
-            child: Consumer(
-              builder: (context, ref, _) {
-                final CustomerDisplayStatus status =
-                    ref.watch(customerDisplayProvider);
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(context.l10n.customerDisplayDialogInstructions),
-                    const SizedBox(height: 16),
-                    SelectableText(
-                      status.sessionCode ?? '--------',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 30,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 4,
+            child: SingleChildScrollView(
+              child: Consumer(
+                builder: (context, ref, _) {
+                  final CustomerDisplayStatus status =
+                      ref.watch(customerDisplayProvider);
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(context.l10n.customerDisplayDialogInstructions),
+                      const SizedBox(height: 16),
+                      ValueListenableBuilder<String?>(
+                        valueListenable: lanServerUrl,
+                        builder: (context, lanUrl, _) {
+                          return PairingQrSection(
+                            scanLabel: context.l10n.customerDisplayScanQrLabel,
+                            orManualLabel:
+                                context.l10n.customerDisplayOrManualLabel,
+                            serverLabel: lanUrl == null
+                                ? null
+                                : context.l10n
+                                    .customerDisplayServerLabel(lanUrl),
+                            unavailableMessage:
+                                context.l10n.customerDisplayQrUnavailable,
+                            qrData:
+                                (lanUrl == null || status.sessionCode == null)
+                                    ? null
+                                    : PairingQrData(
+                                        type: PairingQrType.customerDisplay,
+                                        server: lanUrl,
+                                        sessionCode: status.sessionCode!,
+                                      ).encode(),
+                          );
+                        },
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextButton.icon(
-                      onPressed: status.sessionCode == null
-                          ? null
-                          : () {
-                              Clipboard.setData(
-                                ClipboardData(text: status.sessionCode!),
-                              );
-                            },
-                      icon: const Icon(Icons.copy),
-                      label: Text(context.l10n.customerDisplayCopyCode),
-                    ),
-                    const SizedBox(height: 12),
-                    _StatusLine(status: status),
-                  ],
-                );
-              },
+                      const SizedBox(height: 12),
+                      SelectableText(
+                        status.sessionCode ?? '--------',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 30,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 4,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextButton.icon(
+                        onPressed: status.sessionCode == null
+                            ? null
+                            : () {
+                                Clipboard.setData(
+                                  ClipboardData(text: status.sessionCode!),
+                                );
+                              },
+                        icon: const Icon(Icons.copy),
+                        label: Text(context.l10n.customerDisplayCopyCode),
+                      ),
+                      const SizedBox(height: 12),
+                      _StatusLine(status: status),
+                    ],
+                  );
+                },
+              ),
             ),
           ),
           actions: [
@@ -109,6 +158,7 @@ class CustomerDisplayStatusButton extends ConsumerWidget {
         );
       },
     );
+    lanServerUrl.dispose();
   }
 }
 

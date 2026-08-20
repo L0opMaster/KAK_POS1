@@ -500,14 +500,14 @@ class _PosAppBarState extends ConsumerState<_PosAppBar> {
             ),
           ],
         ),
-        IconButton(
-          icon: const Icon(
-            Icons.settings_outlined,
-            color: Colors.white,
-          ),
-          tooltip: l10n.navSettings,
-          onPressed: () => Navigator.of(context).pushNamed('/settings'),
-        ),
+        // IconButton(
+        //   icon: const Icon(
+        //     Icons.settings_outlined,
+        //     color: Colors.white,
+        //   ),
+        //   tooltip: l10n.navSettings,
+        //   onPressed: () => Navigator.of(context).pushNamed('/settings'),
+        // ),
         Padding(
           padding: const EdgeInsets.only(right: 12, left: 4),
           child: CircleAvatar(

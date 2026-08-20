@@ -15,9 +15,9 @@ import '../providers/customer_provider.dart';
 import '../providers/held_ticket_provider.dart';
 import '../providers/table_selection_provider.dart';
 import '../providers/waiting_ticket_provider.dart' as waiting;
+import '../screens/table_selection_screen.dart';
 import 'cart_items_list.dart';
 import 'cart_totals.dart';
-import 'table_selector.dart';
 import 'waiting_tickets_dialog.dart';
 
 /// Main cart panel with a horizontally scrollable header section.
@@ -576,8 +576,9 @@ class _CustomerChip extends ConsumerWidget {
 
 /// Tappable chip showing the table attached to the cart, or just "Table" if
 /// none — table selection is entirely optional (counter-service shops never
-/// need to touch it). Tapping opens [TableSelector], which updates both
-/// [tableSelectionProvider] and `cartProvider`'s `tableId`.
+/// need to touch it). Tapping pushes [TableSelectionScreen], which updates
+/// both [tableSelectionProvider] and `cartProvider`'s `tableId` once the
+/// user confirms — see that screen for the confirm/cancel contract.
 class _TableChip extends ConsumerWidget {
   const _TableChip();
 
@@ -591,9 +592,8 @@ class _TableChip extends ConsumerWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(PosTheme.radiusPill),
         onTap: () {
-          showDialog<void>(
-            context: context,
-            builder: (_) => const TableSelector(),
+          Navigator.of(context).push<void>(
+            MaterialPageRoute(builder: (_) => const TableSelectionScreen()),
           );
         },
         child: Container(

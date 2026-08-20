@@ -550,7 +550,8 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   Future<void> _startCreditSale() async {
     if (widget.customerId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.paymentScreenCreditRequiresCustomer)),
+        SnackBar(
+            content: Text(context.l10n.paymentScreenCreditRequiresCustomer)),
       );
       return;
     }
@@ -754,13 +755,25 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
 
       // This cart came from a held ticket and just became a real sale —
       // release the original ticket so it doesn't linger as a phantom
-      // in-progress entry that can never be resumed again.
+      // in-progress entry that can never be resumed again. Awaited (not
+      // fire-and-forget) and checked: this used to be `unawaited` with the
+      // failure silently swallowed inside releaseTicketById itself, so a
+      // failed release (network hiccup, etc.) left a fully-paid ticket
+      // sitting in the Held Tickets list forever with zero indication to
+      // staff or in logs of why.
       if (widget.heldTicketId != null) {
-        unawaited(
-          ref
-              .read(heldTicketProvider.notifier)
-              .releaseTicketById(widget.heldTicketId!),
-        );
+        final released = await ref
+            .read(heldTicketProvider.notifier)
+            .releaseTicketById(widget.heldTicketId!);
+        if (!released && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(context.l10n.paymentScreenHeldTicketReleaseFailed(
+                  widget.heldTicketId.toString())),
+              backgroundColor: PosTheme.warningAmber,
+            ),
+          );
+        }
       }
 
       // Add the paid order to the local waiting-number list.
@@ -898,12 +911,21 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
 
       if (!mounted) return;
 
+      // See the matching block in `_submitSaleToBackend` above for why
+      // this is awaited-and-checked rather than fire-and-forget.
       if (widget.heldTicketId != null) {
-        unawaited(
-          ref
-              .read(heldTicketProvider.notifier)
-              .releaseTicketById(widget.heldTicketId!),
-        );
+        final released = await ref
+            .read(heldTicketProvider.notifier)
+            .releaseTicketById(widget.heldTicketId!);
+        if (!released && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(context.l10n.paymentScreenHeldTicketReleaseFailed(
+                  widget.heldTicketId.toString())),
+              backgroundColor: PosTheme.warningAmber,
+            ),
+          );
+        }
       }
 
       try {
@@ -1304,277 +1326,280 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(vertical: 12),
           child: Column(children: [
-          const SizedBox(height: 8),
-          // ── Large total ──
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
-            child: Column(children: [
-              Text(formatAmount(widget.total, _currency),
-                  style: TextStyle(
-                      fontSize: 48,
-                      fontWeight: FontWeight.w800,
-                      color: PosTheme.textPrimaryOf(context))),
-              const SizedBox(height: 6),
-              Text(context.l10n.paymentScreenTotalDue,
-                  style: TextStyle(
-                      fontSize: 14, color: PosTheme.textSecondaryOf(context))),
-            ]),
-          ),
-          const SizedBox(height: 24),
-          // ── Cash received + change calculator ──
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(context.l10n.paymentScreenCashReceived,
-                        style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: PosTheme.textSecondaryOf(context))),
-                    // Paid in $ or paid in ៛ — whichever the customer
-                    // actually handed over.
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: (_rates.keys.toList()
-                            ..sort((a, b) => a == _currency ? -1 : 1))
-                          .map((code) {
-                        final selected = code == _tenderCurrency;
-                        return Padding(
-                          padding: const EdgeInsets.only(left: 6),
-                          child: GestureDetector(
-                            onTap: () => _setTenderCurrency(code),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: selected
-                                    ? PosTheme.primaryGreen
-                                    : Colors.white,
-                                borderRadius:
-                                    BorderRadius.circular(PosTheme.radiusPill),
-                                border: Border.all(
-                                    color: selected
-                                        ? PosTheme.primaryGreen
-                                        : PosTheme.borderColorOf(context)),
-                              ),
-                              child: Text(
-                                '${_rates[code]?.symbol ?? code} $code',
-                                style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: selected
-                                        ? Colors.white
-                                        : PosTheme.textSecondaryOf(context)),
+            const SizedBox(height: 8),
+            // ── Large total ──
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 28),
+              child: Column(children: [
+                Text(formatAmount(widget.total, _currency),
+                    style: TextStyle(
+                        fontSize: 48,
+                        fontWeight: FontWeight.w800,
+                        color: PosTheme.textPrimaryOf(context))),
+                const SizedBox(height: 6),
+                Text(context.l10n.paymentScreenTotalDue,
+                    style: TextStyle(
+                        fontSize: 14,
+                        color: PosTheme.textSecondaryOf(context))),
+              ]),
+            ),
+            const SizedBox(height: 24),
+            // ── Cash received + change calculator ──
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(context.l10n.paymentScreenCashReceived,
+                          style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: PosTheme.textSecondaryOf(context))),
+                      // Paid in $ or paid in ៛ — whichever the customer
+                      // actually handed over.
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: (_rates.keys.toList()
+                              ..sort((a, b) => a == _currency ? -1 : 1))
+                            .map((code) {
+                          final selected = code == _tenderCurrency;
+                          return Padding(
+                            padding: const EdgeInsets.only(left: 6),
+                            child: GestureDetector(
+                              onTap: () => _setTenderCurrency(code),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: selected
+                                      ? PosTheme.primaryGreen
+                                      : Colors.white,
+                                  borderRadius: BorderRadius.circular(
+                                      PosTheme.radiusPill),
+                                  border: Border.all(
+                                      color: selected
+                                          ? PosTheme.primaryGreen
+                                          : PosTheme.borderColorOf(context)),
+                                ),
+                                child: Text(
+                                  '${_rates[code]?.symbol ?? code} $code',
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: selected
+                                          ? Colors.white
+                                          : PosTheme.textSecondaryOf(context)),
+                                ),
                               ),
                             ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _cashReceivedCtl,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(_tenderCurrency == 'KHR'
-                        ? RegExp(r'^\d*')
-                        : RegExp(r'^\d*\.?\d{0,2}'))
-                  ],
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.w700),
-                  decoration: InputDecoration(
-                    isDense: true,
-                    prefixText: _rates[_tenderCurrency]?.symbol ??
-                        currencySymbol(_tenderCurrency),
-                    hintText: _tenderCurrency == 'KHR' ? '0' : '0.00',
-                    border: OutlineInputBorder(
-                      borderRadius:
-                          BorderRadius.circular(PosTheme.radiusMedium),
-                    ),
-                  ),
-                  onChanged: _onCashReceivedChanged,
-                ),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: _quickCashAmounts().map((amount) {
-                    final totalInTender =
-                        _convert(widget.total, _currency, _tenderCurrency);
-                    final tolerance = _tenderCurrency == 'KHR' ? 50 : 0.01;
-                    final isExact = (amount - totalInTender).abs() < tolerance;
-                    return SizedBox(
-                      width: 82,
-                      height: 44,
-                      child: ElevatedButton(
-                        onPressed: () => _selectCashReceived(amount.toDouble()),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              isExact ? PosTheme.primaryGreen : Colors.white,
-                          foregroundColor: isExact
-                              ? Colors.white
-                              : PosTheme.textPrimaryOf(context),
-                          side: BorderSide(
-                              color: isExact
-                                  ? PosTheme.primaryGreen
-                                  : PosTheme.borderColorOf(context)),
-                          shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.circular(PosTheme.radiusSmall),
-                          ),
-                          padding: EdgeInsets.zero,
-                          elevation: 0,
-                        ),
-                        child: Text(
-                          isExact
-                              ? context.l10n.paymentScreenExact
-                              : formatAmount(amount, _tenderCurrency),
-                          style: const TextStyle(
-                              fontSize: 13, fontWeight: FontWeight.w700),
-                        ),
+                          );
+                        }).toList(),
                       ),
-                    );
-                  }).toList(),
-                ),
-                if (_cashReceived != null) ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: (_amountShort > 0
-                              ? PosTheme.warningAmber
-                              : PosTheme.primaryGreen)
-                          .withOpacity(0.1),
-                      borderRadius:
-                          BorderRadius.circular(PosTheme.radiusMedium),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _cashReceivedCtl,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(_tenderCurrency == 'KHR'
+                          ? RegExp(r'^\d*')
+                          : RegExp(r'^\d*\.?\d{0,2}'))
+                    ],
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.w700),
+                    decoration: InputDecoration(
+                      isDense: true,
+                      prefixText: _rates[_tenderCurrency]?.symbol ??
+                          currencySymbol(_tenderCurrency),
+                      hintText: _tenderCurrency == 'KHR' ? '0' : '0.00',
+                      border: OutlineInputBorder(
+                        borderRadius:
+                            BorderRadius.circular(PosTheme.radiusMedium),
+                      ),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(top: 2),
+                    onChanged: _onCashReceivedChanged,
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _quickCashAmounts().map((amount) {
+                      final totalInTender =
+                          _convert(widget.total, _currency, _tenderCurrency);
+                      final tolerance = _tenderCurrency == 'KHR' ? 50 : 0.01;
+                      final isExact =
+                          (amount - totalInTender).abs() < tolerance;
+                      return SizedBox(
+                        width: 82,
+                        height: 44,
+                        child: ElevatedButton(
+                          onPressed: () =>
+                              _selectCashReceived(amount.toDouble()),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                isExact ? PosTheme.primaryGreen : Colors.white,
+                            foregroundColor: isExact
+                                ? Colors.white
+                                : PosTheme.textPrimaryOf(context),
+                            side: BorderSide(
+                                color: isExact
+                                    ? PosTheme.primaryGreen
+                                    : PosTheme.borderColorOf(context)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(PosTheme.radiusSmall),
+                            ),
+                            padding: EdgeInsets.zero,
+                            elevation: 0,
+                          ),
                           child: Text(
-                            _amountShort > 0
-                                ? context.l10n.paymentScreenShort
-                                : context.l10n.receiptChange,
-                            style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: _amountShort > 0
-                                    ? PosTheme.warningAmber
-                                    : PosTheme.primaryGreen),
+                            isExact
+                                ? context.l10n.paymentScreenExact
+                                : formatAmount(amount, _tenderCurrency),
+                            style: const TextStyle(
+                                fontSize: 13, fontWeight: FontWeight.w700),
                           ),
                         ),
-                        _dualCurrencyAmount(
-                          _amountShort > 0 ? _amountShort : _changeDue,
-                          color: _amountShort > 0
-                              ? PosTheme.warningAmber
-                              : PosTheme.primaryGreen,
-                        ),
-                      ],
-                    ),
+                      );
+                    }).toList(),
                   ),
+                  if (_cashReceived != null) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: (_amountShort > 0
+                                ? PosTheme.warningAmber
+                                : PosTheme.primaryGreen)
+                            .withOpacity(0.1),
+                        borderRadius:
+                            BorderRadius.circular(PosTheme.radiusMedium),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              _amountShort > 0
+                                  ? context.l10n.paymentScreenShort
+                                  : context.l10n.receiptChange,
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: _amountShort > 0
+                                      ? PosTheme.warningAmber
+                                      : PosTheme.primaryGreen),
+                            ),
+                          ),
+                          _dualCurrencyAmount(
+                            _amountShort > 0 ? _amountShort : _changeDue,
+                            color: _amountShort > 0
+                                ? PosTheme.warningAmber
+                                : PosTheme.primaryGreen,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          // ── Action buttons ──
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
-            child: SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton.icon(
-                icon: const Icon(Icons.money, size: 22),
-                label: Text(context.l10n.paymentScreenChargeCash,
-                    style: const TextStyle(
-                        fontSize: 17, fontWeight: FontWeight.w700)),
-                onPressed: _chargeCash,
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: PosTheme.primaryGreen,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(PosTheme.radiusMedium))),
               ),
             ),
-          ),
-          const SizedBox(height: 14),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
-            child: SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton.icon(
-                icon: const Icon(Icons.call_split, size: 22),
-                label: Text(context.l10n.paymentScreenSplitPayment,
-                    style: const TextStyle(
-                        fontSize: 17, fontWeight: FontWeight.w700)),
-                onPressed: _enterSplitMode,
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: PosTheme.accentBlue,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(PosTheme.radiusMedium))),
+            const SizedBox(height: 20),
+            // ── Action buttons ──
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 28),
+              child: SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.money, size: 22),
+                  label: Text(context.l10n.paymentScreenChargeCash,
+                      style: const TextStyle(
+                          fontSize: 17, fontWeight: FontWeight.w700)),
+                  onPressed: _chargeCash,
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: PosTheme.primaryGreen,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(PosTheme.radiusMedium))),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 14),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
-            child: SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton.icon(
-                icon: const Icon(Icons.payment, size: 22),
-                label: Text(context.l10n.paymentScreenPayFullAmount,
-                    style: const TextStyle(
-                        fontSize: 17, fontWeight: FontWeight.w700)),
-                onPressed: _payFullAmount,
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: PosTheme.accentBlue,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(PosTheme.radiusMedium))),
+            const SizedBox(height: 14),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 28),
+              child: SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.call_split, size: 22),
+                  label: Text(context.l10n.paymentScreenSplitPayment,
+                      style: const TextStyle(
+                          fontSize: 17, fontWeight: FontWeight.w700)),
+                  onPressed: _enterSplitMode,
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: PosTheme.accentBlue,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(PosTheme.radiusMedium))),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 14),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
-            child: SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.schedule, size: 22),
-                label: Text(context.l10n.paymentScreenPayLater,
-                    style: const TextStyle(
-                        fontSize: 17, fontWeight: FontWeight.w700)),
-                onPressed: _startCreditSale,
-                style: OutlinedButton.styleFrom(
-                    foregroundColor: PosTheme.textPrimaryOf(context),
-                    side: BorderSide(color: PosTheme.borderColorOf(context)),
-                    shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(PosTheme.radiusMedium))),
+            const SizedBox(height: 14),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 28),
+              child: SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.payment, size: 22),
+                  label: Text(context.l10n.paymentScreenPayFullAmount,
+                      style: const TextStyle(
+                          fontSize: 17, fontWeight: FontWeight.w700)),
+                  onPressed: _payFullAmount,
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: PosTheme.accentBlue,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(PosTheme.radiusMedium))),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 24),
-        ]),
+            const SizedBox(height: 14),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 28),
+              child: SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.schedule, size: 22),
+                  label: Text(context.l10n.paymentScreenPayLater,
+                      style: const TextStyle(
+                          fontSize: 17, fontWeight: FontWeight.w700)),
+                  onPressed: _startCreditSale,
+                  style: OutlinedButton.styleFrom(
+                      foregroundColor: PosTheme.textPrimaryOf(context),
+                      side: BorderSide(color: PosTheme.borderColorOf(context)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(PosTheme.radiusMedium))),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+          ]),
         ),
       );
 

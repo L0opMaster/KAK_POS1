@@ -63,6 +63,7 @@ dev_dependencies:
   integration_test:
     sdk: flutter
   mockito: ^5.4.4
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
@@ -82,3 +83,14 @@ flutter:
         - asset: assets/fonts/NotoSansKhmer-Regular.ttf
         - asset: assets/fonts/NotoSansKhmer-Bold.ttf
           weight: 700
+
+flutter_launcher_icons:
+  image_path: "assets/icons/app_icon.png"
+  android: true
+  ios: true
+  web:
+    generate: true
+    background_color: "#009CBD"
+    theme_color: "#009CBD"
+  macos:
+    generate: true

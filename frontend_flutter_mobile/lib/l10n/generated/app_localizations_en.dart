@@ -278,6 +278,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsSavePrinters => 'Save Printers';
 
   @override
+  String get settingsPairing => 'Pairing';
+
+  @override
+  String get settingsPairingServerAddress => 'Server Address (LAN)';
+
+  @override
+  String get settingsPairingServerAddressHint =>
+      'e.g. http://192.168.1.10:8081 — leave blank to auto-detect';
+
+  @override
+  String get settingsPairingServerAddressHelp =>
+      'Overrides the auto-detected LAN address used in the Phone Scanner and Customer Display pairing QR codes. Leave blank to auto-detect.';
+
+  @override
+  String get settingsSavePairing => 'Save Pairing';
+
+  @override
   String get settingsTaxRateLabel => 'Tax rate';
 
   @override
@@ -526,6 +543,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get receiptExchangeRate => 'Exchange rate';
+
+  @override
+  String get receiptTicketNumber => 'Ticket';
+
+  @override
+  String get receiptBillHeaderTitle => 'BILL / CHECK';
+
+  @override
+  String get receiptPaymentStatus => 'Payment Status';
+
+  @override
+  String get receiptUnpaid => 'UNPAID';
+
+  @override
+  String get receiptBillDisclaimer =>
+      'This is a bill for payment. It is NOT a payment receipt.';
+
+  @override
+  String get receiptBillCashierNotice =>
+      'Please present this bill at the cashier.';
+
+  @override
+  String get receiptDineIn => 'Dine In';
 
   @override
   String get dialogConfirmTitle => 'Confirm';
@@ -3588,6 +3628,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get heldTicketsPrintNumber => 'Print number';
 
   @override
+  String get heldTicketsBillPreviewTitle => 'Bill Preview';
+
+  @override
+  String get heldTicketsPrintBillAgain => 'Print Bill Again';
+
+  @override
+  String get heldTicketsBillPrintedBadge => 'BILL PRINTED';
+
+  @override
+  String get heldTicketsUnpaidBadge => 'UNPAID';
+
+  @override
+  String get heldTicketsResumeOrder => 'Resume Order';
+
+  @override
   String get modifierSheetQuantity => 'Quantity';
 
   @override
@@ -3656,6 +3711,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get phoneScannerSessionStoppedStatus => 'Scanner session is stopped';
+
+  @override
+  String get phoneScannerScanQrLabel => 'Scan this QR code';
+
+  @override
+  String get phoneScannerOrManualLabel => 'Or enter manually';
+
+  @override
+  String phoneScannerServerLabel(Object server) {
+    return 'Server: $server';
+  }
+
+  @override
+  String get phoneScannerQrUnavailable =>
+      'Couldn\'t detect a LAN address automatically. Connect this computer to Wi-Fi/LAN, or enter the address manually on the phone.';
 
   @override
   String get productCardOutOfStock => 'Out of Stock';
@@ -4115,6 +4185,48 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get customerDisplayStatusWaiting =>
       'Waiting for the customer display to connect...';
+
+  @override
+  String get customerDisplayScanQrLabel => 'Scan this QR code';
+
+  @override
+  String get customerDisplayOrManualLabel => 'Or enter manually';
+
+  @override
+  String customerDisplayServerLabel(Object server) {
+    return 'Server: $server';
+  }
+
+  @override
+  String get customerDisplayQrUnavailable =>
+      'Couldn\'t detect a LAN address automatically. Connect this computer to Wi-Fi/LAN, or enter the address manually on the display.';
+
+  @override
+  String get pairingQrScanTitle => 'Scan Pairing QR Code';
+
+  @override
+  String get pairingQrScanInstructions =>
+      'Point the camera at the QR code shown on the POS screen';
+
+  @override
+  String get pairingQrScanInvalid => 'Invalid pairing QR code.';
+
+  @override
+  String pairingQrScanWrongType(Object actual, Object expected) {
+    return 'This QR code is for $actual, not $expected.';
+  }
+
+  @override
+  String get pairingQrTypePhoneScanner => 'Phone Scanner';
+
+  @override
+  String get pairingQrTypeCustomerDisplay => 'Customer Display';
+
+  @override
+  String get phoneScanScreenScanQrButton => 'Scan QR Code';
+
+  @override
+  String get phoneScanScreenOrDivider => 'OR';
 
   @override
   String get reportPdfGeneratedLabel => 'Generated';

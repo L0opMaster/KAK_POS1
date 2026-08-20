@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/cart_models.dart';
+import 'bill_print_status_provider.dart';
 import 'cart_provider.dart';
 import '../services/held_ticket_service.dart';
 import 'table_selection_provider.dart';
@@ -193,6 +194,7 @@ class HeldTicketNotifier extends StateNotifier<HeldTicketState> {
   Future<void> releaseTicketById(int ticketId) async {
     try {
       await service.releaseTicket(ticketId: ticketId.toString());
+      await ref.read(billPrintStatusProvider.notifier).clear(ticketId);
     } catch (e) {
       // Non-fatal: the sale already succeeded — a leftover held-ticket row
       // is just clutter, not a lost order.
@@ -203,6 +205,7 @@ class HeldTicketNotifier extends StateNotifier<HeldTicketState> {
   Future<void> deleteTicket(HeldOrder ticket) async {
     try {
       await service.releaseTicket(ticketId: ticket.id.toString());
+      await ref.read(billPrintStatusProvider.notifier).clear(ticket.id);
       await loadHeldTickets();
     } catch (e) {
       state = state.copyWith(error: e.toString());

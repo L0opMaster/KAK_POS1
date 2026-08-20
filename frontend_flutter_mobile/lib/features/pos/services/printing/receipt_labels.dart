@@ -32,6 +32,13 @@ class ReceiptLabels {
     required this.emptyCart,
     required this.telFormat,
     required this.exchangeRateValueFormat,
+    required this.ticket,
+    required this.billHeaderTitle,
+    required this.paymentStatus,
+    required this.unpaid,
+    required this.billDisclaimer,
+    required this.billCashierNotice,
+    required this.dineIn,
   });
 
   factory ReceiptLabels.fromL10n(AppLocalizations l10n) => ReceiptLabels(
@@ -60,6 +67,13 @@ class ReceiptLabels {
     emptyCart: l10n.posEmptyCart,
     telFormat: l10n.receiptsScreenTelLabel,
     exchangeRateValueFormat: l10n.receiptsScreenExchangeRateValue,
+    ticket: l10n.receiptTicketNumber,
+    billHeaderTitle: l10n.receiptBillHeaderTitle,
+    paymentStatus: l10n.receiptPaymentStatus,
+    unpaid: l10n.receiptUnpaid,
+    billDisclaimer: l10n.receiptBillDisclaimer,
+    billCashierNotice: l10n.receiptBillCashierNotice,
+    dineIn: l10n.receiptDineIn,
   );
 
   final String invoiceNumber;
@@ -92,6 +106,33 @@ class ReceiptLabels {
   /// e.g. "1 USD = {rate} KHR" — needs the actual formatted rate.
   final String Function(Object rate) exchangeRateValueFormat;
 
+  /// "Ticket" — used in place of [invoiceNumber] on a pre-payment bill (see
+  /// `ReceiptViewModel.isBill`), since a held ticket isn't an invoice yet.
+  final String ticket;
+
+  /// "BILL / CHECK" — the document-type banner shown at the very top of a
+  /// pre-payment bill, above the business name, so it can never be mistaken
+  /// for a paid receipt at a glance.
+  final String billHeaderTitle;
+
+  /// "Payment Status" — label above [unpaid] on a pre-payment bill.
+  final String paymentStatus;
+
+  /// "UNPAID" — replaces the Paid/Cash Received/Change section entirely on
+  /// a pre-payment bill.
+  final String unpaid;
+
+  /// "This is a bill for payment. It is NOT a payment receipt." — printed
+  /// under [unpaid] on a pre-payment bill.
+  final String billDisclaimer;
+
+  /// "Please present this bill at the cashier." — printed under
+  /// [billDisclaimer] on a pre-payment bill.
+  final String billCashierNotice;
+
+  /// "Dine In" — shown alongside the table number on a pre-payment bill.
+  final String dineIn;
+
   /// English fallback — used only where no [AppLocalizations] is available.
   static const ReceiptLabels fallback = ReceiptLabels(
     invoiceNumber: 'Invoice No.',
@@ -119,6 +160,13 @@ class ReceiptLabels {
     emptyCart: 'Cart is empty',
     telFormat: _fallbackTel,
     exchangeRateValueFormat: _fallbackRate,
+    ticket: 'Ticket',
+    billHeaderTitle: 'BILL / CHECK',
+    paymentStatus: 'Payment Status',
+    unpaid: 'UNPAID',
+    billDisclaimer: 'This is a bill for payment. It is NOT a payment receipt.',
+    billCashierNotice: 'Please present this bill at the cashier.',
+    dineIn: 'Dine In',
   );
 
   static String _fallbackTel(Object phone) => 'Tel: $phone';

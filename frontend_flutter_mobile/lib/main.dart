@@ -55,7 +55,7 @@ class MobileApp extends ConsumerWidget {
     ApiService.onUnauthorized = () => ref.read(authProvider.notifier).logout();
 
     return MaterialApp(
-      title: 'KAKNNEA',
+      title: 'KAKNNEA MOBILE POS',
       debugShowCheckedModeBanner: false,
       theme: PosTheme.lightTheme,
       darkTheme: PosTheme.darkTheme,

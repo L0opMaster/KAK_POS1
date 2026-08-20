@@ -96,6 +96,11 @@
   "settingsSaveCompany": "Save Company",
   "settingsSaveTax": "Save Tax",
   "settingsSavePrinters": "Save Printers",
+  "settingsPairing": "Pairing",
+  "settingsPairingServerAddress": "Server Address (LAN)",
+  "settingsPairingServerAddressHint": "e.g. http://192.168.1.10:8081 — leave blank to auto-detect",
+  "settingsPairingServerAddressHelp": "Overrides the auto-detected LAN address used in the Phone Scanner and Customer Display pairing QR codes. Leave blank to auto-detect.",
+  "settingsSavePairing": "Save Pairing",
   "settingsTaxRateLabel": "Tax rate",
   "settingsDefaultLanguage": "Default language",
   "settingsReceiptFooter": "Receipt footer",
@@ -179,6 +184,13 @@
   "receiptPrint": "Print",
   "receiptReprint": "Reprint",
   "receiptExchangeRate": "Exchange rate",
+  "receiptTicketNumber": "Ticket",
+  "receiptBillHeaderTitle": "BILL / CHECK",
+  "receiptPaymentStatus": "Payment Status",
+  "receiptUnpaid": "UNPAID",
+  "receiptBillDisclaimer": "This is a bill for payment. It is NOT a payment receipt.",
+  "receiptBillCashierNotice": "Please present this bill at the cashier.",
+  "receiptDineIn": "Dine In",
   "dialogConfirmTitle": "Confirm",
   "dialogConfirmDeleteTitle": "Confirm Delete",
   "dialogConfirmDeleteMessage": "Are you sure you want to delete this item? This action cannot be undone.",
@@ -2282,6 +2294,11 @@
   "heldTicketsTapToRestore": "Tap to restore",
   "heldTicketsPrintBill": "Print bill",
   "heldTicketsPrintNumber": "Print number",
+  "heldTicketsBillPreviewTitle": "Bill Preview",
+  "heldTicketsPrintBillAgain": "Print Bill Again",
+  "heldTicketsBillPrintedBadge": "BILL PRINTED",
+  "heldTicketsUnpaidBadge": "UNPAID",
+  "heldTicketsResumeOrder": "Resume Order",
   "modifierSheetQuantity": "Quantity",
   "modifierSheetNoteHint": "Add a note...",
   "modifierSheetValidationError": "Please select an option for all required modifiers.",
@@ -2304,6 +2321,17 @@
   "phoneScannerConnectedTooltip": "Phone scanner connected",
   "phoneScannerConnectTooltip": "Connect phone scanner",
   "phoneScannerSessionStoppedStatus": "Scanner session is stopped",
+  "phoneScannerScanQrLabel": "Scan this QR code",
+  "phoneScannerOrManualLabel": "Or enter manually",
+  "phoneScannerServerLabel": "Server: {server}",
+  "@phoneScannerServerLabel": {
+    "placeholders": {
+      "server": {
+        "type": "Object"
+      }
+    }
+  },
+  "phoneScannerQrUnavailable": "Couldn't detect a LAN address automatically. Connect this computer to Wi-Fi/LAN, or enter the address manually on the phone.",
   "productCardOutOfStock": "Out of Stock",
   "statusBarToggleMenu": "Toggle menu",
   "statusBarShiftLabel": "Shift",
@@ -2539,6 +2567,35 @@
   "customerDisplayStatusStopped": "Session stopped",
   "customerDisplayStatusConnected": "Customer display connected",
   "customerDisplayStatusWaiting": "Waiting for the customer display to connect...",
+  "customerDisplayScanQrLabel": "Scan this QR code",
+  "customerDisplayOrManualLabel": "Or enter manually",
+  "customerDisplayServerLabel": "Server: {server}",
+  "@customerDisplayServerLabel": {
+    "placeholders": {
+      "server": {
+        "type": "Object"
+      }
+    }
+  },
+  "customerDisplayQrUnavailable": "Couldn't detect a LAN address automatically. Connect this computer to Wi-Fi/LAN, or enter the address manually on the display.",
+  "pairingQrScanTitle": "Scan Pairing QR Code",
+  "pairingQrScanInstructions": "Point the camera at the QR code shown on the POS screen",
+  "pairingQrScanInvalid": "Invalid pairing QR code.",
+  "pairingQrScanWrongType": "This QR code is for {actual}, not {expected}.",
+  "@pairingQrScanWrongType": {
+    "placeholders": {
+      "actual": {
+        "type": "Object"
+      },
+      "expected": {
+        "type": "Object"
+      }
+    }
+  },
+  "pairingQrTypePhoneScanner": "Phone Scanner",
+  "pairingQrTypeCustomerDisplay": "Customer Display",
+  "phoneScanScreenScanQrButton": "Scan QR Code",
+  "phoneScanScreenOrDivider": "OR",
   "reportPdfGeneratedLabel": "Generated",
   "reportPdfPageLabel": "Page",
   "salesSummaryPdfTitle": "Sales Summary Report",

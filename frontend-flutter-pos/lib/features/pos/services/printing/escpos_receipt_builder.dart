@@ -80,6 +80,9 @@ class EscPosReceiptBuilder {
 
     final labels = receipt.labels;
 
+    if (receipt.isBill) {
+      line(labels.billHeaderTitle, align: PosAlign.center, bold: true);
+    }
     line(receipt.businessName, align: PosAlign.center, bold: true);
     if (receipt.address != null && receipt.address!.isNotEmpty) {
       line(receipt.address!, align: PosAlign.center);
@@ -88,6 +91,14 @@ class EscPosReceiptBuilder {
       line(labels.telFormat(receipt.phone!), align: PosAlign.center);
     }
     bytes += generator.hr();
+    if (receipt.isBill && receipt.tableNumber != null) {
+      line(receipt.tableNumber!.toUpperCase(),
+          align: PosAlign.center, bold: true, size: PosTextSize.size2);
+      if (receipt.isDineIn) {
+        line(labels.dineIn.toUpperCase(), align: PosAlign.center);
+      }
+      bytes += generator.hr(ch: '-');
+    }
     row(receipt.invoiceNumber, receipt.date);
     if (receipt.time.isNotEmpty) line(receipt.time);
     if (receipt.cashierName != null) line(receipt.cashierName!);
@@ -123,19 +134,28 @@ class EscPosReceiptBuilder {
       row(labels.totalRiel, '${ReceiptViewModel.khrGroup(receipt.khrTotal)} ៛',
           bold: true);
     }
-    if (receipt.paidAmount > 0)
-      row(labels.paid, receipt.fmt(receipt.paidAmount));
-    if (receipt.changeAmount > 0) {
-      // Cash Received (= paidAmount + changeAmount) makes Change legible —
-      // Paid alone is the amount APPLIED to the sale (never more than the
-      // total), so Change would otherwise look like it appeared from
-      // nowhere.
-      row(labels.cashReceived,
-          receipt.fmt(receipt.paidAmount + receipt.changeAmount));
-      row(labels.change, receipt.fmt(receipt.changeAmount));
-    }
-    if (receipt.paymentMethodLabel != null) {
-      row(labels.paymentMethod, receipt.paymentMethodLabel!);
+    if (receipt.isBill) {
+      bytes += generator.hr(ch: '-');
+      line(labels.paymentStatus, align: PosAlign.center, bold: true);
+      line(labels.unpaid, align: PosAlign.center, bold: true, size: PosTextSize.size2);
+      line(labels.billDisclaimer, align: PosAlign.center);
+      line(labels.billCashierNotice, align: PosAlign.center, bold: true);
+    } else {
+      if (receipt.paidAmount > 0) {
+        row(labels.paid, receipt.fmt(receipt.paidAmount));
+      }
+      if (receipt.changeAmount > 0) {
+        // Cash Received (= paidAmount + changeAmount) makes Change legible —
+        // Paid alone is the amount APPLIED to the sale (never more than the
+        // total), so Change would otherwise look like it appeared from
+        // nowhere.
+        row(labels.cashReceived,
+            receipt.fmt(receipt.paidAmount + receipt.changeAmount));
+        row(labels.change, receipt.fmt(receipt.changeAmount));
+      }
+      if (receipt.paymentMethodLabel != null) {
+        row(labels.paymentMethod, receipt.paymentMethodLabel!);
+      }
     }
     if (receipt.creditStatus != null) {
       bytes += generator.hr(ch: '-');

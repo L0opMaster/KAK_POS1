@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../services/scanner_relay_role.dart';
 import '../../../core/utils/l10n_extensions.dart';
+import '../../../core/utils/pairing_qr_data.dart';
+import 'pairing_qr_scan_screen.dart';
 
 class PhoneScannerScreen extends StatefulWidget {
   const PhoneScannerScreen({super.key});
@@ -101,6 +103,22 @@ class _PhoneScannerScreenState extends State<PhoneScannerScreen> {
         });
       }
     }
+  }
+
+  Future<void> _scanQrToConnect() async {
+    final PairingQrData? data = await Navigator.of(context).push<PairingQrData>(
+      MaterialPageRoute<PairingQrData>(
+        builder: (_) =>
+            const PairingQrScanScreen(expectedType: PairingQrType.phoneScanner),
+      ),
+    );
+    if (data == null || !mounted) {
+      return;
+    }
+
+    _serverController.text = data.server;
+    _sessionController.text = data.sessionCode;
+    await _connect();
   }
 
   Future<void> _disconnect() async {
@@ -230,6 +248,26 @@ class _PhoneScannerScreenState extends State<PhoneScannerScreen> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
+          OutlinedButton.icon(
+            onPressed: connecting ? null : _scanQrToConnect,
+            icon: const Icon(Icons.qr_code_scanner),
+            label: Text(context.l10n.phoneScanScreenScanQrButton),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(child: Divider(color: Colors.grey.shade300)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Text(
+                  context.l10n.phoneScanScreenOrDivider,
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                ),
+              ),
+              Expanded(child: Divider(color: Colors.grey.shade300)),
+            ],
+          ),
+          const SizedBox(height: 16),
           TextField(
             controller: _serverController,
             keyboardType: TextInputType.url,
