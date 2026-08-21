@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/config/pos_theme.dart';
+import '../../../core/utils/l10n_extensions.dart';
 import '../models/product_models.dart';
 import '../providers/cart_provider.dart';
 import '../services/settings_service.dart';
@@ -115,10 +116,9 @@ class _ProductGridState extends ConsumerState<ProductGrid> {
             // for products with modifier groups. To choose a modifier
             // (e.g. Sugar Level on an Ice Latte), tap "Modifier" on the
             // cart line afterward.
-            onTap: (p) => ref.read(cartProvider.notifier).addItemFromProduct(p),
+            onTap: (p) => _addToCart(context, ref, p),
             // + icon → same as tap.
-            onQuickAdd: (p) =>
-                ref.read(cartProvider.notifier).addItemFromProduct(p),
+            onQuickAdd: (p) => _addToCart(context, ref, p),
             // Long-press → open modifier sheet for customization before
             // adding, for anyone who prefers to pick options up front.
             onLongPress: widget.onProductLongPress ?? widget.onProductTap,
@@ -128,6 +128,29 @@ class _ProductGridState extends ConsumerState<ProductGrid> {
       ),
     );
   }
+}
+
+/// Adds [product] to the cart (tap or quick-add — both routes here) and
+/// surfaces a SnackBar when [CartNotifier.addItemFromProduct] blocks the
+/// add (out of stock, inactive, not sellable) — mirrors how a blocked
+/// barcode-scan add is already reported via `pos_screen.dart`'s
+/// `_showBarcodeMessage`.
+Future<void> _addToCart(
+  BuildContext context,
+  WidgetRef ref,
+  Product product,
+) async {
+  final CartMutationResult result =
+      await ref.read(cartProvider.notifier).addItemFromProduct(product);
+  if (result.ok || !context.mounted) {
+    return;
+  }
+  final String text = result.stockCapAvailableQty != null
+      ? context.l10n.cartOnlyStockAvailable(result.stockCapAvailableQty!)
+      : (result.message ?? '');
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(SnackBar(content: Text(text)));
 }
 
 /// Compact loading indicator shown at the bottom of the grid when loading more.

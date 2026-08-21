@@ -1103,6 +1103,7 @@
   "phoneScannerServerLabel": "ម៉ាស៊ីនមេ៖ {server}",
   "phoneScannerQrUnavailable": "មិនអាចរកអាសយដ្ឋាន LAN ដោយស្វ័យប្រវត្តិបានទេ។ សូមភ្ជាប់កុំព្យូទ័រនេះទៅ Wi-Fi/LAN ឬបញ្ចូលអាសយដ្ឋានដោយដៃនៅលើទូរស័ព្ទ។",
   "productCardOutOfStock": "អស់ពីស្តុក",
+  "cartOnlyStockAvailable": "នៅសល់តែ {count} ប៉ុណ្ណោះ",
   "statusBarToggleMenu": "បិទ/បើកម៉ឺនុយ",
   "statusBarShiftLabel": "វេន",
   "statusBarOnline": "អនឡាញ",

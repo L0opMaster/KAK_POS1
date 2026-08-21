@@ -43,9 +43,43 @@ class _ProductCardState extends ConsumerState<ProductCard> {
 
   Product get p => widget.product;
 
-  bool get _hasStock => p.stock != 0;
+  /// Stock actually left to add, after subtracting what's already sitting
+  /// in this cart for this product. `widget.cartQty` comes from
+  /// `pos_register_screen.dart`'s `cartQtyFor` (`ref.watch(cartProvider)`
+  /// under the hood), so it — and every getter derived from it below —
+  /// rebuilds live on every +/-, tap-to-add, or held-ticket restore, with
+  /// no server round-trip: the cashier sees Out of Stock/Low Stock and the
+  /// stock count update the instant the cart changes, not only after
+  /// payment completes and the product list is re-fetched. Prefers
+  /// `availableSaleQty` over raw `stock` when present, same as the cap
+  /// `CartNotifier` itself enforces (`_stockCapIfExceeded`), so this card
+  /// can never show more room than the cart is actually allowed to use.
+  double get _remainingStock =>
+      ((p.availableSaleQty ?? p.stock) - widget.cartQty)
+          .clamp(0, double.infinity);
+
+  /// Whether this product can be tapped/added right now. An untracked
+  /// product (the default for a newly created "no stock quantity needed"
+  /// item, which leaves `stock` at its default 0) is never blocked here —
+  /// only a tracked product whose remaining stock has hit zero is.
+  /// Previously this read `p.stock != 0` directly, which ignored
+  /// `trackInventory` entirely and showed every untracked product as
+  /// permanently Out of Stock.
+  bool get _hasStock => !p.trackInventory || _remainingStock > 0;
   bool get _hasImage => p.imageUrl != null && p.imageUrl!.isNotEmpty;
-  bool get _isLowStock => _hasStock && p.stock <= 5;
+
+  /// Whether to show the numeric stock count next to the price — only
+  /// meaningful for a tracked product; an untracked one has no stock
+  /// quantity to show at all (not "0").
+  bool get _showStockCount => p.trackInventory;
+
+  /// Low-stock state against each product's own configured
+  /// `lowStockThreshold`, recomputed from [_remainingStock] rather than the
+  /// server's `p.lowStock` so it also updates live as the cart changes.
+  bool get _isLowStock =>
+      p.trackInventory &&
+      _remainingStock > 0 &&
+      _remainingStock <= p.lowStockThreshold;
 
   void _onTap() {
     if (!_hasStock || widget.onTap == null) return;
@@ -58,8 +92,10 @@ class _ProductCardState extends ConsumerState<ProductCard> {
 
   @override
   Widget build(BuildContext context) {
+    final remainingStock = _remainingStock;
     final hasStock = _hasStock;
     final isLowStock = _isLowStock;
+    final showStockCount = _showStockCount;
     final hasImage = _hasImage;
     final scale = _pressed ? 0.94 : 1.0;
     final lang = ref.watch(appLanguageProvider);
@@ -112,7 +148,7 @@ class _ProductCardState extends ConsumerState<ProductCard> {
                       Positioned(
                         top: 6,
                         left: 6,
-                        child: _LowStockBadge(stock: p.stock.toInt()),
+                        child: _LowStockBadge(stock: remainingStock.toInt()),
                       ),
                     if (widget.onQuickAdd != null && hasStock)
                       Positioned(
@@ -198,10 +234,10 @@ class _ProductCardState extends ConsumerState<ProductCard> {
                             ),
                           ),
                         ),
-                        if (hasStock) ...[
+                        if (showStockCount) ...[
                           const SizedBox(width: 4),
                           Text(
-                            '${p.stock.toInt()}',
+                            '${remainingStock.toInt()}',
                             style: TextStyle(
                               fontSize: 11,
                               color: isLowStock

@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend_flutter_pos/features/pos/models/cart_models.dart';
 import 'package:frontend_flutter_pos/features/pos/models/modifier_models.dart';
 import 'package:frontend_flutter_pos/features/pos/models/product_models.dart';
+import 'package:frontend_flutter_pos/features/pos/providers/cart_provider.dart';
 import 'package:frontend_flutter_pos/features/pos/widgets/cart_items_list.dart';
 import 'package:frontend_flutter_pos/features/pos/widgets/product_modifier_sheet.dart';
 
@@ -16,7 +17,8 @@ class _FakeCartNotifier {
 
   // Unused by this test but present because CartItemsList's `notifier` is
   // `dynamic` and other rows in the same list may call these.
-  void setItemQuantity(String id, int qty) {}
+  Future<CartMutationResult> setItemQuantity(String id, int qty) async =>
+      const CartMutationResult.ok();
   void setItemNote(String id, String? note) {}
   void setItemDiscount(String id, double discount) {}
   void setItemModifiers(String id,

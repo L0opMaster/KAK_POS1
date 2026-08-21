@@ -6761,6 +6761,12 @@ abstract class AppLocalizations {
   /// **'Out of Stock'**
   String get productCardOutOfStock;
 
+  /// No description provided for @cartOnlyStockAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Only {count} available'**
+  String cartOnlyStockAvailable(Object count);
+
   /// No description provided for @statusBarToggleMenu.
   ///
   /// In en, this message translates to:

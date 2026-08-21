@@ -3760,6 +3760,11 @@ class AppLocalizationsKm extends AppLocalizations {
   String get productCardOutOfStock => 'អស់ពីស្តុក';
 
   @override
+  String cartOnlyStockAvailable(Object count) {
+    return 'នៅសល់តែ $count ប៉ុណ្ណោះ';
+  }
+
+  @override
   String get statusBarToggleMenu => 'បិទ/បើកម៉ឺនុយ';
 
   @override

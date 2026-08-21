@@ -207,6 +207,29 @@ class BarcodeAddResult {
   final Product? product;
 }
 
+/// Result of a cart mutation that can be blocked by a stock cap or a
+/// defense-in-depth active/sellable check (mirrors [BarcodeAddResult]'s
+/// success-flag-plus-detail shape). [message] is only set for the
+/// active/sellable cases, reusing the same hardcoded-English convention
+/// [CartNotifier.addProductByBarcode] already uses for those — the
+/// stock-cap case instead carries the raw [stockCapAvailableQty] so callers
+/// can build the localized "Only N available" text via
+/// `context.l10n.cartOnlyStockAvailable(...)` (this class has no
+/// BuildContext to localize it itself).
+class CartMutationResult {
+  const CartMutationResult.ok()
+      : ok = true,
+        message = null,
+        stockCapAvailableQty = null;
+
+  const CartMutationResult.blocked(this.message, {this.stockCapAvailableQty})
+      : ok = false;
+
+  final bool ok;
+  final String? message;
+  final int? stockCapAvailableQty;
+}
+
 /// Notifier responsible for loading/modifying the cart.
 ///
 /// This class mixes two different persistence layers, so read each method's
@@ -390,11 +413,35 @@ class CartNotifier extends StateNotifier<CartState> {
     }
   }
 
+  /// Sums cart qty across every line for [productId] — a product can appear
+  /// as several lines with different modifier selections — optionally
+  /// excluding one line (used by [setItemQuantity] so a line's own current
+  /// qty isn't double-counted against itself when computing its new total).
+  int _cartQtyForProduct(int productId, {String? excludingLineId}) =>
+      state.items
+          .where((item) =>
+              item.product.id == productId && item.id != excludingLineId)
+          .fold(0, (int sum, item) => sum + item.qty);
+
+  /// Returns null if [product] can supply [desiredTotalQty] units across the
+  /// whole cart — always true when it doesn't track inventory, matching the
+  /// backend's own `outOfStock = trackInventory && availableSaleQty <= 0`
+  /// formula — otherwise the number of units that ARE available (floored,
+  /// clamped to >= 0 in case the backend snapshot is already oversold), for
+  /// the "Only N available" message.
+  int? _stockCapIfExceeded(Product product, int desiredTotalQty) {
+    if (!product.trackInventory) return null;
+    final double available = product.availableSaleQty ?? product.stock;
+    if (desiredTotalQty <= available) return null;
+    final int floored = available.floor();
+    return floored < 0 ? 0 : floored;
+  }
+
   /// Adds a new item to cart from a product. If the product is already in the
   /// cart, it increments the quantity (Loyverse-style direct tap). Never
   /// prompts for modifiers itself — if the product has any, the cashier
   /// picks them afterward via the "Modifier" button on the cart line.
-  Future<void> addItemFromProduct(Product product) async {
+  Future<CartMutationResult> addItemFromProduct(Product product) async {
     // Find existing item by product id (not string id which is ephemeral)
     final existingIdx =
         state.items.indexWhere((item) => item.product.id == product.id);
@@ -402,17 +449,35 @@ class CartNotifier extends StateNotifier<CartState> {
     if (existingIdx >= 0) {
       // Already in cart — increment quantity
       final existing = state.items[existingIdx];
-      await incrementItem(existing.id);
-    } else {
-      // New item — generate unique id and add
-      final newItem = CartItem(
-        id: '${DateTime.now().microsecondsSinceEpoch}_${product.id}',
-        product: product,
-        qty: 1,
-        addedAt: DateTime.now().millisecondsSinceEpoch,
-      );
-      await addItem(newItem);
+      return incrementItem(existing.id);
     }
+
+    // New line — defense-in-depth: the product grid doesn't itself filter
+    // inactive/unsellable/out-of-stock products, so mirror the same checks
+    // addProductByBarcode already applies before this path existed.
+    if (!product.active) {
+      return CartMutationResult.blocked('${product.nameEn} is inactive');
+    }
+    if (!product.sellable) {
+      return CartMutationResult.blocked('${product.nameEn} is not sellable');
+    }
+    final int? cap = _stockCapIfExceeded(product, 1);
+    if (cap != null) {
+      return CartMutationResult.blocked(
+        '${product.nameEn} is out of stock',
+        stockCapAvailableQty: cap,
+      );
+    }
+
+    // New item — generate unique id and add
+    final newItem = CartItem(
+      id: '${DateTime.now().microsecondsSinceEpoch}_${product.id}',
+      product: product,
+      qty: 1,
+      addedAt: DateTime.now().millisecondsSinceEpoch,
+    );
+    await addItem(newItem);
+    return const CartMutationResult.ok();
   }
 
   /// Finds a product by barcode and adds it through the same local-cart path
@@ -552,25 +617,39 @@ class CartNotifier extends StateNotifier<CartState> {
   }
 
   /// increment quantity of an existing item (or add if not present)
-  Future<void> incrementItem(final String id) async {
+  Future<CartMutationResult> incrementItem(final String id) async {
+    final int idx = state.items.indexWhere((final CartItem i) => i.id == id);
+    if (idx < 0) {
+      return const CartMutationResult.ok();
+    }
+
+    final CartItem item = state.items[idx];
+    final int? cap = _stockCapIfExceeded(
+      item.product,
+      _cartQtyForProduct(item.product.id) + 1,
+    );
+    if (cap != null) {
+      return CartMutationResult.blocked(
+        '${item.product.nameEn} is out of stock',
+        stockCapAvailableQty: cap,
+      );
+    }
+
     state = state.copyWith(loading: true);
     try {
-      final int idx = state.items.indexWhere((final CartItem i) => i.id == id);
-      if (idx >= 0) {
-        final CartItem item = state.items[idx];
-        final CartItem updated = item.copyWith(qty: item.qty + 1);
-        final List<CartItem> list = <CartItem>[...state.items];
-        list[idx] = updated;
-        state = state.copyWith(items: list);
-        await persistCart();
-        await _syncService(
-            () => service.saveCartItems(state.items), 'increment');
-      }
+      final CartItem updated = item.copyWith(qty: item.qty + 1);
+      final List<CartItem> list = <CartItem>[...state.items];
+      list[idx] = updated;
+      state = state.copyWith(items: list);
+      await persistCart();
+      await _syncService(
+          () => service.saveCartItems(state.items), 'increment');
     } catch (e) {
       debugPrint('Cart increment failed: $e');
     } finally {
       state = state.copyWith(loading: false);
     }
+    return const CartMutationResult.ok();
   }
 
   /// decrement quantity, removing item if it reaches zero
@@ -600,18 +679,31 @@ class CartNotifier extends StateNotifier<CartState> {
   }
 
   /// Set a specific quantity for an existing item (removes item if qty <= 0).
-  Future<void> setItemQuantity(final String id, final int qty) async {
+  Future<CartMutationResult> setItemQuantity(
+    final String id,
+    final int qty,
+  ) async {
     state = state.copyWith(loading: true);
     try {
       final int idx = state.items.indexWhere((final CartItem i) => i.id == id);
       if (idx < 0) {
-        return;
+        return const CartMutationResult.ok();
       }
       if (qty <= 0) {
         await removeItem(id);
-        return;
+        return const CartMutationResult.ok();
       }
       final CartItem item = state.items[idx];
+      final int? cap = _stockCapIfExceeded(
+        item.product,
+        _cartQtyForProduct(item.product.id, excludingLineId: id) + qty,
+      );
+      if (cap != null) {
+        return CartMutationResult.blocked(
+          '${item.product.nameEn} is out of stock',
+          stockCapAvailableQty: cap,
+        );
+      }
       final CartItem updated = item.copyWith(qty: qty);
       final List<CartItem> list = <CartItem>[...state.items];
       list[idx] = updated;
@@ -624,6 +716,7 @@ class CartNotifier extends StateNotifier<CartState> {
     } finally {
       state = state.copyWith(loading: false);
     }
+    return const CartMutationResult.ok();
   }
 
   /// Update the modifier selections attached to a cart item (e.g. choosing

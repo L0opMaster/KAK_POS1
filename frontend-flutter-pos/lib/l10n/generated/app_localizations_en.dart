@@ -3749,6 +3749,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get productCardOutOfStock => 'Out of Stock';
 
   @override
+  String cartOnlyStockAvailable(Object count) {
+    return 'Only $count available';
+  }
+
+  @override
   String get statusBarToggleMenu => 'Toggle menu';
 
   @override

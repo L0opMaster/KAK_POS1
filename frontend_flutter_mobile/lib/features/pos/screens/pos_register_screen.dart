@@ -82,8 +82,17 @@ class _PosRegisterScreenState extends ConsumerState<PosRegisterScreen> {
   /// `onTap`/`onQuickAdd` closures — tap always quick-adds, even for
   /// products with modifier groups (pick modifiers afterward via the cart
   /// line's Modifier button, wired in `cart_items_list.dart`).
-  void _handleProductTap(Product product) {
-    ref.read(cartProvider.notifier).addItemFromProduct(product);
+  Future<void> _handleProductTap(Product product) async {
+    final result =
+        await ref.read(cartProvider.notifier).addItemFromProduct(product);
+    if (!result.ok && mounted) {
+      final text = result.stockCapAvailableQty != null
+          ? context.l10n.cartOnlyStockAvailable(result.stockCapAvailableQty!)
+          : (result.message ?? '');
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(text)));
+    }
   }
 
   /// REUSE EXISTING FUNCTION shape from `[OLD/SOURCE]` `pos_screen.dart`'s

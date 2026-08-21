@@ -2333,6 +2333,14 @@
   },
   "phoneScannerQrUnavailable": "Couldn't detect a LAN address automatically. Connect this computer to Wi-Fi/LAN, or enter the address manually on the phone.",
   "productCardOutOfStock": "Out of Stock",
+  "cartOnlyStockAvailable": "Only {count} available",
+  "@cartOnlyStockAvailable": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
   "statusBarToggleMenu": "Toggle menu",
   "statusBarShiftLabel": "Shift",
   "statusBarOnline": "Online",

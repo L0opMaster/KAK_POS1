@@ -5,6 +5,7 @@ import 'package:frontend_flutter_pos/core/utils/khmer_text_scaler.dart';
 import 'package:frontend_flutter_pos/features/pos/models/cart_models.dart';
 import 'package:frontend_flutter_pos/features/pos/models/modifier_models.dart';
 import 'package:frontend_flutter_pos/features/pos/models/product_models.dart';
+import 'package:frontend_flutter_pos/features/pos/providers/cart_provider.dart';
 import 'package:frontend_flutter_pos/features/pos/widgets/cart_items_list.dart';
 import 'package:frontend_flutter_pos/features/pos/widgets/category_tabs.dart';
 
@@ -12,7 +13,8 @@ import 'test_l10n_helper.dart';
 
 class _FakeCartNotifier {
   void removeItem(String id) {}
-  void setItemQuantity(String id, int qty) {}
+  Future<CartMutationResult> setItemQuantity(String id, int qty) async =>
+      const CartMutationResult.ok();
   void setItemNote(String id, String? note) {}
   void setItemDiscount(String id, double discount) {}
   void setItemModifiers(String id,

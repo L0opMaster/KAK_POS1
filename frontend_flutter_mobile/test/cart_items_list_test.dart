@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:frontend_flutter_mobile/features/pos/models/cart_models.dart';
 import 'package:frontend_flutter_mobile/features/pos/models/product_models.dart';
+import 'package:frontend_flutter_mobile/features/pos/providers/cart_provider.dart';
 import 'package:frontend_flutter_mobile/features/pos/widgets/cart_items_list.dart';
 
 import 'test_l10n_helper.dart';
@@ -16,7 +17,10 @@ class _FakeCartNotifier {
 
   void removeItem(String id) => removedItemId = id;
   void addItem(CartItem item) => reAddedItem = item;
-  void setItemQuantity(String id, int qty) => qtyCalls[id] = qty;
+  Future<CartMutationResult> setItemQuantity(String id, int qty) async {
+    qtyCalls[id] = qty;
+    return const CartMutationResult.ok();
+  }
   void setItemNote(String id, String? note) {}
   void setItemDiscount(String id, double discount) {}
   void setItemModifiers(String id,

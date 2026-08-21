@@ -169,7 +169,11 @@ class _CartItemCard extends StatelessWidget {
             onPressed: () {
               final newQty = int.tryParse(controller.text.trim());
               if (newQty != null && newQty > 0) {
-                notifier.setItemQuantity(item.id, newQty);
+                notifier.setItemQuantity(item.id, newQty).then((result) {
+                  if (!result.ok && context.mounted) {
+                    _showBlockedSnackBar(context, result);
+                  }
+                });
               }
               final newNote = noteController.text.trim();
               if (newNote != (item.note ?? '')) {
@@ -335,8 +339,13 @@ class _CartItemCard extends StatelessWidget {
                 children: [
                   QtyStepper(
                     quantity: item.qty,
-                    onIncrement: () =>
-                        notifier.setItemQuantity(item.id, item.qty + 1),
+                    onIncrement: () async {
+                      final result = await notifier.setItemQuantity(
+                          item.id, item.qty + 1);
+                      if (!result.ok && context.mounted) {
+                        _showBlockedSnackBar(context, result);
+                      }
+                    },
                     onDecrement: () {
                       if (item.qty > 1) {
                         notifier.setItemQuantity(item.id, item.qty - 1);
@@ -379,4 +388,18 @@ class _CartItemCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Shows the "Only N available" (or inactive/not-sellable) message for a
+/// [CartMutationResult]-shaped block from `CartNotifier.setItemQuantity` —
+/// [result] is `dynamic` (this widget accepts a `dynamic notifier` so tests
+/// can supply a fake) but always duck-types to `.ok`/`.message`/
+/// `.stockCapAvailableQty` at runtime, matching `CartMutationResult`.
+void _showBlockedSnackBar(BuildContext context, dynamic result) {
+  final String text = result.stockCapAvailableQty != null
+      ? context.l10n.cartOnlyStockAvailable(result.stockCapAvailableQty)
+      : ((result.message as String?) ?? '');
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(SnackBar(content: Text(text)));
 }
